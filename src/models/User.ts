@@ -8,8 +8,8 @@ export type TUser = {
   password: string;
   username: string;
   phone_num: string;
-  createdAt?: Date;
-  updatedAt?: Date;
+  created_at?: Date;
+  updated_at?: Date;
 };
 
 export class User extends Model<TUser> implements TUser {
@@ -18,8 +18,8 @@ export class User extends Model<TUser> implements TUser {
   public password!: string;
   public username!: string;
   public phone_num!: string;
-  public createdAt!: Date;
-  public updatedAt!: Date;
+  public created_at!: Date;
+  public updated_at!: Date;
 
   static associate() {
     User.hasMany(FAQ, { foreignKey: 'createdBy', as: 'faqsCreated' });
@@ -50,13 +50,15 @@ User.init(
       allowNull: false,
       unique: true,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      field: 'created_at',
     },
-    updatedAt: {
+    updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      field: 'updated_at',
     },
   },
   {

@@ -12,10 +12,10 @@ export type TFAQ = {
   question_en: string;
   answer_ko: object;
   answer_en: object;
-  createdAt: Date;
-  createdBy: number | null;
-  updatedAt: Date;
-  updatedBy: number | null;
+  created_at: Date;
+  created_by: number | null;
+  updated_at: Date;
+  updated_by: number | null;
 };
 
 export class FAQ extends Model<TFAQ> implements TFAQ {
@@ -28,19 +28,19 @@ export class FAQ extends Model<TFAQ> implements TFAQ {
   public question_en!: string;
   public answer_ko!: object;
   public answer_en!: object;
-  public createdAt!: Date;
-  public createdBy!: number | null;
-  public updatedAt!: Date;
-  public updatedBy!: number | null;
+  public created_at!: Date;
+  public created_by!: number | null;
+  public updated_at!: Date;
+  public updated_by!: number | null;
 
   static associate() {
     FAQ.belongsTo(User, {
-      foreignKey: 'createdBy',
+      foreignKey: 'created_by',
       as: 'creator',
       onDelete: 'SET NULL',
     });
     FAQ.belongsTo(User, {
-      foreignKey: 'updatedBy',
+      foreignKey: 'updated_by',
       as: 'updater',
       onDelete: 'SET NULL',
     });
@@ -86,21 +86,25 @@ FAQ.init(
       type: DataTypes.JSON,
       allowNull: false,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      field: 'created_at',
     },
-    createdBy: {
+    created_by: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      field: 'created_by',
     },
-    updatedAt: {
+    updated_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      field: 'updated_at',
     },
-    updatedBy: {
+    updated_by: {
       type: DataTypes.INTEGER,
       allowNull: true,
+      field: 'updated_by',
     },
   },
   {

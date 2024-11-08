@@ -5,20 +5,22 @@ import { FAQ } from './FAQ';
 // 유저가 입력한 질문 log를 저장하는 table
 export type TQuestionLog = {
   id: number;
-  faqId: number | null;
-  userQuestion: string;
-  feedbackScore: number | null;
+  faq_id: number | null;
+  user_question: string;
+  feedback_score: number | null;
   feedback: string | null;
-  createdAt: Date;
+  created_at: Date;
+  language: string;
 };
 
 export class QuestionLog extends Model<TQuestionLog> implements TQuestionLog {
   public id!: number;
-  public faqId!: number | null;
-  public userQuestion!: string;
-  public feedbackScore!: number | null;
+  public faq_id!: number | null;
+  public user_question!: string;
+  public feedback_score!: number | null;
   public feedback!: string | null;
-  public createdAt!: Date;
+  public created_at!: Date;
+  public language!: string;
 
   static associate() {
     QuestionLog.belongsTo(FAQ, {
@@ -36,15 +38,19 @@ QuestionLog.init(
       primaryKey: true,
       autoIncrement: true,
     },
-    faqId: {
+    faq_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
-    userQuestion: {
+    user_question: {
       type: DataTypes.STRING(300),
       allowNull: false,
     },
-    feedbackScore: {
+    language: {
+      type: DataTypes.STRING(45),
+      allowNull: false,
+    },
+    feedback_score: {
       type: DataTypes.INTEGER,
       allowNull: true,
     },
@@ -52,16 +58,17 @@ QuestionLog.init(
       type: DataTypes.STRING(300),
       allowNull: true,
     },
-    createdAt: {
+    created_at: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
+      field: 'created_at',
     },
   },
   {
     sequelize,
     modelName: 'QuestionLog',
     tableName: 'question_logs',
-    timestamps: true,
+    timestamps: false,
     underscored: true,
   }
 );

@@ -7,20 +7,20 @@ export type TQuestionLog = {
   id: number;
   faq_id: number | null;
   user_question: string;
+  language: string;
   feedback_score: number | null;
   feedback: string | null;
-  created_at: Date;
-  language: string;
+  created_at?: Date;
 };
 
 export class QuestionLog extends Model<TQuestionLog> implements TQuestionLog {
   public id!: number;
   public faq_id!: number | null;
   public user_question!: string;
+  public language!: string;
   public feedback_score!: number | null;
   public feedback!: string | null;
   public created_at!: Date;
-  public language!: string;
 
   static associate() {
     QuestionLog.belongsTo(FAQ, {
@@ -58,17 +58,13 @@ QuestionLog.init(
       type: DataTypes.STRING(300),
       allowNull: true,
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'created_at',
-    },
   },
   {
     sequelize,
     modelName: 'QuestionLog',
     tableName: 'question_logs',
-    timestamps: false,
+    timestamps: true,
+    updatedAt: false, 
     underscored: true,
   }
 );

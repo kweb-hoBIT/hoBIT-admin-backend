@@ -10,11 +10,10 @@ export type TFAQ = {
   subcategory_en: string;
   question_ko: string;
   question_en: string;
-  answer_ko: object;
-  answer_en: object;
-  created_at: Date;
+  answer_ko: string;
+  answer_en: string;
+  manager: string;
   created_by: number | null;
-  updated_at: Date;
   updated_by: number | null;
 };
 
@@ -26,11 +25,10 @@ export class FAQ extends Model<TFAQ> implements TFAQ {
   public subcategory_en!: string;
   public question_ko!: string;
   public question_en!: string;
-  public answer_ko!: object;
-  public answer_en!: object;
-  public created_at!: Date;
+  public answer_ko!: string;
+  public answer_en!: string;
+  public manager!: string;
   public created_by!: number | null;
-  public updated_at!: Date;
   public updated_by!: number | null;
 
   static associate() {
@@ -79,39 +77,31 @@ FAQ.init(
       allowNull: false,
     },
     answer_ko: {
-      type: DataTypes.JSON,
+      type: DataTypes.STRING(1000),
       allowNull: false,
     },
     answer_en: {
-      type: DataTypes.JSON,
+      type: DataTypes.STRING(1000),
       allowNull: false,
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'created_at',
+    manager: {
+      type: DataTypes.STRING(45),
+      allowNull: false,
     },
     created_by: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'created_by',
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'updated_at',
     },
     updated_by: {
       type: DataTypes.INTEGER,
       allowNull: true,
-      field: 'updated_by',
     },
   },
   {
     sequelize,
     modelName: 'FAQ',
     tableName: 'faqs',
-    timestamps: false,
+    timestamps: true,
     underscored: true,
   }
 );

@@ -9,7 +9,6 @@ export type TUser = {
   username: string;
   phone_num: string;
   created_at?: Date;
-  updated_at?: Date;
 };
 
 export class User extends Model<TUser> implements TUser {
@@ -19,7 +18,6 @@ export class User extends Model<TUser> implements TUser {
   public username!: string;
   public phone_num!: string;
   public created_at!: Date;
-  public updated_at!: Date;
 
   static associate() {
     User.hasMany(FAQ, { foreignKey: 'createdBy', as: 'faqsCreated' });
@@ -50,22 +48,12 @@ User.init(
       allowNull: false,
       unique: true,
     },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'created_at',
-    },
-    updated_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'updated_at',
-    },
   },
   {
     sequelize,
     modelName: 'User',
     tableName: 'users',
-    timestamps: false,
+    timestamps: true,
     underscored: true,
   }
 );

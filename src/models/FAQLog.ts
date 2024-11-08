@@ -3,23 +3,22 @@ import { sequelize } from '../../config/sequelize';
 import { FAQ } from './FAQ';
 import { User } from './User';
 
-// 관리자가 FAQ를 수정할 때마다 log를 남기는 table
 export type TFaqLog = {
   id: number;
   user_id: number | null;
   faq_id: number | null;
-  prev_faq: any;
-  new_faq: any;
+  prev_faq: string;
+  new_faq: string;
   action_type: string;
-  created_at: Date;
+  created_at?: Date;
 };
 
 export class FaqLog extends Model<TFaqLog> implements TFaqLog {
   public id!: number;
   public user_id!: number | null;
   public faq_id!: number | null;
-  public prev_faq!: any;
-  public new_faq!: any;
+  public prev_faq!: string;
+  public new_faq!: string;
   public action_type!: string;
   public created_at!: Date;
 
@@ -53,28 +52,25 @@ FaqLog.init(
       allowNull: true,
     },
     prev_faq: {
-      type: DataTypes.JSON,
-      allowNull: true,
+      type: DataTypes.STRING(1000),
+      allowNull: false,
     },
     new_faq: {
-      type: DataTypes.JSON,
-      allowNull: true,
+      type: DataTypes.STRING(1000),
+      allowNull: false,
     },
     action_type: {
       type: DataTypes.STRING,
       allowNull: false,
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW,
-      field: 'created_at',
     },
   },
   {
     sequelize,
     modelName: 'FaqLog',
     tableName: 'faq_logs',
-    timestamps: false,
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: false,
     underscored: true,
   }
 );

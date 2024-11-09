@@ -1,5 +1,7 @@
 import express, { Request, Response } from "express";
+import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { Pool } from "../../../config/connectDB";
+import { TFAQ } from "../../models/FAQ";
 
 const router = express.Router();
 
@@ -7,45 +9,34 @@ const router = express.Router();
 // @desc    Create a new FAQ
 // @access  Private
 router.post("/", async (req: Request, res: Response) => {
-  const connection = await Pool.getConnection();
+  const connection : PoolConnection = await Pool.getConnection();
+  const {
+    user_id,
+    maincategory_ko,
+    maincategory_en,
+    subcategory_ko,
+    subcategory_en,
+    question_ko,
+    question_en,
+    answer_ko,
+    answer_en,
+    manager
+  }: TFAQ & { user_id: number } = req.body;
+
+  console.log(
+    user_id,
+    maincategory_ko,
+    maincategory_en,
+    subcategory_ko,
+    subcategory_en,
+    question_ko,
+    question_en,
+    answer_ko,
+    answer_en,
+    manager
+  );
+
   try {
-    const {
-      user_id,
-      maincategory_ko,
-      maincategory_en,
-      subcategory_ko,
-      subcategory_en,
-      question_ko,
-      question_en,
-      answer_ko,
-      answer_en,
-      manager
-    }: {
-      user_id: number;
-      maincategory_ko: string;
-      maincategory_en: string;
-      subcategory_ko: string;
-      subcategory_en: string;
-      question_ko: string;
-      question_en: string;
-      answer_ko: Record<string, any>;
-      answer_en: Record<string, any>;
-      manager: string;
-    } = req.body;
-
-    console.log(
-      user_id,
-      maincategory_ko,
-      maincategory_en,
-      subcategory_ko,
-      subcategory_en,
-      question_ko,
-      question_en,
-      answer_ko,
-      answer_en,
-      manager
-    );
-
     await connection.query(
       `INSERT INTO faqs (
         maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by, created_at, updated_at) 

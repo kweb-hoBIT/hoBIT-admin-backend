@@ -9,6 +9,7 @@ export type TUser = {
   username: string;
   phone_num: string;
   created_at?: Date;
+  updated_at?: Date;
 };
 
 export class User extends Model<TUser> implements TUser {
@@ -18,9 +19,11 @@ export class User extends Model<TUser> implements TUser {
   public username!: string;
   public phone_num!: string;
   public created_at!: Date;
+  public updated_at!: Date;
 
   static associate() {
     User.hasMany(FAQ, { foreignKey: 'createdBy', as: 'faqsCreated' });
+    User.hasMany(FAQ, { foreignKey: 'updatedBy', as: 'faqsUpdated' });
   }
 }
 
@@ -36,7 +39,7 @@ User.init(
       allowNull: false,
     },
     password: {
-      type: DataTypes.STRING(45),
+      type: DataTypes.STRING(100),
       allowNull: false,
     },
     username: {

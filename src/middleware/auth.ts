@@ -1,6 +1,5 @@
 import config from "config";
 import { Response, NextFunction } from "express";
-import HttpStatusCodes from "http-status-codes";
 import jwt from "jsonwebtoken";
 
 import Payload from "../types/Payload";
@@ -13,17 +12,17 @@ export default function(req: Request, res: Response, next: NextFunction) {
   // Check if no token
   if (!token) {
     return res
-      .status(HttpStatusCodes.UNAUTHORIZED)
+      .status(401)
       .json({ msg: "No token, authorization denied" });
   }
   // Verify token
   try {
     const payload: Payload | any = jwt.verify(token, config.get("jwtSecret"));
-    req.userId = payload.userId;
+    req.user_id = payload.user_id;
     next();
   } catch (err) {
     res
-      .status(HttpStatusCodes.UNAUTHORIZED)
+      .status(401)
       .json({ msg: "Token is not valid" });
   }
 }

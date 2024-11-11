@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../config/connectDB";
 import {
+  addMonths,
   addDays,
   startOfWeek,
   startOfMonth,
@@ -44,60 +45,74 @@ router.get("/frequency", async (req: Request, res: Response) => {
       SELECT 
         ${interval}(created_at) AS period_number,
         faq_id,
-        COUNT(*) AS frequency
+        user_question,
+        COUNT(*) AS frequency,
+        MIN(created_at) AS period_start_date
       FROM question_logs
       WHERE created_at BETWEEN ? AND ?
-      GROUP BY period_number, faq_id
+      GROUP BY period_number, faq_id, user_question
       ORDER BY period_number, frequency ${sortOrder === "1" ? "ASC" : "DESC"}
     `;
 
     const [rows]: any = await Pool.execute(query, [startDate, endDate]);
 
-    // Group records by period and add date ranges
-    const groupedData = rows.reduce((acc: any, row: any) => {
+    // Group records by month or week and calculate correct date ranges
+    const groupedData: Record<
+      string,
+      { faq_id: number; user_question: string; frequency: number }[]
+    > = {};
+
+    // Iterate over each month between startDate and endDate
+    let currentStart = new Date(startDate as string);
+    const end = new Date(endDate as string);
+
+    while (currentStart <= end) {
       let startOfPeriod, endOfPeriod;
-      const createdAt = new Date(startDate as string);
 
       if (period === "week") {
-        startOfPeriod = addDays(
-          startOfWeek(createdAt),
-          (row.period_number - 1) * 7
-        );
-        endOfPeriod = endOfWeek(startOfPeriod);
+        startOfPeriod = startOfWeek(currentStart);
+        endOfPeriod = endOfWeek(currentStart);
       } else {
-        startOfPeriod = addDays(
-          startOfMonth(createdAt),
-          (row.period_number - 1) * 30
-        );
-        endOfPeriod = endOfMonth(startOfPeriod);
+        startOfPeriod = startOfMonth(currentStart);
+        endOfPeriod = endOfMonth(currentStart);
       }
 
+      // Format the period range
       const periodRange = `${startOfPeriod.toISOString().split("T")[0]} ~ ${
         endOfPeriod.toISOString().split("T")[0]
       }`;
+      groupedData[periodRange] = [];
 
-      if (!acc[periodRange]) {
-        acc[periodRange] = [];
-      }
-      acc[periodRange].push({
-        faq_id: row.faq_id,
-        frequency: row.frequency,
+      // Filter rows that fall within the current period
+      rows.forEach((row: any) => {
+        const rowDate = new Date(row.period_start_date);
+        if (rowDate >= startOfPeriod && rowDate <= endOfPeriod) {
+          groupedData[periodRange].push({
+            faq_id: row.faq_id,
+            user_question: row.user_question,
+            frequency: row.frequency,
+          });
+        }
       });
-      return acc;
-    }, {});
 
-    // Limit the number of records per group if a limit is provided
-    const limitedData = limit
-      ? Object.fromEntries(
-          Object.entries(groupedData).map(([key, records]) => [
-            key,
-            (records as any[]).slice(0, parseInt(limit as string, 10)),
-          ])
+      // Apply sorting and limit to the current period
+      groupedData[periodRange] = groupedData[periodRange]
+        .sort((a, b) =>
+          sortOrder === "1"
+            ? a.frequency - b.frequency
+            : b.frequency - a.frequency
         )
-      : groupedData;
+        .slice(0, parseInt(limit as string, 10));
+
+      // Move to the next period
+      currentStart =
+        period === "week"
+          ? addDays(currentStart, 7)
+          : addMonths(currentStart, 1);
+    }
 
     res.json({
-      data: limitedData,
+      data: groupedData,
       parameters: {
         startDate,
         endDate,
@@ -133,7 +148,9 @@ router.get("/feedback", async (req: Request, res: Response) => {
     const query = `
       SELECT 
         created_at,
-        faq_id, user_question, language, 
+        faq_id, 
+        user_question, 
+        language, 
         AVG(feedback_score) AS avg_feedback_score,
         COUNT(*) AS frequency
       FROM question_logs
@@ -147,28 +164,28 @@ router.get("/feedback", async (req: Request, res: Response) => {
     let currentStart = new Date(startDate as string);
     const end = new Date(endDate as string);
 
+    // Iterate through each period (month or week)
     while (currentStart <= end) {
-      let nextStart;
-      const periodRange =
-        period === "week"
-          ? `${currentStart.toISOString().split("T")[0]} ~ ${
-              addDays(currentStart, 6).toISOString().split("T")[0]
-            }`
-          : `${currentStart.toISOString().split("T")[0]} ~ ${
-              endOfMonth(currentStart).toISOString().split("T")[0]
-            }`;
+      let startOfPeriod, endOfPeriod;
 
+      // Determine the start and end dates of the period
       if (period === "week") {
-        nextStart = addDays(currentStart, 7);
+        startOfPeriod = startOfWeek(currentStart);
+        endOfPeriod = endOfWeek(currentStart);
       } else {
-        nextStart = addDays(currentStart, 30);
+        startOfPeriod = startOfMonth(currentStart);
+        endOfPeriod = endOfMonth(currentStart);
       }
 
+      const periodRange = `${startOfPeriod.toISOString().split("T")[0]} ~ ${
+        endOfPeriod.toISOString().split("T")[0]
+      }`;
       groupedData[periodRange] = [];
 
+      // Add records to the current period if they fall within the period range
       rows.forEach((row: any) => {
         const rowDate = new Date(row.created_at);
-        if (rowDate >= currentStart && rowDate < nextStart) {
+        if (rowDate >= startOfPeriod && rowDate <= endOfPeriod) {
           groupedData[periodRange].push({
             faq_id: row.faq_id,
             user_question: row.user_question,
@@ -186,21 +203,20 @@ router.get("/feedback", async (req: Request, res: Response) => {
           : parseFloat(b.avg_feedback_score) - parseFloat(a.avg_feedback_score)
       );
 
-      currentStart = nextStart;
+      // Apply limit if provided
+      groupedData[periodRange] = limit
+        ? groupedData[periodRange].slice(0, parseInt(limit as string, 10))
+        : groupedData[periodRange];
+
+      // Move to the next period
+      currentStart =
+        period === "week"
+          ? addDays(currentStart, 7)
+          : addMonths(currentStart, 1);
     }
 
-    // Apply limit if provided
-    const limitedData = limit
-      ? Object.fromEntries(
-          Object.entries(groupedData).map(([key, records]) => [
-            key,
-            records.slice(0, parseInt(limit as string, 10)),
-          ])
-        )
-      : groupedData;
-
     res.json({
-      data: limitedData,
+      data: groupedData,
       parameters: {
         startDate,
         endDate,

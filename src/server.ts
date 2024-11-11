@@ -1,7 +1,7 @@
 import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
-import { createTable } from '../config/createTable';
+import { initializeDatabase } from '../config/createDB';
 
 import authRoutes from "./routes/api/auth";
 import usersRoutes from "./routes/api/users";
@@ -13,7 +13,7 @@ const app = express();
 app.use(cors());
 
 (async () => {
-  await createTable();
+  await initializeDatabase();
 })();
 
 // Express configuration

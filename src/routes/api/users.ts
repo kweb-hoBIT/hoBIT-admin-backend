@@ -33,8 +33,8 @@ router.post(
     const connection: PoolConnection = await Pool.getConnection();
     const { email, password, username, phone_num }: TUser = req.body;
     try {
-      const [[user_existed]] = await connection.query<RowDataPacket[] & TUser[]>(
-        `SELECT * FROM users WHERE email = ?`,
+      const [[user_existed]] = await connection.query<RowDataPacket[]>(
+        `SELECT * FROM hobit.users WHERE email = ?`,
         [email]
       );
 
@@ -53,7 +53,7 @@ router.post(
 
 
       const [user] = await connection.query<ResultSetHeader>(
-        `INSERT INTO users (email, password, username, phone_num, created_at, updated_at) VALUES (?, ?, ? ,?, NOW(), NOW())`,
+        `INSERT INTO hobit.users (email, password, username, phone_num, created_at, updated_at) VALUES (?, ?, ? ,?, NOW(), NOW())`,
         [email, hashed, username, phone_num]
       );
 
@@ -72,7 +72,7 @@ router.post(
       );
     } catch (err: any) {
       console.error(err.message);
-      res.status(500).json({ error: err.message });
+      res.status(400).json({ error: err.message });
     } finally {
       connection.release();
     }

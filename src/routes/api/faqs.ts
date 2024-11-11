@@ -38,9 +38,9 @@ router.post("/", async (req: Request, res: Response) => {
 
   try {
     await connection.query(
-      `INSERT INTO faqs (
-        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+      `INSERT INTO hobit.faqs (
+        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         maincategory_ko,
         maincategory_en,
@@ -58,7 +58,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     res.status(201).json({ message: "FAQ created successfully" });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   } finally {
     connection.release();
   }

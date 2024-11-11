@@ -22,8 +22,8 @@ router.get("/", auth, async (req: Request, res: Response) => {
   const {user_id}: { user_id : number} = req;
   console.log(user_id);
   try {
-    const [[user]] = await connection.query<RowDataPacket[] & TUser[]>(
-      `SELECT id, email, username, phone_num, created_at, updated_at FROM users WHERE id = ?`,
+    const [[user]] = await connection.query<RowDataPacket[]>(
+      `SELECT id, email, username, phone_num, created_at, updated_at FROM hobit.users WHERE id = ?`,
       [user_id]
     );
     const response = {
@@ -33,7 +33,7 @@ router.get("/", auth, async (req: Request, res: Response) => {
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(500).json({ error: err.message });
+    res.status(400).json({ error: err.message });
   } finally {
     connection.release();
   }
@@ -52,14 +52,14 @@ router.post(
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res
-        .status(500)
+        .status(400)
         .json({ errors: errors.array() });
     }
     const connection = await Pool.getConnection();
     const { email, password } : TUser = req.body;
     try {
-      const [[user]] = await connection.query<RowDataPacket[] & TUser[]>(
-        `SELECT * FROM users WHERE email = ?`,
+      const [[user]] = await connection.query<RowDataPacket[]>(
+        `SELECT * FROM hobit.users WHERE email = ?`,
         [email]
       );
 
@@ -100,13 +100,11 @@ router.post(
       );
     } catch (err: any) {
       console.error(err.message);
-      res.status(500).json({ error: err.message });
+      res.status(400).json({ error: err.message });
     } finally {
       connection.release();
     }
   }
 );
-
-
 
 export default router;

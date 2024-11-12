@@ -1,7 +1,8 @@
 {
+  "timezone": "+09:00",
   "dbHost": "127.0.0.1",
   "dbUser": "root",
-  "dbPassword": "qwer",
+  "dbPassword": "1234",
   "dbName": "hobit",
   "jwtSecret": "jwtSecretToken",
   "jwtExpiration": 360000

@@ -1,7 +1,7 @@
 {
   "dbHost": "127.0.0.1",
   "dbUser": "root",
-  "dbPassword": "1234",
+  "dbPassword": "qwer",
   "dbName": "hobit",
   "jwtSecret": "jwtSecretToken",
   "jwtExpiration": 360000

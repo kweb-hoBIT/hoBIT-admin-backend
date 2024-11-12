@@ -5,6 +5,7 @@ const dbHost = config.get<string>("dbHost");
 const dbUser = config.get<string>("dbUser");
 const dbPassword = config.get<string>("dbPassword");
 const dbName = config.get<string>("dbName");
+const timezone = config.get<string>("timezone");
 
 // 데이터베이스 연결
 const createConnection = async (database: string = dbName) => {
@@ -13,6 +14,7 @@ const createConnection = async (database: string = dbName) => {
     user: dbUser,
     password: dbPassword,
     database: database,
+    timezone: timezone
   });
 };
 

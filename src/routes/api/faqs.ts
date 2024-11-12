@@ -263,7 +263,7 @@ function safetyParse<T>(data: string): T | undefined {
     return JSON.parse(data) as T;
   } catch (error) {
     console.error('Invalid JSON string:', error);
-    return undefined;  // Return undefined to indicate a failure
+    return undefined;
   }
 }
 

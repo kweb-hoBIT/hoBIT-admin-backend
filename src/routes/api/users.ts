@@ -32,8 +32,9 @@ router.post(
     }
     const connection: PoolConnection = await Pool.getConnection();
     const { email, password, username, phone_num }: TUser = req.body;
+    
     try {
-      const [[user_existed]] = await connection.query<RowDataPacket[]>(
+      const [[user_existed]] = await connection.execute<RowDataPacket[]>(
         `SELECT * FROM hobit.users WHERE email = ?`,
         [email]
       );
@@ -52,7 +53,7 @@ router.post(
       const hashed = await bcrypt.hash(password, salt);
 
 
-      const [user] = await connection.query<ResultSetHeader>(
+      const [user] = await connection.execute<ResultSetHeader>(
         `INSERT INTO hobit.users (email, password, username, phone_num, created_at, updated_at) VALUES (?, ?, ? ,?, NOW(), NOW())`,
         [email, hashed, username, phone_num]
       );

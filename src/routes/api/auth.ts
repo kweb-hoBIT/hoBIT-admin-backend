@@ -8,7 +8,6 @@ import Payload from "../../types/Payload";
 import Request from "../../types/Request";
 import { Pool } from "../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { TUser } from "../../models/User";
 
 
 const router = express.Router();
@@ -20,9 +19,9 @@ const router = express.Router();
 router.get("/", auth, async (req: Request, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
   const {user_id}: { user_id : number} = req;
-  console.log(user_id);
+
   try {
-    const [[user]] = await connection.query<RowDataPacket[]>(
+    const [[user]] = await connection.execute<RowDataPacket[]>(
       `SELECT id, email, username, phone_num, created_at, updated_at FROM hobit.users WHERE id = ?`,
       [user_id]
     );
@@ -56,15 +55,16 @@ router.post(
         .json({ errors: errors.array() });
     }
     const connection = await Pool.getConnection();
-    const { email, password } : TUser = req.body;
+    const { email, password } : { email: string, password: string}= req.body;
+
     try {
-      const [[user]] = await connection.query<RowDataPacket[]>(
+      const [[user]] = await connection.execute<RowDataPacket[]>(
         `SELECT * FROM hobit.users WHERE email = ?`,
         [email]
       );
 
       if (!user) {
-        return res.status(400).json({
+        return res.status(404).json({
           errors: [
             {
               msg: "Invalid Credentials",

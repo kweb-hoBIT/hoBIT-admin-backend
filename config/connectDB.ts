@@ -5,6 +5,7 @@ const dbHost = config.get<string>('dbHost');
 const dbUser = config.get<string>('dbUser');
 const dbPassword = config.get<string>('dbPassword');
 const dbName = config.get<string>('dbName');
+const timezone = config.get<string>('timezone');
 
 // MySQL connection pool
 const Pool = mysql.createPool({
@@ -12,6 +13,7 @@ const Pool = mysql.createPool({
   user: dbUser,
   password: dbPassword,
   database: dbName,
+  timezone: timezone,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

@@ -1,7 +1,6 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../config/connectDB";
-import { RowDataPacket } from "mysql2";
-import c from "config";
+import { PoolConnection, RowDataPacket } from "mysql2/promise";
 
 const router = express.Router();
 
@@ -9,7 +8,7 @@ const router = express.Router();
 // @desc    Create a new FAQ
 // @access  Private
 router.post("/", async (req: Request, res: Response) => {
-  const connection = await Pool.getConnection();
+  const connection : PoolConnection = await Pool.getConnection();
   const {
     user_id,
     maincategory_ko,
@@ -68,7 +67,7 @@ router.post("/", async (req: Request, res: Response) => {
 // @desc    Get all FAQs
 // @access  Private
 router.get("/", async (req: Request, res: Response) => {
-  const connection = await Pool.getConnection();
+  const connection : PoolConnection= await Pool.getConnection();
 
   try {
     const [rows] = await connection.execute<RowDataPacket[]>(
@@ -110,7 +109,7 @@ router.get("/", async (req: Request, res: Response) => {
 // @desc    get a FAQ
 // @access  Private
 router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
-  const connection = await Pool.getConnection();
+  const connection : PoolConnection = await Pool.getConnection();
   const { faq_id } = req.params;
   console.log(faq_id);
 
@@ -151,7 +150,7 @@ router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
 // @desc    Delete a FAQ
 // @access  Private
 router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
-  const connection = await Pool.getConnection();
+  const connection : PoolConnection = await Pool.getConnection();
   const { faq_id } = req.params;
   console.log(faq_id);
 
@@ -183,7 +182,7 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response
 // @desc    Update a FAQ
 // @access  Private
 router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
-  const connection = await Pool.getConnection();
+  const connection : PoolConnection= await Pool.getConnection();
   const { faq_id } = req.params;
   const {
     user_id,

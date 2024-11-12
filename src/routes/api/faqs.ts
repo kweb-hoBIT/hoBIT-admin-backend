@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../config/connectDB";
 import { RowDataPacket } from "mysql2";
+import c from "config";
 
 const router = express.Router();
 
@@ -9,48 +10,36 @@ const router = express.Router();
 // @access  Private
 router.post("/", async (req: Request, res: Response) => {
   const connection = await Pool.getConnection();
+  const {
+    user_id,
+    maincategory_ko,
+    maincategory_en,
+    subcategory_ko,
+    subcategory_en,
+    question_ko,
+    question_en,
+    answer_ko,
+    answer_en,
+    manager
+  }: {
+    user_id: number;
+    maincategory_ko: string;
+    maincategory_en: string;
+    subcategory_ko: string;
+    subcategory_en: string;
+    question_ko: string;
+    question_en: string;
+    answer_ko: Record<string, any>;
+    answer_en: Record<string, any>;
+    manager: string;
+  } = req.body;
+  console.log(req.body);
+
   try {
-    const {
-      user_id,
-      maincategory_ko,
-      maincategory_en,
-      subcategory_ko,
-      subcategory_en,
-      question_ko,
-      question_en,
-      answer_ko,
-      answer_en,
-      manager
-    }: {
-      user_id: number;
-      maincategory_ko: string;
-      maincategory_en: string;
-      subcategory_ko: string;
-      subcategory_en: string;
-      question_ko: string;
-      question_en: string;
-      answer_ko: Record<string, any>;
-      answer_en: Record<string, any>;
-      manager: string;
-    } = req.body;
-
-    console.log(
-      user_id,
-      maincategory_ko,
-      maincategory_en,
-      subcategory_ko,
-      subcategory_en,
-      question_ko,
-      question_en,
-      answer_ko,
-      answer_en,
-      manager
-    );
-
-    await connection.query(
+    await connection.execute(
       `INSERT INTO faqs (
-        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         maincategory_ko,
         maincategory_en,
@@ -65,166 +54,217 @@ router.post("/", async (req: Request, res: Response) => {
         user_id
       ]
     );
-
     res.status(201).json({ message: "FAQ created successfully" });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(400).json({ error: err.message });
   } finally {
     connection.release();
   }
 });
 
-//faq 가져오기 
-router.get("/:Id", async (req: Request, res: Response) => {
+
+// @route   Get api/faqs/
+// @desc    Get all FAQs
+// @access  Private
+router.get("/", async (req: Request, res: Response) => {
+  const connection = await Pool.getConnection();
+
   try {
-    const connection = await Pool.getConnection(); //DB와 연결
+    const [rows] = await connection.execute<RowDataPacket[]>(
+      'SELECT * FROM faqs',
+    )
 
-    const { faqId } = req.body;
+    const faqs = rows.map((faq) => {
+      return {
+        faq_id: faq.id,
+        maincategory_ko: faq.maincategory_ko,
+        maincategory_en: faq.maincategory_en,
+        subcategory_ko: faq.subcategory_ko,
+        subcategory_en: faq.subcategory_en,
+        question_ko: faq.question_ko,
+        question_en: faq.question_en,
+        answer_ko: safetyParse(faq.answer_ko),
+        answer_en: safetyParse(faq.answer_en),
+        manager: faq.manager,
+        created_at: faq.created_at,
+        updated_at: faq.updated_at
+      };
+    });
 
-    try {
-      const [rows] = await connection.execute<RowDataPacket[]>(
-        'SELECT * FROM faqs WHERE id = ?',
-        [faqId]
-      );
-
-      if (rows.length === 0) {
-        return res.status(404).json({ message: "FAQ not found" });
-      }
-
-      const faq = rows[0]
-
-      res.json({
-        faq: {
-          faq_id: faq.id,
-          maincategory_ko: faq.maincategory_ko,
-          maincategory_en: faq.maincategory_en,
-          subcategory_ko: faq.subcategory_ko,
-          subcategory_en: faq.subcategory_en,
-          question_ko: faq.question_ko,
-          question_en: faq.question_en,
-          answer_ko: JSON.parse(faq.answer_ko),
-          answer_en: JSON.parse(faq.answer_en),
-          manager: faq.manager
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error retrieving FAQ" });
-    } finally {
-      connection.release();
-    }
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const response = {
+      faqs    
+    };
+    console.log(response);
+    res.status(200).json(response);
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
-//faq 삭제하기
-router.delete("/:Id", async (req: Request, res: Response) => {
+
+// @route   Post api/faqs/:faq_id
+// @desc    get a FAQ
+// @access  Private
+router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
+  const connection = await Pool.getConnection();
+  const { faq_id } = req.params;
+  console.log(faq_id);
+
   try {
-    const connection = await Pool.getConnection();
-    
-    const { faqId } = req.body;
+    const [[faq]] = await connection.execute<RowDataPacket[]>(
+      'SELECT id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager FROM hobit.faqs WHERE id = ?',
+      [faq_id]
+    );
 
-    try {
-      const [rows] = await connection.execute<RowDataPacket[]>(
-        'SELECT * FROM faqs WHERE id = ?',
-        [faqId]
-      );
-
-      if (rows.length === 0) {
-        return res.status(404).json({ message: 'FAQ not found' })
-      }
-
-      await connection.execute(
-        'DELETE FROM faqs WHERE id = ?',
-        [faqId]
-      );
-
-      res.status(200).json();
-    } catch (error) {
-      res.status(500).json();
-    } finally {
-      connection.release();
+    if (!faq) {
+      return res.status(404).json({ message: "FAQ not found" });
     }
-
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    const response = {
+      faq: {
+        faq_id: faq.id,
+        maincategory_ko: faq.maincategory_ko,
+        maincategory_en: faq.maincategory_en,
+        subcategory_ko: faq.subcategory_ko,
+        subcategory_en: faq.subcategory_en,
+        question_ko: faq.question_ko,
+        question_en: faq.question_en,
+        answer_ko: safetyParse(faq.answer_ko),
+        answer_en: safetyParse(faq.answer_en),
+        manager: faq.manager
+      }  
+    };
+    console.log(response);
+    res.status(200).json(response);
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
-//faq 수정하기
-router.put("/:Id", async (req: Request, res: Response) => {
+// @route   Delete api/faqs/:faq_id
+// @desc    Delete a FAQ
+// @access  Private
+router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
+  const connection = await Pool.getConnection();
+  const { faq_id } = req.params;
+  console.log(faq_id);
+
   try {
-    const connection = await Pool.getConnection();
+    const [[faq]] = await connection.execute<RowDataPacket[]>(
+      'SELECT * FROM hobit.faqs WHERE id = ?',
+      [faq_id]
+    );
 
-    console.log(req.body);
-
-    const {
-      faq_id,
-      user_id,
-      maincategory_ko,
-      maincategory_en,
-      subcategory_ko,
-      subcategory_en,
-      question_ko,
-      question_en,
-      answer_ko,
-      answer_en,
-      manager
-    } = req.body;
-
-    console.log(manager);
-
-    try {
-      const [rows] = await connection.execute<RowDataPacket[]>(
-        'SELECT * FROM faqs WHERE id = ?',
-        [faq_id]
-      );
-
-      if (rows.length === 0) {
-        return res.status(404).json({ message: "FAQ not found" });
-      }
-
-      await connection.execute(
-        `UPDATE faqs SET 
-          maincategory_ko = ?, 
-          maincategory_en = ?, 
-          subcategory_ko = ?, 
-          subcategory_en = ?, 
-          question_ko = ?, 
-          question_en = ?, 
-          answer_ko = ?, 
-          answer_en = ?, 
-          manager = ?, 
-          updated_by = ?,
-          updated_at = NOW() 
-        WHERE id = ?`,
-        [ 
-          maincategory_ko,
-          maincategory_en,
-          subcategory_ko,
-          subcategory_en,
-          question_ko,
-          question_en,
-          JSON.stringify(answer_ko),
-          JSON.stringify(answer_en),
-          manager,
-          user_id,
-          faq_id,
-        ]
-      );
-
-      res.status(200).json();
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    } finally {
-      connection.release();
+    if (!faq) {
+      return res.status(404).json({ message: 'FAQ not found' });
     }
 
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    await connection.execute(
+      'DELETE FROM hobit.faqs WHERE id = ?',
+      [faq_id]
+    );
+
+    res.status(200).json({ message: 'FAQ deleted successfully' });
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
+
+// @route   Put api/faqs/:faq_id
+// @desc    Update a FAQ
+// @access  Private
+router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
+  const connection = await Pool.getConnection();
+  const { faq_id } = req.params;
+  const {
+    user_id,
+    maincategory_ko,
+    maincategory_en,
+    subcategory_ko,
+    subcategory_en,
+    question_ko,
+    question_en,
+    answer_ko,
+    answer_en,
+    manager
+  }: {
+    user_id: number;
+    maincategory_ko: string;
+    maincategory_en: string;
+    subcategory_ko: string;
+    subcategory_en: string;
+    question_ko: string;
+    question_en: string;
+    answer_ko: Record<string, any>;
+    answer_en: Record<string, any>;
+    manager: string;
+  } = req.body;
+  console.log(faq_id);
+  console.log(req.body);
+
+  try {
+    const [[faq]] = await connection.execute<RowDataPacket[]>(
+      'SELECT * FROM hobit.faqs WHERE id = ?',
+      [faq_id]
+    );
+
+    if (!faq) {
+      return res.status(404).json({ message: "FAQ not found" });
+    }
+
+    await connection.execute(
+      `UPDATE hobit.faqs SET 
+        maincategory_ko = ?, 
+        maincategory_en = ?, 
+        subcategory_ko = ?, 
+        subcategory_en = ?, 
+        question_ko = ?, 
+        question_en = ?, 
+        answer_ko = ?, 
+        answer_en = ?, 
+        manager = ?, 
+        updated_by = ? 
+      WHERE id = ?`,
+      [ 
+        maincategory_ko,
+        maincategory_en,
+        subcategory_ko,
+        subcategory_en,
+        question_ko,
+        question_en,
+        JSON.stringify(answer_ko),
+        JSON.stringify(answer_en),
+        manager,
+        user_id,
+        faq_id
+      ]
+    );
+
+    res.status(200).json({ message: "FAQ updated successfully" });
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
+  }
+});
+
+function safetyParse<T>(data: string): T | undefined {
+  try {
+    return JSON.parse(data) as T;
+  } catch (error) {
+    console.error('Invalid JSON string:', error);
+    return undefined;  // Return undefined to indicate a failure
+  }
+}
 
 export default router;

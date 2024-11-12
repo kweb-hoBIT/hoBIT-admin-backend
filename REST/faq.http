@@ -1,0 +1,18 @@
+### Variables
+@faq = {
+  "mainCategory": { "ko": "학술정보", "en": "Academic Information" },
+  "subCategory": { "ko": "장학금", "en": "Scholarship" },
+  "question": { "ko": "장학금 받는 법", "en": "How to get a scholarship" },
+  "answer": {
+    "ko": ["1. 신청 방법을 확인하세요.", "2. 필요한 서류를 준비하세요."],
+    "en": ["1. Check the application process.", "2. Prepare the required documents."]
+  },
+  "createdBy": "admin",
+  "lastModifiedBy": "admin"
+}
+
+### Create a new FAQ entry
+POST http://localhost:5000/api/faq
+Content-Type: application/json
+
+{{faq}}

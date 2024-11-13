@@ -9,11 +9,8 @@ const router = express.Router();
 
 
 
-// @route   Get api/questionlogs/
-// @desc    Get all question_logs
-// @access  Private
-
-router.get('/', async (req: Request, res: Response) => {
+// 로그 가져오기 API
+router.get('/question', async (req: Request, res: Response) => {
   const lang = req.query.lang || 'en'; // 기본 언어는 영어로 설정
   // MySQL 연결 풀에서 연결을 가져옴
   const connection: PoolConnection = await Pool.getConnection();

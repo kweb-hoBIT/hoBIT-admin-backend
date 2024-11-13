@@ -39,7 +39,7 @@ const server = app.listen(port, () =>
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/faqs", faqsRoutes);
-app.use("/api/faqlogs", faqlogsRoutes);
+app.use("/api/faqslogs", faqlogsRoutes);
 app.use("/api/questionlogs", questionlogsRoutes);
 app.use("/api/translate", translateRoutes);
 

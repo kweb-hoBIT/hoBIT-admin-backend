@@ -5,166 +5,114 @@ import { PoolConnection, RowDataPacket } from "mysql2/promise";
 const router = express.Router();
 
 
-router.post("/", async (req: Request, res: Response) => {
-  const connection: PoolConnection = await Pool.getConnection();
-  const {
-    user_id,
-    faq_id,
-    prev_faq,
-    new_faq,
-    action_type
-  }: {
-    user_id: number;
-    faq_id: number;
-    prev_faq: Record<string, any>;
-    new_faq: Record<string, any>;
-    action_type: string;
-  } = req.body;
-  console.log(new_faq);
-  try { 
-    await connection.execute(
-      `INSERT INTO faq_logs (
-        user_id, faq_id, action_type, prev_faq, new_faq) 
-        VALUES (?, ?, ?, ?, ?)`,
-      [
-        user_id,
-        faq_id,
-        action_type,
-        JSON.stringify(prev_faq),
-        JSON.stringify(new_faq)
-      ]
-    );
-    res.status(201).json({ message: "FAQ log created successfully" });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(400).json({ error: err.message });
-  } finally {
-    connection.release();
-  }
-});
-
-
-// @route   Get api/faqlogs/
-// @desc    Get all faq_logs
-// @access  Private
+// FAQ 로그 가져오기 API
 router.get('/', async (req: Request, res: Response) => {
+  const lang = req.query.lang || 'en'; // 기본 언어는 영어로 설정
+  // MySQL 연결 풀에서 연결을 가져옴
   const connection: PoolConnection = await Pool.getConnection();
 
   try {
-    const [faqLogs] = await connection.execute<RowDataPacket[]>(
-      `SELECT 
+    // SQL 쿼리 작성/실행
+    const query = `
+      SELECT 
         faq_logs.id AS faq_log_id,
         faq_logs.user_id,
         users.username,
         faq_logs.faq_id,
-        faqs.maincategory_ko AS faq_main,
-        faqs.subcategory_ko AS faq_sub,
-        faqs.question_ko AS faq_question,
+        faqs.maincategory_${lang} AS faq_main,
+        faqs.subcategory_${lang} AS faq_sub,
+        faqs.question_${lang} AS faq_question,
         faq_logs.action_type,
         faq_logs.created_at
-      FROM hobit.faq_logs
-      LEFT JOIN hobit.users ON faq_logs.user_id = users.id
-      LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id`
-    );
-    const response = {
-      faqLogs: faqLogs
-    }
-    console.log(response);
-    res.status(200).json({ response });
+      FROM faq_logs
+      LEFT JOIN users ON faq_logs.user_id = users.id
+      LEFT JOIN faqs ON faq_logs.faq_id = faqs.id
+    `;
+    
+    const [rows] = await connection.execute(query);
+    console.log('Rows:', rows)
 
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(400).json({ error: err.message });
+    // 응답 반환
+    res.status(200).json({ logs: rows });
+
+  } catch (error) {
+    console.error('Error fetching FAQ logs:', error);
+    res.status(500).json({ message: 'Internal server error' });
   } finally {
-    connection.release();
+    // 연결 반환 (finally에서 항상 실행되도록)
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
-
-// @route   Post api/faqlogs/:faq_log_id
-// @desc    Get a faq_log
-// @access  Private
-router.get('/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Response) => {
+// 특정 FAQ 로그 가져오기 API
+router.get('/:id', async (req: Request, res: Response) => {
+  const faqLogId = req.params.id; // 요청 URL에서 faq_log_id를 가져옴
+  // MySQL 연결 풀에서 연결을 가져옴
   const connection: PoolConnection = await Pool.getConnection();
-  const faq_log_id = req.params.faq_log_id;
+
   try {
-    const [[faqLog]] = await connection.execute<RowDataPacket[]>(
-      `SELECT 
+    // SQL 쿼리 작성/실행
+    const query = `
+      SELECT 
         faq_logs.id AS faq_log_id,
         faq_logs.user_id,
         users.username,
         faq_logs.faq_id,
-        faqs.maincategory_ko AS faq_main,
-        faqs.subcategory_ko AS faq_sub,
-        faqs.question_ko AS faq_question,
+        faqs.maincategory_${req.query.lang || 'en'} AS faq_main,
+        faqs.subcategory_${req.query.lang || 'en'} AS faq_sub,
+        faqs.question_${req.query.lang || 'en'} AS faq_question,
         faq_logs.action_type,
-        faq_logs.created_at
-      FROM hobit.faq_logs
-      LEFT JOIN hobit.users ON faq_logs.user_id = users.id
-      LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id
-      WHERE faq_logs.id = ?`
-      , [faq_log_id]
-    );
-    const response = {
-      faqLog: faqLog
-    }
-    console.log(response);
-    res.status(200).json({ response });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(400).json({ error: err.message });
-  } finally {
-    connection.release();
-  }
-});
-
-
-// @route   Post api/faqlogs/compare/:faq_log_id
-// @desc    Get a comparison of the faq_log
-// @access  Private
-router.get('/compare/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Response) => {
-  const connection: PoolConnection = await Pool.getConnection();
-  const faq_log_id = req.params.faq_log_id;
-
-  try {
-    const [[faqLog]] = await connection.execute<RowDataPacket[]>(
-      `SELECT 
+        faq_logs.created_at,
         faq_logs.prev_faq,
         faq_logs.new_faq
       FROM faq_logs
+      LEFT JOIN users ON faq_logs.user_id = users.id
+      LEFT JOIN faqs ON faq_logs.faq_id = faqs.id
       WHERE faq_logs.id = ?
-      `, [faq_log_id]
-    )
+    `;
+    
+    const [rows] = await connection.query<RowDataPacket[]>(query, [faqLogId]);
+    console.log("Rows in faq:id", rows);
 
-    if (!faqLog) {
+    if (rows.length === 0) {
       return res.status(404).json({ message: "FAQ log not found" });
     }
 
-    let prevFaq = {}, newFaq = {};
-    prevFaq = safetyParse(faqLog.prev_faq);
-    newFaq = safetyParse(faqLog.new_faq);
+    const row = rows[0];
 
-    const response = {
+    // prev_faq와 new_faq가 JSON 형식인지 확인하여 JSON 파싱 시도
+    let prevFaq = {}, newFaq = {};
+    try {
+      prevFaq = JSON.parse(row.prev_faq);
+    } catch (e) {
+      prevFaq = row.prev_faq; // JSON 파싱이 실패하면 원래 문자열로 사용
+    }
+    try {
+      newFaq = JSON.parse(row.new_faq);
+    } catch (e) {
+      newFaq = row.new_faq; // JSON 파싱이 실패하면 원래 문자열로 사용
+    }
+
+    // 응답 반환
+    res.status(200).json({
+      faq_log_id: row.faq_log_id,
       prev_faq: prevFaq,
       new_faq: newFaq
-    }
-    console.log(response);
-    res.status(200).json({ response });
-  } catch (err: any) {
-    console.error(err.message);
-    res.status(400).json({ error: err.message });
+    });
+
+  } catch (error) {
+    console.error('Error fetching FAQ log:', error);
+    res.status(500).json({ message: 'Internal server error' });
   } finally {
-    connection.release();
+    // 연결 반환 (finally에서 항상 실행되도록)
+    if (connection) {
+      connection.release();
+    }
   }
 });
 
-function safetyParse<T>(data: string): T | undefined {
-  try {
-    return JSON.parse(data) as T;
-  } catch (error) {
-    console.error('Invalid JSON string:', error);
-    return undefined;
-  }
-}
+
 
 export default router;

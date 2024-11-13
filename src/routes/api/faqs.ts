@@ -1,6 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../config/connectDB";
-import { PoolConnection, RowDataPacket } from "mysql2/promise";
+import { PoolConnection, RowDataPacket, ResultSetHeader } from "mysql2/promise";
+import fetch from "node-fetch";
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.post("/", async (req: Request, res: Response) => {
   console.log(req.body);
 
   try {
-    await connection.execute(
+    const [faq] = await connection.execute<ResultSetHeader>(
       `INSERT INTO faqs (
         maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -53,6 +54,53 @@ router.post("/", async (req: Request, res: Response) => {
         user_id
       ]
     );
+
+    const faq_id = faq.insertId;
+    const prev_faq = {
+      maincategory_ko: "",
+      maincategory_en: "",
+      subcategory_ko: "",
+      subcategory_en: "",
+      question_ko: "",
+      question_en: "",
+      answer_ko: {},
+      answer_en: {},
+      manager: ""
+    };
+    const new_faq = {
+      maincategory_ko: maincategory_ko,
+      maincategory_en: maincategory_en,
+      subcategory_ko: subcategory_ko,
+      subcategory_en: subcategory_en,
+      question_ko: question_ko,
+      question_en: question_en,
+      answer_ko: answer_ko,
+      answer_en: answer_en,
+      manager: manager,
+    }
+
+    const data = {
+      user_id: user_id,
+      faq_id: faq_id,
+      prev_faq: prev_faq,
+      new_faq: new_faq,
+      action_type: 'CREATE'
+    }
+
+    // faq_logs 테이블에 로그를 남기기 위해 API 호출
+    const response = await fetch('http://localhost:5000/api/faqlogs', {
+      method: 'POST',
+      headers: {
+       'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if(!response.ok) {
+      const errorData = await response.json();
+      return res.status(response.status).json({ error: errorData.message });
+    }
+
     res.status(201).json({ message: "FAQ created successfully" });
   } catch (err: any) {
     console.error(err.message);
@@ -152,16 +200,49 @@ router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
 router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
   const { faq_id } = req.params;
+  const { user_id } : { user_id : number} = req.body;
   console.log(faq_id);
 
   try {
-    const [[faq]] = await connection.execute<RowDataPacket[]>(
-      'SELECT * FROM hobit.faqs WHERE id = ?',
+    const [[prev_faq]] = await connection.execute<RowDataPacket[]>(
+      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
+       FROM hobit.faqs 
+       WHERE id = ?`,
       [faq_id]
     );
 
-    if (!faq) {
-      return res.status(404).json({ message: 'FAQ not found' });
+    const new_faq = {
+      maincategory_ko: "",
+      maincategory_en: "",
+      subcategory_ko: "",
+      subcategory_en: "",
+      question_ko: "",
+      question_en: "",
+      answer_ko: {},
+      answer_en: {},
+      manager: "",
+    }
+    
+    const data = {
+      user_id: user_id,
+      faq_id: faq_id,
+      prev_faq: prev_faq,
+      new_faq: new_faq,
+      action_type: 'DELETE'
+    }
+
+    // faq_logs 테이블에 로그를 남기기 위해 API 호출
+    const response = await fetch('http://localhost:5000/api/faqlogs', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if(!response.ok) {
+      const errorData = await response.json();
+      return res.status(response.status).json({ error: errorData.message });
     }
 
     await connection.execute(
@@ -212,12 +293,41 @@ router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
 
   try {
     const [[faq]] = await connection.execute<RowDataPacket[]>(
-      'SELECT * FROM hobit.faqs WHERE id = ?',
+      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
+       FROM hobit.faqs 
+       WHERE id = ?`,
       [faq_id]
     );
+    const prev_faq = {
+      maincategory_ko: faq.maincategory_ko,
+      maincategory_en: faq.maincategory_en,
+      subcategory_ko: faq.subcategory_ko,
+      subcategory_en: faq.subcategory_en,
+      question_ko: faq.question_ko,
+      question_en: faq.question_en,
+      answer_ko: safetyParse(faq.answer_ko),
+      answer_en: safetyParse(faq.answer_en),
+      manager: faq.manager
+    }
 
-    if (!faq) {
-      return res.status(404).json({ message: "FAQ not found" });
+    const new_faq = {
+      maincategory_ko: maincategory_ko,
+      maincategory_en: maincategory_en,
+      subcategory_ko: subcategory_ko,
+      subcategory_en: subcategory_en,
+      question_ko: question_ko,
+      question_en: question_en,
+      answer_ko: answer_ko,
+      answer_en: answer_en,
+      manager: manager
+    }
+
+    const data = {
+      user_id: user_id,
+      faq_id: faq_id,
+      prev_faq: prev_faq,
+      new_faq: new_faq,
+      action_type: 'UPDATE'
     }
 
     await connection.execute(
@@ -240,13 +350,27 @@ router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
         subcategory_en,
         question_ko,
         question_en,
-        JSON.stringify(answer_ko),
-        JSON.stringify(answer_en),
+        answer_ko,
+        answer_en,
         manager,
         user_id,
         faq_id
       ]
     );
+
+    // faq_logs 테이블에 로그를 남기기 위해 API 호출
+    const response = await fetch('http://localhost:5000/api/faqlogs', {
+      method: 'POST',
+      headers: {
+       'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if(!response.ok) {
+      const errorData = await response.json();
+      return res.status(response.status).json({ error: errorData.message });
+    }
 
     res.status(200).json({ message: "FAQ updated successfully" });
   } catch (err: any) {

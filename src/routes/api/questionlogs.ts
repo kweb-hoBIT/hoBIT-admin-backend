@@ -44,13 +44,19 @@ router.get('/', async (req: Request, res: Response) => {
 // @access  Private
 router.get("/frequency", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period, sortOrder, limit } = req.query;
+  const { startDate, endDate, period, sortOrder, limit } = req.query as {
+    startDate: string;
+    endDate: string;
+    period: string;
+    sortOrder: string;
+    limit: string;
+  };
   console.log(req.query);
 
   try {
-    const sortorder = sortOrder ? "DESC" : "ASC";
-    const start_date = moment(String(startDate)).format("YYYY-MM-DD");
-    const end_date = moment(String(endDate)).format("YYYY-MM-DD");
+    const sortorder = parseInt(sortOrder) ? "DESC" : "ASC";
+    const start_date = moment(startDate).format("YYYY-MM-DD");
+    const end_date = moment(endDate).format("YYYY-MM-DD");
 
     const intervalType =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";
@@ -144,12 +150,19 @@ router.get("/frequency", async (req: Request, res: Response) => {
 // @access  Private
 router.get("/feedback", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period, sortOrder, limit } = req.query;
+  const { startDate, endDate, period, sortOrder, limit } = req.query as {
+    startDate: string;
+    endDate: string;
+    period: string;
+    sortOrder: string;
+    limit: string;
+  };
+  console.log(req.query);
 
   try {
-    const sortorder = sortOrder ? "DESC" : "ASC";
-    const start_date = moment(String(startDate)).format("YYYY-MM-DD");
-    const end_date = moment(String(endDate)).format("YYYY-MM-DD");
+    const sortorder = parseInt(sortOrder) ? "DESC" : "ASC";
+    const start_date = moment(startDate).format("YYYY-MM-DD");
+    const end_date = moment(endDate).format("YYYY-MM-DD");
     const intervalType =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";
 
@@ -244,11 +257,16 @@ router.get("/feedback", async (req: Request, res: Response) => {
 // @access  Private
 router.get("/language", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period } = req.query;
+  const { startDate, endDate, period} = req.query as {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+  console.log(req.query);
 
   try {
-    const start_date = moment(String(startDate)).format("YYYY-MM-DD");
-    const end_date = moment(String(endDate)).format("YYYY-MM-DD");
+    const start_date = moment(startDate).format("YYYY-MM-DD");
+    const end_date = moment(endDate).format("YYYY-MM-DD");
 
     const interval =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";

@@ -84,7 +84,7 @@ router.post("/", async (req: Request, res: Response) => {
       faq_id: faq_id,
       prev_faq: prev_faq,
       new_faq: new_faq,
-      action_type: 'CREATE'
+      action_type: '추가'
     }
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
@@ -228,7 +228,7 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response
       faq_id: faq_id,
       prev_faq: prev_faq,
       new_faq: new_faq,
-      action_type: 'DELETE'
+      action_type: '삭제'
     }
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
@@ -327,7 +327,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
       faq_id: faq_id,
       prev_faq: prev_faq,
       new_faq: new_faq,
-      action_type: 'UPDATE'
+      action_type: '수정'
     }
 
     await connection.execute(

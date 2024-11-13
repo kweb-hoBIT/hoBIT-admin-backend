@@ -4,7 +4,9 @@ import { PoolConnection, RowDataPacket } from "mysql2/promise";
 
 const router = express.Router();
 
-
+// @route   Post api/faqlogs/
+// @desc    Create a faq_log
+// @access  Private
 router.post("/", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {
@@ -20,7 +22,6 @@ router.post("/", async (req: Request, res: Response) => {
     new_faq: Record<string, any>;
     action_type: string;
   } = req.body;
-  console.log(new_faq);
   try { 
     await connection.execute(
       `INSERT INTO faq_logs (
@@ -57,8 +58,8 @@ router.get('/', async (req: Request, res: Response) => {
         faq_logs.user_id,
         users.username,
         faq_logs.faq_id,
-        faqs.maincategory_ko AS faq_main,
-        faqs.subcategory_ko AS faq_sub,
+        faqs.maincategory_ko AS faq_maincategory,
+        faqs.subcategory_ko AS faq_subcategory,
         faqs.question_ko AS faq_question,
         faq_logs.action_type,
         faq_logs.created_at
@@ -94,9 +95,9 @@ router.get('/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Res
         faq_logs.user_id,
         users.username,
         faq_logs.faq_id,
-        faqs.maincategory_ko AS faq_main,
-        faqs.subcategory_ko AS faq_sub,
-        faqs.question_ko AS faq_question,
+        faqs.maincategory_ko AS faq_maincategory,
+        faqs.subcategory_ko AS faq_subcateogory,
+        faqs.question_ko AS faq_questioncategory,
         faq_logs.action_type,
         faq_logs.created_at
       FROM hobit.faq_logs

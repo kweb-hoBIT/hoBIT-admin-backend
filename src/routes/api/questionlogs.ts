@@ -3,72 +3,60 @@ import { Pool } from "../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import _ from "lodash";
 import moment from "moment";
-import {
-  addDays,
-  addMonths,
-  endOfMonth,
-  endOfWeek,
-  startOfWeek,
-  startOfMonth,
-} from "date-fns";
 
 const router = express.Router();
 
-// 로그 가져오기 API
-router.get("/question", async (req: Request, res: Response) => {
-  const lang = req.query.lang || "en"; // 기본 언어는 영어로 설정
-  // MySQL 연결 풀에서 연결을 가져옴
+// @route   Get api/questionlogs/
+// @desc    Get all question_logs
+// @access  Private
+router.get('/', async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
 
   try {
-    // SQL 쿼리 작성/실행 (lang을 고정으로 두고 문제를 확인)
-    const query = `
-      SELECT 
+    const [logs] = await connection.execute<RowDataPacket[]>(
+      `SELECT 
         ql.id AS question_log_id,
         ql.user_question,
         ql.feedback_score,
         ql.feedback,
         ql.created_at,
         f.id AS faq_id,
-        f.maincategory_${lang} AS faq_main,  -- lang에 맞춰서 동적으로 컬럼 선택
-        f.subcategory_${lang} AS faq_sub,
-        f.question_${lang} AS faq_question
+        IF (ql.language = 'ko', f.question_ko, f.question_en) AS faq_question,
+        IF (ql.language = 'ko', f.maincategory_ko, f.maincategory_en) AS faq_maincategory,
+        IF (ql.language = 'ko', f.subcategory_ko, f.subcategory_en) AS faq_subcategory
       FROM question_logs ql
-      JOIN faqs f ON ql.faq_id = f.id
-    `;
-
-    // 쿼리 실행
-    const [rows] = await connection.execute(query);
-
-    // 로그가 존재하지 않으면 빈 배열로 반환
-    // if (rows.length === 0) {
-    //   return res.status(404).json({ message: 'No logs found' });
-    // }
-
-    console.log("Rows:", rows); // 쿼리 결과를 출력하여 확인
-
-    // 응답 반환
-    res.status(200).json({ logs: rows });
-  } catch (error) {
-    console.error("Error fetching logs:", error);
-    res.status(500).json({ message: "Internal server error" });
-  } finally {
-    // 연결 반환 (finally에서 항상 실행되도록)
-    if (connection) {
-      connection.release();
+      JOIN faqs f ON ql.faq_id = f.id`
+    );
+    const response = {
+      logs
     }
+    res.status(200).json(response);
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(400).json({ error: err.message });
+  } finally {
+    connection.release();
   }
 });
 
+// @route   Get api/questionlogs/frequency
+// @desc    Get frequency of question logs
+// @access  Private
 router.get("/frequency", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period, sortOrder, limit } = req.query;
+  const { startDate, endDate, period, sortOrder, limit } = req.query as {
+    startDate: string;
+    endDate: string;
+    period: string;
+    sortOrder: string;
+    limit: string;
+  };
   console.log(req.query);
 
   try {
-    const sortorder = sortOrder ? "DESC" : "ASC";
-    const start_date = moment(String(startDate)).format("YYYY-MM-DD");
-    const end_date = moment(String(endDate)).format("YYYY-MM-DD");
+    const sortorder = parseInt(sortOrder) ? "DESC" : "ASC";
+    const start_date = moment(startDate).format("YYYY-MM-DD");
+    const end_date = moment(endDate).format("YYYY-MM-DD");
 
     const intervalType =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";
@@ -144,7 +132,11 @@ router.get("/frequency", async (req: Request, res: Response) => {
     logData.endDate = end_date;
     logData.groupData = groupData;
 
-    res.status(200).json({ logData });
+    const response = {
+      logData
+    };
+    console.log(response);
+    res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
     res.status(400).json({ error: err.message });
@@ -153,26 +145,24 @@ router.get("/frequency", async (req: Request, res: Response) => {
   }
 });
 
+// @route   Get api/questionlogs/frequency
+// @desc    Get average feedback score of question logs
+// @access  Private
 router.get("/feedback", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period, sortOrder, limit } = req.query;
-
-  if (!startDate || !endDate || !period) {
-    return res
-      .status(400)
-      .json({ error: "startDate, endDate, and period are required" });
-  }
-
-  if (period !== "week" && period !== "month" && period !== "day") {
-    return res
-      .status(400)
-      .json({ error: "Invalid period value. Use 'day', 'week', or 'month'." });
-  }
+  const { startDate, endDate, period, sortOrder, limit } = req.query as {
+    startDate: string;
+    endDate: string;
+    period: string;
+    sortOrder: string;
+    limit: string;
+  };
+  console.log(req.query);
 
   try {
-    const sortorder = sortOrder ? "DESC" : "ASC";
-    const start_date = moment(String(startDate)).format("YYYY-MM-DD");
-    const end_date = moment(String(endDate)).format("YYYY-MM-DD");
+    const sortorder = parseInt(sortOrder) ? "DESC" : "ASC";
+    const start_date = moment(startDate).format("YYYY-MM-DD");
+    const end_date = moment(endDate).format("YYYY-MM-DD");
     const intervalType =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";
 
@@ -249,7 +239,11 @@ router.get("/feedback", async (req: Request, res: Response) => {
     logData.endDate = end_date;
     logData.groupData = groupData;
 
-    res.status(200).json({ logData });
+    const response = {
+      logData
+    };
+    console.log(response);
+    res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);
     res.status(400).json({ error: err.message });
@@ -258,13 +252,21 @@ router.get("/feedback", async (req: Request, res: Response) => {
   }
 });
 
+// @route   Get api/questionlogs/language
+// @desc    Get frequency of question logs by language
+// @access  Private
 router.get("/language", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period } = req.query;
+  const { startDate, endDate, period} = req.query as {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+  console.log(req.query);
 
   try {
-    const start_date = moment(String(startDate)).format("YYYY-MM-DD");
-    const end_date = moment(String(endDate)).format("YYYY-MM-DD");
+    const start_date = moment(startDate).format("YYYY-MM-DD");
+    const end_date = moment(endDate).format("YYYY-MM-DD");
 
     const interval =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";
@@ -326,14 +328,13 @@ router.get("/language", async (req: Request, res: Response) => {
     logData.endDate = end_date;
     logData.groupData = groupData;
 
-    res.status(200).json({ logData });
-
-    res.status;
-  } catch (error) {
-    console.error("Error fetching language frequency data:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to retrieve data from question_logs" });
+    const response = {
+      logData
+    };
+    res.status(200).json(response);
+  } catch (err: any) {
+    console.error("Error:", err.message);
+    res.status(400).json({ error: err.message });
   } finally {
     connection.release();
   }

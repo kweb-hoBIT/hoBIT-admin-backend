@@ -80,10 +80,10 @@ router.get("/frequency", async (req: Request, res: Response) => {
         ON faqs.id = question_logs.faq_id 
         AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) >= DATE_FORMAT(CONVERT_TZ(DateRange.date, '+00:00', '+09:00'), '%Y-%m-%d')
         AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) < DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType}, '+00:00', '+09:00'), '%Y-%m-%d')
-      WHERE DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '+00:00', '+09:00'), '%Y-%m-%d') <= ?
+      WHERE DateRange.date BETWEEN ? AND ?
       GROUP BY DateRange.date, faqs.id
       ORDER BY DateRange.date, count ${sortorder}, faqs.id;`,
-      [start_date, end_date, end_date]
+      [start_date, end_date, start_date, end_date]
     );
 
     const groupbyDate = _.groupBy(dateFrequncy, "startDate");
@@ -186,10 +186,10 @@ router.get("/feedback", async (req: Request, res: Response) => {
         ON faqs.id = question_logs.faq_id 
         AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) >= DATE_FORMAT(CONVERT_TZ(DateRange.date, '+00:00', '+09:00'), '%Y-%m-%d')
         AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) < DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType}, '+00:00', '+09:00'), '%Y-%m-%d')
-      WHERE DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '+00:00', '+09:00'), '%Y-%m-%d') <= ?
+      WHERE DateRange.date BETWEEN ? AND ?
       GROUP BY DateRange.date, faqs.id
       ORDER BY DateRange.date, score_average ${sortorder}, faqs.id;`,
-      [start_date, end_date, end_date]
+      [start_date, end_date, start_date, end_date]
     );
 
     const groupbyDate = _.groupBy(feedbackData, "startDate");

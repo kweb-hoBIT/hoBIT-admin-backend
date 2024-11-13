@@ -6,7 +6,8 @@ import { initializeDatabase } from '../config/createDB';
 import authRoutes from "./routes/api/auth";
 import usersRoutes from "./routes/api/users";
 import faqsRoutes from "./routes/api/faqs";
-import logsRoutes from "./routes/api/logs";
+import faqlogsRoutes from "./routes/api/faqlogs";
+import questionlogsRoutes from "./routes/api/questionlogs";
 import translateRoutes from "./routes/api/translate";
 
 const app = express();
@@ -38,7 +39,8 @@ const server = app.listen(port, () =>
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/faqs", faqsRoutes);
-app.use("/api/logs", logsRoutes);
+app.use("/api/faqslogs", faqlogsRoutes);
+app.use("/api/questionlogs", questionlogsRoutes);
 app.use("/api/translate", translateRoutes);
 
 export default server;

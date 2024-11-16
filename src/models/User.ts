@@ -4,6 +4,7 @@ export type TUser = {
   password: string;
   username: string;
   phone_num: string;
+  stauts: string;
   created_at?: Date;
   updated_at?: Date;
 };

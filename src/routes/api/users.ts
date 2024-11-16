@@ -1,15 +1,14 @@
 import express, { Response } from "express";
 import bcrypt from "bcryptjs";
-import config from "config";
 import { check, validationResult } from "express-validator";
-import jwt from "jsonwebtoken";
-import Payload from "../../types/Payload";
 import Request from "../../types/Request";
 import { Pool } from "../../../config/connectDB";
 import { PoolConnection, RowDataPacket,  ResultSetHeader } from "mysql2/promise";
 import { TUser } from "../../models/User";
 
 const router = express.Router();
+
+const VALID_INVITATION_KEYS = ["YOUR_SECRET_KEY_1", "YOUR_SECRET_KEY_2"];
 
 // @route   POST api/user
 // @desc    Register user given their email and password, returns the token upon successful registration
@@ -31,8 +30,13 @@ router.post(
         .json({ errors: errors.array() });
     }
     const connection: PoolConnection = await Pool.getConnection();
-    const { email, password, username, phone_num }: TUser = req.body;
-    
+    const { email, password, username, phone_num, invitationKey }:  TUser & { invitationKey: string } = req.body;
+    if (!VALID_INVITATION_KEYS.includes(invitationKey)) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Invalid invitation key. Access denied.",
+      });
+    }
     try {
       const [[user_existed]] = await connection.execute<RowDataPacket[]>(
         `SELECT * FROM hobit.users WHERE email = ?`,
@@ -41,39 +45,30 @@ router.post(
 
       if (user_existed) {
         return res.status(400).json({
-          errors: [
-            {
-              msg: "User already exists",
-            },
-          ],
+          status: "fail",
+          message: "User already exists",
         });
       }
 
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash(password, salt);
 
-
-      const [user] = await connection.execute<ResultSetHeader>(
+      await connection.execute<ResultSetHeader>(
         `INSERT INTO hobit.users (email, password, username, phone_num, created_at, updated_at) VALUES (?, ?, ? ,?, NOW(), NOW())`,
         [email, hashed, username, phone_num]
       );
 
-      const payload: Payload = {
-        user_id: user.insertId,
-      };
-
-      jwt.sign(
-        payload,
-        config.get("jwtSecret"),
-        { expiresIn: config.get("jwtExpiration") },
-        (err, token) => {
-          if (err) throw err;
-          res.json({ token });
-        }
-      );
+      const response = {
+        status: "success",
+        message: "User registered successfully",
+      }
+      res.status(201).json(response);
     } catch (err: any) {
       console.error(err.message);
-      res.status(400).json({ error: err.message });
+      res.status(500).json({
+        status: "fail",
+        message: err.message,
+      });
     } finally {
       connection.release();
     }

@@ -11,7 +11,7 @@ router.post("/", async (req: Request, res: Response) => {
   console.log(text);
 
   try {
-    const translate_response = await fetch('https://api-free.deepl.com/v2/translate', {
+    const translateResponse = await fetch('https://api-free.deepl.com/v2/translate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -23,20 +23,29 @@ router.post("/", async (req: Request, res: Response) => {
       }).toString(),
     });
 
-    if (!translate_response.ok) {
-      const errorData = await translate_response.json();
-      return res.status(translate_response.status).json({ error: errorData.message });
+    if (!translateResponse.ok) {
+      const errorData = await translateResponse.json();
+      return res.status(translateResponse.status).json({ error: errorData.message });
     }
 
-    const data: { translations: { text: string }[] } = await translate_response.json();
+    const data: { translations: { text: string }[] } = await translateResponse.json();
     const translatedText = data.translations[0].text;
-    const response = { translatedText };
+    const response = {
+      status: "success",
+      message: "Text translated successfully",
+      data: {
+        translatedText,
+      },
+    };
     console.log(response);
 
     res.status(200).json(response);
   } catch (error: any) {
     console.error('Error:', error.message);
-    res.status(500).json({ error: 'Translation failed' });
+    res.status(500).json({
+      status: "fail",
+      message: error.message,
+    });
   }
 });
 

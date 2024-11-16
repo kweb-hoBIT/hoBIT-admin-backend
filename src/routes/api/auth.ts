@@ -17,22 +17,38 @@ const router = express.Router();
 // @desc    Get authenticated user given the token
 // @access  Private
 router.get("/", auth, async (req: Request, res: Response) => {
-  const connection : PoolConnection = await Pool.getConnection();
-  const {user_id}: { user_id : number} = req;
+  const connection: PoolConnection = await Pool.getConnection();
+  const { user_id }: { user_id: number } = req;
 
   try {
     const [[user]] = await connection.execute<RowDataPacket[]>(
       `SELECT id, email, username, phone_num, created_at, updated_at FROM hobit.users WHERE id = ?`,
       [user_id]
     );
-    const response = {
-      user
+
+    if (!user) {
+      return res.status(404).json({
+        status: "fail",
+        message: "User not found",
+      });
     }
+
+    const response = {
+      status: "success",
+      message: "User data retrieved successfully",
+      data: {
+        user,
+      },
+    };
+
     console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -56,7 +72,7 @@ router.post(
     }
     const connection = await Pool.getConnection();
     const { email, password } : { email: string, password: string}= req.body;
-
+    console.log(email, password);
     try {
       const [[user]] = await connection.execute<RowDataPacket[]>(
         `SELECT * FROM hobit.users WHERE email = ?`,
@@ -65,11 +81,8 @@ router.post(
 
       if (!user) {
         return res.status(404).json({
-          errors: [
-            {
-              msg: "Invalid Credentials",
-            },
-          ],
+          status: "fail",
+          message: "User not found",
         });
       }
 
@@ -77,11 +90,15 @@ router.post(
 
       if (!isMatch) {
         return res.status(400).json({
-          errors: [
-            {
-              msg: "Invalid Credentials",
-            },
-          ],
+          status: "fail",
+          message: "Invalid Credentials",
+        });
+      }
+
+      if (user.status === "pending") {
+        return res.status(403).json({
+          status: "fail",
+          message: "User registration is pending approval",
         });
       }
 
@@ -95,12 +112,22 @@ router.post(
         { expiresIn: config.get("jwtExpiration") },
         (err, token) => {
           if (err) throw err;
-          res.json({ token });
+          const response = {
+            status: "success",
+            message: "Authentication successful",
+            data: {
+              token
+            }
+          }
+          res.json(response);
         }
       );
     } catch (err: any) {
       console.error(err.message);
-      res.status(400).json({ error: err.message });
+      res.status(500).json({
+        status: "fail",
+        message: err.message
+      });
     } finally {
       connection.release();
     }

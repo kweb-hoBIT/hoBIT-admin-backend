@@ -39,7 +39,8 @@ const createUserTable = async () => {
       email VARCHAR(45) NOT NULL,
       password VARCHAR(100) NOT NULL,
       username VARCHAR(45) NOT NULL,
-      phone_num VARCHAR(45) NOT NULL UNIQUE,
+      phone_num VARCHAR(45) NOT NULL,
+      status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     );

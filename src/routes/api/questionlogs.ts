@@ -28,12 +28,19 @@ router.get('/', async (req: Request, res: Response) => {
       JOIN faqs f ON ql.faq_id = f.id`
     );
     const response = {
-      logs
+      status: "success",
+      message: "Question logs retrieved successfully",
+      data : {
+        logs
+      }
     }
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -133,13 +140,20 @@ router.get("/frequency", async (req: Request, res: Response) => {
     logData.groupData = groupData;
 
     const response = {
-      logData
+      status: "success",
+      message: "Question logs frequency retrieved successfully",
+      data : {
+        logData
+      }
     };
     console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -240,13 +254,20 @@ router.get("/feedback", async (req: Request, res: Response) => {
     logData.groupData = groupData;
 
     const response = {
-      logData
+      status: "success",
+      message: "Question logs feedback score retrieved successfully",
+      data : {
+        logData
+      }
     };
     console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -329,12 +350,19 @@ router.get("/language", async (req: Request, res: Response) => {
     logData.groupData = groupData;
 
     const response = {
-      logData
+      status: "success",
+      message: "Question logs language frequency retrieved successfully",
+      data : {
+        logData
+      }
     };
     res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }

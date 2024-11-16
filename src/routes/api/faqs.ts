@@ -88,7 +88,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const response = await fetch('http://localhost:5000/api/faqlogs', {
+    const logResponse = await fetch('http://localhost:5000/api/faqlogs', {
       method: 'POST',
       headers: {
        'Content-Type': 'application/json',
@@ -96,15 +96,21 @@ router.post("/", async (req: Request, res: Response) => {
       body: JSON.stringify(data)
     });
 
-    if(!response.ok) {
-      const errorData = await response.json();
-      return res.status(response.status).json({ error: errorData.message });
+    if(!logResponse.ok) {
+      const errorData = await logResponse.json();
+      return res.status(logResponse.status).json({ error: errorData.message });
     }
-
-    res.status(201).json({ message: "FAQ created successfully" });
+    const response = {
+      status: "success",
+      message: "FAQ created successfully"
+    }
+    res.status(201).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -140,13 +146,20 @@ router.get("/", async (req: Request, res: Response) => {
     });
 
     const response = {
-      faqs    
+      status: "success",
+      message: "FAQs retrieved successfully",
+      data : {
+        faqs
+      }
     };
     console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -171,6 +184,8 @@ router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
       return res.status(404).json({ message: "FAQ not found" });
     }
     const response = {
+      status: "success",
+      message: "FAQ retrieved successfully",
       faq: {
         faq_id: faq.id,
         maincategory_ko: faq.maincategory_ko,
@@ -188,7 +203,10 @@ router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -232,7 +250,7 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response
     }
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const response = await fetch('http://localhost:5000/api/faqlogs', {
+    const logResponse = await fetch('http://localhost:5000/api/faqlogs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -240,20 +258,26 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response
       body: JSON.stringify(data)
     });
 
-    if(!response.ok) {
-      const errorData = await response.json();
-      return res.status(response.status).json({ error: errorData.message });
+    if(!logResponse.ok) {
+      const errorData = await logResponse.json();
+      return res.status(logResponse.status).json({ error: errorData.message });
     }
 
     await connection.execute(
       'DELETE FROM hobit.faqs WHERE id = ?',
       [faq_id]
     );
-
-    res.status(200).json({ message: 'FAQ deleted successfully' });
+    const response = {
+      status: "success",
+      message: "FAQ deleted successfully"
+    }
+    res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -359,7 +383,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
     );
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const response = await fetch('http://localhost:5000/api/faqlogs', {
+    const logResponse = await fetch('http://localhost:5000/api/faqlogs', {
       method: 'POST',
       headers: {
        'Content-Type': 'application/json',
@@ -367,15 +391,18 @@ router.put("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
       body: JSON.stringify(data)
     });
 
-    if(!response.ok) {
-      const errorData = await response.json();
-      return res.status(response.status).json({ error: errorData.message });
+    if(!logResponse.ok) {
+      const errorData = await logResponse.json();
+      return res.status(logResponse.status).json({ error: errorData.message });
     }
-
-    res.status(200).json({ message: "FAQ updated successfully" });
+    const response = {
+      status: "success",
+      message: "FAQ updated successfully"
+    }
+    res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({ error: err.message });
   } finally {
     connection.release();
   }

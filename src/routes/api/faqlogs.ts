@@ -35,10 +35,18 @@ router.post("/", async (req: Request, res: Response) => {
         JSON.stringify(new_faq)
       ]
     );
-    res.status(201).json({ message: "FAQ log created successfully" });
+    const response = {
+      status: "success",
+      message: "FAQ log created successfully"
+    };
+    console.log(response);
+    res.status(201).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -68,14 +76,20 @@ router.get('/', async (req: Request, res: Response) => {
       LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id`
     );
     const response = {
-      faqLogs: faqLogs
+      status: "success",
+      data: {
+        faqLogs
+      }
     }
     console.log(response);
-    res.status(200).json({ response });
+    res.status(200).json(response);
 
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -107,13 +121,20 @@ router.get('/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Res
       , [faq_log_id]
     );
     const response = {
-      faqLog: faqLog
+      status: "success",
+      message: "FAQ log retrieved successfully",
+      data: {
+        faqLog
+      }
     }
     console.log(response);
-    res.status(200).json({ response });
+    res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }
@@ -138,7 +159,10 @@ router.get('/compare/:faq_log_id', async (req: Request<{ faq_log_id: string }>, 
     )
 
     if (!faqLog) {
-      return res.status(404).json({ message: "FAQ log not found" });
+      return res.status(404).json({
+        status: "fail",
+        message: "FAQ log not found"
+      });
     }
 
     let prevFaq = {}, newFaq = {};
@@ -146,14 +170,21 @@ router.get('/compare/:faq_log_id', async (req: Request<{ faq_log_id: string }>, 
     newFaq = safetyParse(faqLog.new_faq);
 
     const response = {
-      prev_faq: prevFaq,
-      new_faq: newFaq
-    }
+      status: "success",
+      message: "FAQ log comparison retrieved successfully",
+      data: {
+        prev_faq: prevFaq,
+        new_faq: newFaq
+      }
+    };
     console.log(response);
-    res.status(200).json({ response });
+    res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);
-    res.status(400).json({ error: err.message });
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
   } finally {
     connection.release();
   }

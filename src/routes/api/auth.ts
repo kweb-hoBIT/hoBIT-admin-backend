@@ -91,7 +91,7 @@ router.post(
       if (!isMatch) {
         return res.status(400).json({
           status: "fail",
-          message: "Invalid Credentials",
+          message: "Invalid password",
         });
       }
 

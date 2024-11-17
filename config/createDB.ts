@@ -116,12 +116,30 @@ const createFaqLogTable = async () => {
   await connection.end();
 };
 
+const createRelatedFaqTable = async () => {
+  const connection = await createConnection();
+  const query = `
+    CREATE TABLE IF NOT EXISTS related_faqs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      faq_id INT,
+      related_faqs JSON,
+      FOREIGN KEY (faq_id) REFERENCES faqs(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+    );
+  `;
+  await connection.query(query);
+  console.log('RelatedFaq table created or already exists.');
+  await connection.end();
+};
+
 // 테이블 생성 실행
 const createTables = async () => {
   await createUserTable();
   await createFAQTable();
   await createQuestionLogTable();
   await createFaqLogTable();
+  await createRelatedFaqTable();
 };
 
 // 데이터베이스 및 테이블 생성

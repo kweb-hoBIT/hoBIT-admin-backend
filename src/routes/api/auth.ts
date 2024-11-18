@@ -98,9 +98,16 @@ router.post(
           message: "User registration is pending approval",
         });
       }
+      const user_id: number = user.id;
+      const payload: Payload = {user_id};
 
-      // Generate Access Token and Refresh Token
-      const { accessToken, refreshToken } = generateTokens(user.id);
+      const accessToken = jwt.sign(payload, config.get("jwtSecret"), {
+        expiresIn: config.get("jwtExpiration"),
+      });
+    
+      const refreshToken = jwt.sign(payload, config.get("jwtSecret"), {
+        expiresIn: config.get("jwtRefreshExpiration"),
+      });
 
       const response = {
         status: "success",
@@ -143,9 +150,12 @@ router.post("/refresh", async (req: Request, res: Response) => {
     // Extract user_id from the decoded payload
     const { user_id } = decoded;
 
-    // Generate new Access Token
-    const { accessToken } = generateTokens(user_id);
+    const payload: Payload = { user_id };
 
+    const accessToken = jwt.sign(payload, config.get("jwtSecret"), {
+      expiresIn: config.get("jwtExpiration"),
+    });
+  
     const response = {
       status: "success",
       message: "Access token refreshed",
@@ -163,19 +173,5 @@ router.post("/refresh", async (req: Request, res: Response) => {
     });
   }
 });
-
-const generateTokens = (user_id: number) => {
-  const payload: Payload = { user_id };
-
-  const accessToken = jwt.sign(payload, config.get("jwtSecret"), {
-    expiresIn: config.get("jwtExpiration"), // Access Token expiration
-  });
-
-  const refreshToken = jwt.sign(payload, config.get("jwtSecret"), {
-    expiresIn: config.get("jwtRefreshExpiration"), // Refresh Token expiration
-  });
-
-  return { accessToken, refreshToken };
-};
 
 export default router;

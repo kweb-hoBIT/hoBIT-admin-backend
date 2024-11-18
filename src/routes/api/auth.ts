@@ -9,9 +9,7 @@ import Request from "../../types/Request";
 import { Pool } from "../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 
-
 const router = express.Router();
-
 
 // @route   GET api/auth
 // @desc    Get authenticated user given the token
@@ -66,13 +64,12 @@ router.post(
   async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res
-        .status(400)
-        .json({ errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
     }
+
     const connection = await Pool.getConnection();
-    const { email, password } : { email: string, password: string}= req.body;
-    console.log(email, password);
+    const { email, password }: { email: string; password: string } = req.body;
+
     try {
       const [[user]] = await connection.execute<RowDataPacket[]>(
         `SELECT * FROM hobit.users WHERE email = ?`,
@@ -102,36 +99,83 @@ router.post(
         });
       }
 
-      const payload: Payload = {
-        user_id: user.id,
+      // Generate Access Token and Refresh Token
+      const { accessToken, refreshToken } = generateTokens(user.id);
+
+      const response = {
+        status: "success",
+        message: "Authentication successful",
+        data: {
+          accessToken,
+          refreshToken,
+        },
       };
 
-      jwt.sign(
-        payload,
-        config.get("jwtSecret"),
-        { expiresIn: config.get("jwtExpiration") },
-        (err, token) => {
-          if (err) throw err;
-          const response = {
-            status: "success",
-            message: "Authentication successful",
-            data: {
-              token
-            }
-          }
-          res.json(response);
-        }
-      );
+      res.json(response);
     } catch (err: any) {
       console.error(err.message);
       res.status(500).json({
         status: "fail",
-        message: err.message
+        message: err.message,
       });
     } finally {
       connection.release();
     }
   }
 );
+
+// @route   POST api/auth/refresh
+// @desc    Refresh Access Token using Refresh Token
+// @access  Public
+router.post("/refresh", async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({
+      status: "fail",
+      message: "No refresh token provided",
+    });
+  }
+
+  try {
+    const decoded: any = jwt.verify(refreshToken, config.get("jwtSecret"));
+
+    // Extract user_id from the decoded payload
+    const { user_id } = decoded;
+
+    // Generate new Access Token
+    const { accessToken } = generateTokens(user_id);
+
+    const response = {
+      status: "success",
+      message: "Access token refreshed",
+      data: {
+        accessToken,
+      },
+    };
+
+    res.json(response);
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(401).json({
+      status: "fail",
+      message: "Invalid refresh token",
+    });
+  }
+});
+
+const generateTokens = (user_id: number) => {
+  const payload: Payload = { user_id };
+
+  const accessToken = jwt.sign(payload, config.get("jwtSecret"), {
+    expiresIn: config.get("jwtExpiration"), // Access Token expiration
+  });
+
+  const refreshToken = jwt.sign(payload, config.get("jwtSecret"), {
+    expiresIn: config.get("jwtRefreshExpiration"), // Refresh Token expiration
+  });
+
+  return { accessToken, refreshToken };
+};
 
 export default router;

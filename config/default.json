@@ -5,6 +5,6 @@
   "dbPassword": "1234",
   "dbName": "hobit",
   "jwtSecret": "jwtSecretToken",
-  "jwtExpiration": 360000,
-  "refreshTokenExpiration": 86400000
+  "jwtExpiration": 3600,
+  "jwtRefreshExpiration": 86400
 }

@@ -74,6 +74,10 @@ router.post(
   }
 );
 
+
+// @route DELETE api/user/:user_id
+// @desc Delete user by user_id
+// @access Private
 router.delete("/:user_id", async (req: Request<{ user_id: string }>, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { user_id } = req.params;

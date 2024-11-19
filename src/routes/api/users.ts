@@ -1,7 +1,6 @@
-import express, { Response } from "express";
+import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { check, validationResult } from "express-validator";
-import Request from "../../types/Request";
 import { Pool } from "../../../config/connectDB";
 import { PoolConnection, RowDataPacket,  ResultSetHeader } from "mysql2/promise";
 import { TUser } from "../../models/User";
@@ -54,7 +53,7 @@ router.post(
       const hashed = await bcrypt.hash(password, salt);
 
       await connection.execute<ResultSetHeader>(
-        `INSERT INTO hobit.users (email, password, username, phone_num, created_at, updated_at) VALUES (?, ?, ? ,?, NOW(), NOW())`,
+        `INSERT INTO hobit.users (email, password, username, phone_num) VALUES (?, ?, ? ,?)`,
         [email, hashed, username, phone_num]
       );
 
@@ -74,5 +73,34 @@ router.post(
     }
   }
 );
+
+router.delete("/:user_id", async (req: Request<{ user_id: string }>, res: Response) => {
+  const connection: PoolConnection = await Pool.getConnection();
+  const { user_id } = req.params;
+  console.log(user_id)
+  try {
+    await connection.execute<ResultSetHeader>(
+      `DELETE FROM hobit.users WHERE id = ?`,
+      [user_id]
+    );
+    const response = {
+      status: "success",
+      message: "User deleted successfully",
+    };
+    console.log(response);
+    res.status(200).json(response);
+  } catch (err: any) {
+    console.error(err.message);
+    res.status(500).json({
+      status: "fail",
+      message: err.message,
+    });
+  } finally {
+    connection.release();
+  }
+
+});
+
+
 
 export default router;

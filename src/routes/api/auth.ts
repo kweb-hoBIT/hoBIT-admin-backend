@@ -117,6 +117,7 @@ router.post(
         data: {
           accessToken,
           refreshToken,
+          user_id,
           username
         },
       };

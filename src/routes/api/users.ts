@@ -75,7 +75,7 @@ router.post(
 );
 
 
-// @route DELETE api/user/:user_id
+// @route DELETE api/users/:user_id
 // @desc Delete user by user_id
 // @access Private
 router.delete("/:user_id", async (req: Request<{ user_id: string }>, res: Response) => {

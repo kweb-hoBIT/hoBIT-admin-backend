@@ -98,6 +98,8 @@ router.post(
           message: "User registration is pending approval",
         });
       }
+
+      const username: string = user.username;
       const user_id: number = user.id;
       const payload: Payload = {user_id};
 
@@ -115,6 +117,7 @@ router.post(
         data: {
           accessToken,
           refreshToken,
+          username
         },
       };
 

@@ -260,7 +260,7 @@ router.get("/feedback", async (req: Request, res: Response) => {
         logData
       }
     };
-    console.log(response, 1111);
+    console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);
@@ -362,7 +362,7 @@ router.get("/language", async (req: Request, res: Response) => {
         logData
       }
     };
-    console.log(response.data.logData.groupData);
+    console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);

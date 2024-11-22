@@ -260,7 +260,7 @@ router.get("/feedback", async (req: Request, res: Response) => {
         logData
       }
     };
-    console.log(response);
+    console.log(response, 1111);
     res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);
@@ -322,8 +322,10 @@ router.get("/language", async (req: Request, res: Response) => {
       groupData: {
         startDate: string;
         endDate: string;
-        ko_frequency: number;
-        en_frequency: number;
+        data: {
+          ko_frequency: number;
+          en_frequency: number;
+        }[];
       }[];
     } = {
       startDate: "",
@@ -336,12 +338,16 @@ router.get("/language", async (req: Request, res: Response) => {
       const endDate = groupbyDate[date][0].endDate;
       const ko_frequency = groupbyDate[date][0].frequency_ko;
       const en_frequency = groupbyDate[date][0].frequency_en;
+      const data = [];
+      data.push({
+        ko_frequency: ko_frequency,
+        en_frequency: en_frequency,
+      });
 
       groupData.push({
         startDate: startDate,
         endDate: endDate,
-        ko_frequency: ko_frequency,
-        en_frequency: en_frequency,
+        data: data,
       });
     }
 
@@ -356,6 +362,7 @@ router.get("/language", async (req: Request, res: Response) => {
         logData
       }
     };
+    console.log(response.data.logData.groupData);
     res.status(200).json(response);
   } catch (err: any) {
     console.error("Error:", err.message);

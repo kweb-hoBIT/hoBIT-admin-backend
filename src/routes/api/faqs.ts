@@ -166,12 +166,12 @@ router.get("/", async (req: Request, res: Response) => {
 });
 
 
-// @route   Post api/faqs/:faq_id
+// @route   GET api/faqs/:faq_id
 // @desc    get a FAQ
 // @access  Private
 router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
-  const { faq_id } = req.params;
+  const { faq_id } = req.params
   console.log(faq_id);
 
   try {
@@ -186,18 +186,20 @@ router.get("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response) =
     const response = {
       status: "success",
       message: "FAQ retrieved successfully",
-      faq: {
-        faq_id: faq.id,
-        maincategory_ko: faq.maincategory_ko,
-        maincategory_en: faq.maincategory_en,
-        subcategory_ko: faq.subcategory_ko,
-        subcategory_en: faq.subcategory_en,
-        question_ko: faq.question_ko,
-        question_en: faq.question_en,
-        answer_ko: safetyParse(faq.answer_ko),
-        answer_en: safetyParse(faq.answer_en),
-        manager: faq.manager
-      }  
+      data: {
+        faq: {
+          faq_id: faq.id,
+          maincategory_ko: faq.maincategory_ko,
+          maincategory_en: faq.maincategory_en,
+          subcategory_ko: faq.subcategory_ko,
+          subcategory_en: faq.subcategory_en,
+          question_ko: faq.question_ko,
+          question_en: faq.question_en,
+          answer_ko: safetyParse(faq.answer_ko),
+          answer_en: safetyParse(faq.answer_en),
+          manager: faq.manager
+        }  
+      }
     };
     console.log(response);
     res.status(200).json(response);

@@ -101,7 +101,7 @@ router.get('/', async (req: Request, res: Response) => {
 // @access  Private
 router.get('/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const faq_log_id = req.params.faq_log_id;
+  const {faq_log_id} = req.params;
   try {
     const [[faqLog]] = await connection.execute<RowDataPacket[]>(
       `SELECT 
@@ -146,7 +146,7 @@ router.get('/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Res
 // @access  Private
 router.get('/compare/:faq_log_id', async (req: Request<{ faq_log_id: string }>, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const faq_log_id = req.params.faq_log_id;
+  const {faq_log_id} = req.params;
 
   try {
     const [[faqLog]] = await connection.execute<RowDataPacket[]>(

@@ -13,7 +13,7 @@ router.get('/', async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
 
   try {
-    const [logs] = await connection.execute<RowDataPacket[]>(
+    const [questionLogs] = await connection.execute<RowDataPacket[]>(
       `SELECT 
         ql.id AS question_log_id,
         ql.user_question,
@@ -21,17 +21,16 @@ router.get('/', async (req: Request, res: Response) => {
         ql.feedback,
         ql.created_at,
         f.id AS faq_id,
-        IF (ql.language = 'ko', f.question_ko, f.question_en) AS faq_question,
-        IF (ql.language = 'ko', f.maincategory_ko, f.maincategory_en) AS faq_maincategory,
-        IF (ql.language = 'ko', f.subcategory_ko, f.subcategory_en) AS faq_subcategory
-      FROM question_logs ql
-      JOIN faqs f ON ql.faq_id = f.id`
+        IF (ql.language = 'ko', f.question_ko, f.question_en) AS faq_question
+      FROM hobit.question_logs ql
+      LEFT JOIN hobit.faqs f ON ql.faq_id = f.id
+      ORDER BY ql.created_at DESC`
     );
     const response = {
       status: "success",
       message: "Question logs retrieved successfully",
       data : {
-        logs
+        questionLogs
       }
     }
     res.status(200).json(response);

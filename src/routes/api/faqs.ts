@@ -144,7 +144,6 @@ router.get("/", async (req: Request, res: Response) => {
         updated_at: faq.updated_at
       };
     });
-
     const response = {
       status: "success",
       message: "FAQs retrieved successfully",
@@ -224,12 +223,24 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: string }>, res: Response
   console.log(faq_id);
 
   try {
-    const [[prev_faq]] = await connection.execute<RowDataPacket[]>(
+    const [[faq]] = await connection.execute<RowDataPacket[]>(
       `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
        FROM hobit.faqs 
        WHERE id = ?`,
       [faq_id]
     );
+
+    const prev_faq = {
+      maincategory_ko: faq.maincategory_ko,
+      maincategory_en: faq.maincategory_en,
+      subcategory_ko: faq.subcategory_ko,
+      subcategory_en: faq.subcategory_en,
+      question_ko: faq.question_ko,
+      question_en: faq.question_en,
+      answer_ko: safetyParse(faq.answer_ko),
+      answer_en: safetyParse(faq.answer_en),
+      manager: faq.manager
+    }
 
     const new_faq = {
       maincategory_ko: "",

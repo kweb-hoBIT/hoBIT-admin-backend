@@ -73,10 +73,12 @@ router.get('/', async (req: Request, res: Response) => {
         faq_logs.created_at
       FROM hobit.faq_logs
       LEFT JOIN hobit.users ON faq_logs.user_id = users.id
-      LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id`
+      LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id
+      ORDER BY faq_logs.created_at DESC`
     );
     const response = {
       status: "success",
+      messeage: "FAQ logs retrieved successfully",
       data: {
         faqLogs
       }

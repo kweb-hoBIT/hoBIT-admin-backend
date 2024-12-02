@@ -125,7 +125,7 @@ router.get("/", async (req: Request, res: Response) => {
 
   try {
     const [rows] = await connection.execute<RowDataPacket[]>(
-      'SELECT * FROM faqs',
+      'SELECT * FROM faqs order by created_at desc',
     )
 
     const faqs = rows.map((faq) => {

@@ -6,7 +6,7 @@ const router = express.Router();
 // @route   POST api/translate/
 // @desc    Translate the given text and return the translated result
 // @access  Private
-router.post("/", async (req: Request, res: Response) => {
+router.post("/translate", async (req: Request, res: Response) => {
   const { text }: { text: string } = req.body;
   console.log(text);
 
@@ -31,21 +31,21 @@ router.post("/", async (req: Request, res: Response) => {
     const data: { translations: { text: string }[] } = await translateResponse.json();
     const translatedText = data.translations[0].text;
     const response = {
-      status: "success",
+      statusCode: 200,
       message: "Text translated successfully",
       data: {
         translatedText,
       },
     };
     console.log(response);
-
     res.status(200).json(response);
   } catch (error: any) {
-    console.error('Error:', error.message);
-    res.status(500).json({
-      status: "fail",
+    const response = {
+      statusCode: 500,
       message: error.message,
-    });
+    }
+    console.log(response);
+    res.status(500).json(response);
   }
 });
 

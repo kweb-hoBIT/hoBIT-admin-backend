@@ -3,12 +3,11 @@ import express from "express";
 import cors from "cors";
 import { initializeDatabase } from '../config/createDB';
 
-import authRoutes from "./routes/api/auth";
-import usersRoutes from "./routes/api/users";
-import faqsRoutes from "./routes/api/faqs";
-import faqlogsRoutes from "./routes/api/faqlogs";
-import questionlogsRoutes from "./routes/api/questionlogs";
-import translateRoutes from "./routes/api/translate";
+import authRoutes from "./routes/api/auth/authIndex";
+import usersRoutes from "./routes/api/users/usersIndex";
+import faqsRoutes from "./routes/api/faqs/faqsIndex";
+import faqlogsRoutes from "./routes/api/faqlogs/faqlogsIndex";
+import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
 
 const app = express();
 app.use(cors());
@@ -17,7 +16,6 @@ app.use(cors());
   await initializeDatabase();
 })();
 
-// Express configuration
 app.set("port", process.env.PORT || 5000);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -41,6 +39,5 @@ app.use("/api/users", usersRoutes);
 app.use("/api/faqs", faqsRoutes);
 app.use("/api/faqlogs", faqlogsRoutes);
 app.use("/api/questionlogs", questionlogsRoutes);
-app.use("/api/translate", translateRoutes);
 
 export default server;

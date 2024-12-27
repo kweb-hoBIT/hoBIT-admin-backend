@@ -25,13 +25,10 @@ interface User {
 // @access  Public
 router.post("/", async (req: Request, res: Response) => {
   const connection = await Pool.getConnection();
-  const { email, password }: LoginRequest['body'] = req.body;
+  const { email, password }: LoginRequest["body"] = req.body;
 
   try {
-    const [rows] = await connection.execute<RowDataPacket[]>(
-      `SELECT * FROM hobit.users WHERE email = ?`,
-      [email]
-    );
+    const [rows] = await connection.execute<RowDataPacket[]>(`SELECT * FROM hobit.users WHERE email = ?`, [email]);
     const user = rows[0] as User;
 
     if (!user) {
@@ -57,27 +54,40 @@ router.post("/", async (req: Request, res: Response) => {
     const accessToken = jwt.sign(payload, config.get("jwtSecret"), {
       expiresIn: config.get("jwtExpiration"),
     });
-  
+
     const refreshToken = jwt.sign(payload, config.get("jwtSecret"), {
       expiresIn: config.get("jwtRefreshExpiration"),
+    });
+
+    res.cookie("accessToken", accessToken, {
+      httpOnly: false, // 클라이언트에서 접근 가능하도록 설정 (JavaScript로 읽기 가능)
+      secure: true, // HTTPS에서만 작동
+      sameSite: "strict", // CSRF 공격 방지
+      maxAge: Number(config.get("jwtExpiration")) * 1000, // 쿠키 유효 기간 설정
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "strict",
+      maxAge: Number(config.get("jwtRefreshExpiration")) * 1000,
     });
 
     const response: LoginResponse = {
       statusCode: 200,
       message: "Authentication successful",
       data: {
-        accessToken,
-        refreshToken,
         user_id,
-        username
+        username,
       },
     };
+
     res.json(response);
   } catch (err: any) {
     const response = {
       statusCode: 500,
       message: err.message,
-    }
+    };
     res.status(500).json(response);
   } finally {
     connection.release();

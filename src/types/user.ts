@@ -9,8 +9,6 @@ export type LoginResponse = {
   statusCode: number;
   message: string;          
   data: {
-    accessToken: string;
-    refreshToken: string;
     user_id: number;
     username: string;
   };
@@ -32,17 +30,12 @@ export type SignupResponse = {
 };
 
 export type NewAccessTokenRequest = {
-  body: {
-    refreshToken: string;
-  }
+  body: {}
 }
 
 export type NewAccessTokenResponse = {
   statusCode: number;
   message: string;
-  data: {
-    accessToken?: string;
-  };
 }
 
 
@@ -58,21 +51,6 @@ export type DeleteAccountResponse = {
   statusCode: number;
   message: string
 }
-
-export type RefreshTokenRequest = {
-  body: {
-    refreshToken: string;
-  }
-}
-
-export type RefreshTokenResponse = {
-  statusCode: number;
-  message: string;
-  data: {
-    accessToken?: string;
-  };
-}
-
 
 export type User = {
   id: number;

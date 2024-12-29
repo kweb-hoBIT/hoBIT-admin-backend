@@ -37,7 +37,7 @@ router.get("/feedback", async (req: Request, res: Response) => {
         DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '+00:00', '+09:00'), '%Y-%m-%d') AS endDate,
         COALESCE(AVG(question_logs.feedback_score), 0) AS score_average,
         COUNT(CASE WHEN question_logs.feedback_score = 1 THEN 1 END) AS score_like_count,
-        COUNT(CASE WHEN question_logs.feedback_score = 0 THEN 1 END) AS score_dislike_count
+        COUNT(CASE WHEN question_logs.feedback_score = -1 THEN 1 END) AS score_dislike_count
       FROM hobit.faqs
       CROSS JOIN DateRange
       LEFT OUTER JOIN hobit.question_logs 

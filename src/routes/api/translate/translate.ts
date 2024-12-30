@@ -1,12 +1,13 @@
 import express, { Request, Response } from "express";
 import fetch from "node-fetch";
+import { TranslateFAQRequest, TranslateFAQResponse } from '../../../types/translate';
 
 const router = express.Router();
 
 // @route   POST api/translate/
 // @desc    Translate the given text and return the translated result
 // @access  Private
-router.post("/translate", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   const { text }: { text: string } = req.body;
   console.log(text);
 

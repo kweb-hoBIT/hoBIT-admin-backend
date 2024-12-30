@@ -33,7 +33,6 @@ router.get("/", auth, async (req: Request, res: Response) => {
       },
     };
 
-    console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     const response = {

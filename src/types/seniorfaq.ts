@@ -1,78 +1,86 @@
-export type Faq = {
-  id: number;
-  maincategory_ko: string;
-  maincategory_en: string;
-  subcategory_ko: string;
-  subcategory_en: string;
-  question_ko: string;
-  question_en: string;
-  answer_ko: [];
-  answer_en: [];
-  manager: string;
-  created_by: number | null;
-  updated_by: number | null;
-};
-
-
-export type CreateFAQRequest = {
+export type CreateSeniorFAQRequest = {
   body: {
     user_id: number;
     maincategory_ko: string;
     maincategory_en: string;
     subcategory_ko: string;
     subcategory_en: string;
-    question_ko: string;
-    question_en: string;
+    detailcategory_ko: string;
+    detailcategory_en: string;
     answer_ko: {
+      title: string;
       answer: string;
       url: string;
       email: string;
       phone: string;
+      image: string;
+      map: {
+        latitude: string;
+        longitude: string;
+      };
     }[];
     answer_en: {
+      title: string;
       answer: string;
       url: string;
       email: string;
       phone: string;
+      image: string;
+      map: {
+        latitude: string;
+        longitude: string;
+      };
     }[];
     manager: string;
   }
 };
 
-export type CreateFAQResponse = {
+export type CreateSeniorFAQResponse = {
   statusCode: number;
   message: string;
 };
 
 
-export type GetAllFAQRequest = {
+export type GetAllSeniorFAQRequest = {
   params: {};
   query: {};
 }
 
-export type GetAllFAQResponse = {
+export type GetAllSeniorFAQResponse = {
   statusCode: number;
   message: string;
   data : {
-    faqs : {
-      faq_id: number;
+    seniorFaqs : {
+      senior_faq_id: number;
       maincategory_ko: string;
       maincategory_en: string;
       subcategory_ko: string;
       subcategory_en: string;
-      question_ko: string; 
-      question_en: string;
+      detailcategory_ko: string;
+      detailcategory_en: string;
       answer_ko: {
+        title: string;
         answer: string;
         url: string;
         email: string;
         phone: string;
+        image: string;
+        map: {
+          latitude: string;
+          longitude: string;
+        };
       }[];
       answer_en: {
+        title: string;
         answer: string;
         url: string;
         email: string;
         phone: string;
+        image: string;
+        map: {
+          latitude: string;
+          longitude: string;
+        };
       }[];
       manager: string;
       created_at: string;
@@ -81,36 +89,48 @@ export type GetAllFAQResponse = {
   }
 };
 
-export type GetFAQRequest = {
+export type GetSeniorFAQRequest = {
   params: {
-    faq_id: string;
+    senior_faq_id: string;
   };
   query: {};
 }
 
-export type GetFAQResponse = {
+export type GetSeniorFAQResponse = {
   statusCode: number;
   message: string;
   data: {
-    faq : {
-      faq_id: number;
+    seniorFaq : {
+      senior_faq_id: number;
       maincategory_ko: string;
       maincategory_en: string;
+      detailcategory_ko: string;
+      detailcategory_en: string;
       subcategory_ko: string;
       subcategory_en: string;
-      question_ko: string;
-      question_en: string;
       answer_ko: {
+        title: string;
         answer: string;
         url: string;
         email: string;
         phone: string;
+        image: string;
+        map: {
+          latitude: string;
+          longitude: string;
+        };
       }[];
       answer_en: {
+        title: string;
         answer: string;
         url: string;
         email: string;
         phone: string;
+        image: string;
+        map: {
+          latitude: string;
+          longitude: string;
+        };
       }[];
       manager: string;
       created_at: string;
@@ -120,25 +140,23 @@ export type GetFAQResponse = {
 };
 
 
-export type DeleteFAQRequest = {
+export type DeleteSeniorFAQRequest = {
   params: {
-    faq_id: string;
-  }
-  body: {
-    user_id: number;
-  }
+    senior_faq_id: string;
+  },
+  body: {}
 }
 
 
-export type DeleteFAQResponse = {
+export type DeleteSeniorFAQResponse = {
   statusCode: number;
   message: string;
 };
 
 
-export type UpdateFAQRequest = {
+export type UpdateSeniorFAQRequest = {
   params: {
-    faq_id: string;
+    senior_faq_id: string;
   }
   body: {
     user_id: number;
@@ -146,27 +164,37 @@ export type UpdateFAQRequest = {
     maincategory_en: string;
     subcategory_ko: string;
     subcategory_en: string;
-    question_ko: string;
-    question_en: string;
+    detailcategory_ko: string;
+    detailcategory_en: string;
     answer_ko: {
+      title: string;
       answer: string;
       url: string;
       email: string;
       phone: string;
+      image: string;
+      map: {
+        latitude: string;
+        longitude: string;
+      };
     }[];
     answer_en: {
+      title: string;
       answer: string;
       url: string;
       email: string;
       phone: string;
+      image: string;
+      map: {
+        latitude: string;
+        longitude: string;
+      };
     }[];
     manager: string;
   }
 }
 
-export type UpdateFAQResponse = {
+export type UpdateSeniorFAQResponse = {
   statusCode: number;
   message: string;
 }
-
-export default Faq;

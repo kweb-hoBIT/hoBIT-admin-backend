@@ -7,8 +7,10 @@ import { initializeDatabase } from '../config/createDB';
 import authRoutes from "./routes/api/auth/authIndex";
 import usersRoutes from "./routes/api/users/usersIndex";
 import faqsRoutes from "./routes/api/faqs/faqsIndex";
+import seniorfaqsRoutes from "./routes/api/seniorfaqs/seniorfaqsIndex";
 import faqlogsRoutes from "./routes/api/faqlogs/faqlogsIndex";
 import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
+import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
@@ -46,8 +48,10 @@ app.get("/", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/faqs", faqsRoutes);
+app.use("/api/seniorfaqs", seniorfaqsRoutes);
 app.use("/api/faqlogs", faqlogsRoutes);
 app.use("/api/questionlogs", questionlogsRoutes);
+app.use("/api/translate", translateRoutes);
 
 // 서버 포트 설정 및 시작
 app.set("port", process.env.PORT || 5000);

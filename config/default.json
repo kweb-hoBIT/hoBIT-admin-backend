@@ -6,5 +6,6 @@
   "dbName": "hobit",
   "jwtSecret": "jwtSecretToken",
   "jwtExpiration": 3600,
-  "jwtRefreshExpiration": 86400
+  "jwtRefreshExpiration": 86400,
+  "openaiApiKey": "your-api-key"
 }

@@ -1,7 +1,4 @@
-export type GetAllQuestionLogRequest = {
-  params: {};
-  query: {};
-}
+export type GetAllQuestionLogRequest = {}
 
 export type GetAllQuestionLogResponse = {
   statusCode: number;
@@ -22,7 +19,6 @@ export type GetAllQuestionLogResponse = {
 }
 
 export type FrequencyRequest = {
-  params: {};
   query: {
     startDate: string;
     endDate: string;
@@ -54,7 +50,6 @@ export type FrequencyResponse = {
 };
 
 export type FeedbackRequest = {
-  params: {};
   query: {
     startDate: string;
     endDate: string;
@@ -88,7 +83,6 @@ export type FeedbackResponse = {
 };
 
 export type LanguageRequest = {
-  params: {};
   query: {
     startDate: string;
     endDate: string;

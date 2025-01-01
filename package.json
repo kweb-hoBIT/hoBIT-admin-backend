@@ -25,6 +25,7 @@
     "lodash": "^4.17.21",
     "mysql2": "^3.11.4",
     "node-fetch": "^2.7.0",
+    "openai": "^4.77.0",
     "request": "^2.88.2",
     "sequelize": "^6.37.5",
     "sequelize-typescript": "^2.1.6",

@@ -42,18 +42,21 @@ router.post("/related", async (req, res) => {
 
     const responseContent = koreanCompletion.choices[0].message.content;
     const relatedQuestions = JSON.parse(responseContent);
-
-    res.json({
+    
+    const response = {
       success: true,
       originalQuestion: question,
       relatedQuestions,
-    });
+    }
+    console.log(response);
+    res.status(200).json(response);
   } catch (error) {
-    console.error("Error generating related questions:", error);
-    res.status(500).json({
+    const response = {
       success: false,
-      error: "Failed to generate related questions",
-    });
+      error: error.message,
+    }
+    console.error(response);
+    res.status(500).json(response);
   }
 });
 

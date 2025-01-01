@@ -55,10 +55,7 @@ export type CreateFAQLogResponse = {
 
 
 
-export type GetAllFAQLogRequest = {
-  params: {};
-  query: {};
-}
+export type GetAllFAQLogRequest = {}
 
 export type GetAllFAQLogResponse = {
   statusCode: number;
@@ -83,7 +80,6 @@ export type CompareFAQLogRequest = {
   params: {
     faq_log_id: string;
   }
-  query: {};
 }
 
 export type CompareFAQLogResponse = {

@@ -44,7 +44,7 @@ router.post("/related", async (req, res) => {
     const relatedQuestions = JSON.parse(responseContent);
     
     const response = {
-      success: true,
+      statusCode: 200,
       originalQuestion: question,
       relatedQuestions,
     }
@@ -52,7 +52,7 @@ router.post("/related", async (req, res) => {
     res.status(200).json(response);
   } catch (error) {
     const response = {
-      success: false,
+      statusCode: 500,
       error: error.message,
     }
     console.error(response);

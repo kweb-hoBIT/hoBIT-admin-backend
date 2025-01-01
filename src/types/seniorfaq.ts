@@ -41,10 +41,7 @@ export type CreateSeniorFAQResponse = {
 };
 
 
-export type GetAllSeniorFAQRequest = {
-  params: {};
-  query: {};
-}
+export type GetAllSeniorFAQRequest = {}
 
 export type GetAllSeniorFAQResponse = {
   statusCode: number;
@@ -93,7 +90,6 @@ export type GetSeniorFAQRequest = {
   params: {
     senior_faq_id: string;
   };
-  query: {};
 }
 
 export type GetSeniorFAQResponse = {
@@ -143,8 +139,7 @@ export type GetSeniorFAQResponse = {
 export type DeleteSeniorFAQRequest = {
   params: {
     senior_faq_id: string;
-  },
-  body: {}
+  }
 }
 
 

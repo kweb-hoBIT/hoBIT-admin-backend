@@ -29,9 +29,7 @@ export type SignupResponse = {
   message: string;
 };
 
-export type NewAccessTokenRequest = {
-  body: {}
-}
+export type NewAccessTokenRequest = {}
 
 export type NewAccessTokenResponse = {
   statusCode: number;

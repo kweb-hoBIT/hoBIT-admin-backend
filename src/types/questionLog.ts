@@ -18,7 +18,7 @@ export type GetAllQuestionLogResponse = {
   };
 }
 
-export type FrequencyRequest = {
+export type EntireFrequencyRequest = {
   query: {
     startDate: string;
     endDate: string;
@@ -28,7 +28,7 @@ export type FrequencyRequest = {
   };
 };
 
-export type FrequencyResponse = {
+export type EntireFrequencyResponse = {
   statusCode: number;
   message: string;          
   data: {
@@ -49,7 +49,7 @@ export type FrequencyResponse = {
   };
 };
 
-export type FeedbackRequest = {
+export type EntireFeedbackRequest = {
   query: {
     startDate: string;
     endDate: string;
@@ -59,7 +59,7 @@ export type FeedbackRequest = {
   };
 };
 
-export type FeedbackResponse = {
+export type EntireFeedbackResponse = {
   statusCode: number;
   message: string;          
   data: {
@@ -82,7 +82,7 @@ export type FeedbackResponse = {
   };
 };
 
-export type LanguageRequest = {
+export type EntireLanguageRequest = {
   query: {
     startDate: string;
     endDate: string;
@@ -92,7 +92,7 @@ export type LanguageRequest = {
   };
 };
 
-export type LanguageResponse = {
+export type EntireLanguageResponse = {
   statusCode: number;
   message: string;          
   data: {
@@ -106,6 +106,102 @@ export type LanguageResponse = {
           ko_frequency: number;
           en_frequency: number;
         }[];
+      }[];
+    }
+  };
+};
+
+export type SpecificFrequencyRequest = {
+  params: {
+    faq_id: string;
+  },
+  query: {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+};
+
+export type SpecificFrequencyResponse = {
+  statusCode: number;
+  message: string;          
+  data: {
+    logData: {
+      startDate: string;
+      endDate: string;
+      groupData: {
+          startDate: string;
+          endDate: string;
+          data: {
+              faq_id: number;
+              question_ko: string;
+              count: number;
+          };
+      }[];
+    };
+  };
+};
+
+export type SpecificFeedbackRequest = {
+  params: {
+    faq_id: string;
+  },
+  query: {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+};
+
+export type SpecificFeedbackResponse = {
+  statusCode: number;
+  message: string;          
+  data: {
+    logData: {
+      startDate: string;
+      endDate: string;
+      groupData: {
+          startDate: string;
+          endDate: string;
+          data: {
+              faq_id: number;
+              question_ko: string;
+              score_average: number;
+              score_like_count: number;
+              score_dislike_count: number;
+          };
+      }[];
+    };
+  };
+};
+
+export type SpecificLanguageRequest = {
+  params: {
+    faq_id: string;
+  },
+  query: {
+    startDate: string;
+    endDate: string;
+    period: string;
+  };
+};
+
+export type SpecificLanguageResponse = {
+  statusCode: number;
+  message: string;          
+  data: {
+    logData: {
+      startDate: string;
+      endDate: string;
+      groupData: {
+        startDate: string;
+        endDate: string;
+        data: {
+          faq_id: number;
+          question_ko: string;
+          ko_frequency: number;
+          en_frequency: number;
+        };
       }[];
     }
   };

@@ -2,7 +2,8 @@ export type LoginRequest = {
   body: {
     email: string;
     password: string;
-  }
+  },
+  credentials: RequestCredentials
 };
 
 export type LoginResponse = {

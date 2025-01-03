@@ -165,4 +165,21 @@ export type UpdateFAQResponse = {
   message: string;
 }
 
+export type RelatedFAQRequest = {
+  body: {
+    question : string 
+    count : number
+  }
+}
+
+export type RelatedFAQResponse = {
+  statusCode: number;
+  message: string;
+  originalQuestion: string;
+  relatedQuestions: {
+    ko: string[];
+    en: string[];
+  };
+};
+
 export default Faq;

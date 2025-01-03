@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { OpenAI } from "openai";
 import config from "config";
+import { RelatedFAQRequest, RelatedFAQResponse } from '../../../types/faq';
 
 const router = Router();
 
@@ -10,7 +11,7 @@ const openai = new OpenAI({
 
 router.post("/related", async (req, res) => {
   try {
-    const { question, count = 10 } = req.body;
+    const { question, count = 10 } : RelatedFAQRequest['body'] = req.body;
 
     const koreanCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -41,10 +42,11 @@ router.post("/related", async (req, res) => {
     });
 
     const responseContent = koreanCompletion.choices[0].message.content;
-    const relatedQuestions = JSON.parse(responseContent);
+    const relatedQuestions : RelatedFAQResponse['relatedQuestions']= JSON.parse(responseContent);
     
-    const response = {
+    const response : RelatedFAQResponse= {
       statusCode: 200,
+      message: "Related questions generated successfully",
       originalQuestion: question,
       relatedQuestions,
     }

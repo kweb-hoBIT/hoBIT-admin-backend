@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { LanguageRequest, LanguageResponse } from "../../../types/questionLog";
+import { EntireLanguageRequest, EntireLanguageResponse } from "../../../types/questionLog";
 import _ from "lodash";
 import moment from "moment";
 
@@ -12,7 +12,7 @@ const router = express.Router();
 // @access  Private
 router.get("/language", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period} = req.query as LanguageRequest['query'];
+  const { startDate, endDate, period} = req.query as EntireLanguageRequest['query'];
   console.log(req.query);
 
   try {
@@ -46,18 +46,18 @@ router.get("/language", async (req: Request, res: Response) => {
     );
 
     const groupbyDate = _.groupBy(languageFrequency, "startDate");
-    const logData : LanguageResponse['data']['logData'] = {
+    const logData : EntireLanguageResponse['data']['logData'] = {
       startDate: "",
       endDate: "",
       groupData: [],
     };
-    const groupData :  LanguageResponse['data']['logData']['groupData'] = [];
+    const groupData :  EntireLanguageResponse['data']['logData']['groupData'] = [];
     for (const date in groupbyDate) {
       const startDate = date;
       const endDate = groupbyDate[date][0].endDate;
       const ko_frequency = groupbyDate[date][0].frequency_ko;
       const en_frequency = groupbyDate[date][0].frequency_en;
-      const data : LanguageResponse['data']['logData']['groupData'][0]['data'] = [];
+      const data : EntireLanguageResponse['data']['logData']['groupData'][0]['data'] = [];
       data.push({
         ko_frequency: ko_frequency,
         en_frequency: en_frequency,

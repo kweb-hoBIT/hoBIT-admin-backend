@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { FeedbackRequest, FeedbackResponse } from "../../../types/questionLog";
+import { EntireFeedbackRequest, EntireFeedbackResponse } from "../../../types/questionLog";
 import _ from "lodash";
 import moment from "moment";
 
@@ -12,7 +12,7 @@ const router = express.Router();
 // @access  Private
 router.get("/feedback", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { startDate, endDate, period, sortOrder, limit } = req.query as FeedbackRequest['query'];
+  const { startDate, endDate, period, sortOrder, limit } = req.query as EntireFeedbackRequest['query'];
   console.log(req.query);
 
   try {
@@ -51,19 +51,19 @@ router.get("/feedback", async (req: Request, res: Response) => {
     );
 
     const groupbyDate = _.groupBy(feedbackData, "startDate");
-    const logData: FeedbackResponse['data']['logData'] = {
+    const logData: EntireFeedbackResponse['data']['logData'] = {
       startDate: "",
       endDate: "",
       groupData: [],
     };
 
-    const groupData : FeedbackResponse['data']['logData']['groupData'] = [];
+    const groupData : EntireFeedbackResponse['data']['logData']['groupData'] = [];
     for (const date in groupbyDate) {
       const startDate = date;
       const endDate = groupbyDate[date][0].endDate;
 
       let rank = 1;
-      const data : FeedbackResponse['data']['logData']['groupData'][0]['data'] = [];
+      const data : EntireFeedbackResponse['data']['logData']['groupData'][0]['data'] = [];
       for (const item of groupbyDate[date]) {
         data.push({
           rank: rank,
@@ -86,7 +86,7 @@ router.get("/feedback", async (req: Request, res: Response) => {
     logData.endDate = end_date;
     logData.groupData = groupData;
 
-    const response : FeedbackResponse = {
+    const response : EntireFeedbackResponse = {
       statusCode: 200,
       message: "Question logs feedback score retrieved successfully",
       data : {

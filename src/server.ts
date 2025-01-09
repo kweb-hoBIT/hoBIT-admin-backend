@@ -10,7 +10,9 @@ import faqsRoutes from "./routes/api/faqs/faqsIndex";
 import seniorfaqsRoutes from "./routes/api/seniorfaqs/seniorfaqsIndex";
 import faqlogsRoutes from "./routes/api/faqlogs/faqlogsIndex";
 import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
+import feedbacksRoutes from "./routes/api/feedbacks/feedbacksIndex";
 import translateRoutes from "./routes/api/translate/translateIndex";
+
 
 const app = express();
 
@@ -51,6 +53,7 @@ app.use("/api/faqs", faqsRoutes);
 app.use("/api/seniorfaqs", seniorfaqsRoutes);
 app.use("/api/faqlogs", faqlogsRoutes);
 app.use("/api/questionlogs", questionlogsRoutes);
+app.use("/api/feedbacks", feedbacksRoutes);
 app.use("/api/translate", translateRoutes);
 
 // 서버 포트 설정 및 시작

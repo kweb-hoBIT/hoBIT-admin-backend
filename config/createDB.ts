@@ -161,6 +161,24 @@ const createRelatedFaqTable = async () => {
   await connection.end();
 };
 
+const createUserFeedbacksTable = async () => {
+  const connection = await createConnection();
+  const query = `
+    CREATE TABLE IF NOT EXISTS user_feedbacks (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      feedback_reason VARCHAR(255) NULL,
+      feedback_detail TEXT NOT NULL,
+      language VARCHAR(45) NOT NULL,
+      resolved INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+  await connection.query(query);
+  console.log('UserFeedbacks table created or already exists.');
+  await connection.end();
+};
+
+
 // 테이블 생성 실행
 const createTables = async () => {
   await createUserTable();
@@ -169,6 +187,7 @@ const createTables = async () => {
   await createQuestionLogTable();
   await createFaqLogTable();
   await createRelatedFaqTable();
+  await createUserFeedbacksTable();
 };
 
 // 데이터베이스 및 테이블 생성

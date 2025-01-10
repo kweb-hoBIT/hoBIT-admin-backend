@@ -11,9 +11,6 @@ export type CreateSeniorFAQRequest = {
       title: string;
       answer: string;
       url: string;
-      email: string;
-      phone: string;
-      image: string;
       map: {
         latitude: string;
         longitude: string;
@@ -23,9 +20,6 @@ export type CreateSeniorFAQRequest = {
       title: string;
       answer: string;
       url: string;
-      email: string;
-      phone: string;
-      image: string;
       map: {
         latitude: string;
         longitude: string;
@@ -59,9 +53,6 @@ export type GetAllSeniorFAQResponse = {
         title: string;
         answer: string;
         url: string;
-        email: string;
-        phone: string;
-        image: string;
         map: {
           latitude: string;
           longitude: string;
@@ -71,9 +62,6 @@ export type GetAllSeniorFAQResponse = {
         title: string;
         answer: string;
         url: string;
-        email: string;
-        phone: string;
-        image: string;
         map: {
           latitude: string;
           longitude: string;
@@ -108,9 +96,6 @@ export type GetSeniorFAQResponse = {
         title: string;
         answer: string;
         url: string;
-        email: string;
-        phone: string;
-        image: string;
         map: {
           latitude: string;
           longitude: string;
@@ -120,9 +105,6 @@ export type GetSeniorFAQResponse = {
         title: string;
         answer: string;
         url: string;
-        email: string;
-        phone: string;
-        image: string;
         map: {
           latitude: string;
           longitude: string;
@@ -165,9 +147,6 @@ export type UpdateSeniorFAQRequest = {
       title: string;
       answer: string;
       url: string;
-      email: string;
-      phone: string;
-      image: string;
       map: {
         latitude: string;
         longitude: string;
@@ -177,9 +156,6 @@ export type UpdateSeniorFAQRequest = {
       title: string;
       answer: string;
       url: string;
-      email: string;
-      phone: string;
-      image: string;
       map: {
         latitude: string;
         longitude: string;

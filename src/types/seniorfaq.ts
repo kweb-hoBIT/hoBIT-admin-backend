@@ -193,3 +193,16 @@ export type UpdateSeniorFAQResponse = {
   statusCode: number;
   message: string;
 }
+
+
+export type UploadSeniorFAQImageRequest = {
+  body: FormData;
+}
+
+export type UploadSeniorFAQImageResponse = {
+  statusCode: number;
+  message: string;
+  data: {
+    image_url: string;
+  }
+};

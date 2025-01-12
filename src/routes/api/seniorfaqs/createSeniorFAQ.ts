@@ -27,7 +27,7 @@ router.post("/", async (req: Request, res: Response) => {
   try {
     await connection.execute<ResultSetHeader>(
       `INSERT INTO senior_faqs (
-        maincategory_ko, maincategory_en, subcategory_ko, detailcategory_ko, detailcategory_en, subcategory_en, answer_ko, answer_en, manager, created_by, updated_by) 
+        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager, created_by, updated_by) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         maincategory_ko,

@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { OpenAI } from "openai";
+import { Pool } from "../../../../config/connectDB";
+import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import config from "config";
 import { RelatedFAQRequest, RelatedFAQResponse } from '../../../types/faq';
 
@@ -10,8 +12,9 @@ const openai = new OpenAI({
 });
 
 router.post("/related", async (req, res) => {
+  const connection: PoolConnection = await Pool.getConnection();
   try {
-    const { question, count = 10 } : RelatedFAQRequest['body'] = req.body;
+    const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
 
     const koreanCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -40,6 +43,11 @@ router.post("/related", async (req, res) => {
       ],
       temperature: 0.6,
     });
+
+    const [row] = await connection.execute<RowDataPacket[]>(
+      `SELECT COUNT(*) as count FROM hobit.related_faqs WHERE faq_id = ?`,
+      [faq_id]
+    )
 
     const responseContent = koreanCompletion.choices[0].message.content;
     const relatedQuestions : RelatedFAQResponse['relatedQuestions']= JSON.parse(responseContent);

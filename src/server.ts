@@ -2,6 +2,7 @@ import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import config from 'config';
 import { initializeDatabase } from '../config/createDB';
 
 import authRoutes from "./routes/api/auth/authIndex";
@@ -18,7 +19,7 @@ const app = express();
 
 // CORS 설정
 const corsOptions = {
-  origin: process.env.CLIENT_URL || "http://localhost:3000", // 클라이언트 도메인으로 설정
+  origin: process.env.CLIENT_URL || config.get<string>("port"),
   credentials: true, // 쿠키를 포함한 요청을 허용
 };
 
@@ -40,6 +41,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
     console.error("Error initializing database", err);
   }
 })();
+
 
 // 기본 라우트
 app.get("/", (_req, res) => {

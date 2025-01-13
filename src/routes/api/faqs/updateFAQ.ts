@@ -51,27 +51,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
        WHERE id = ?`,
       [Number(faq_id)]
     );
-
-    const gptbody = {
-      faq_id: Number(faq_id),
-      question: question_ko,
-    }
-
-    const GPTResponse = await fetch('http://localhost:5001/api/faqs/related', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(gptbody)
-    });
-
-    if (!GPTResponse.ok) {
-      const errorData = await GPTResponse.json();
-      return res.status(GPTResponse.status).json({ 
-        statusCode: GPTResponse.status, 
-        message: errorData.message 
-      });
-    }
+    
 
     const prev_faq : FAQ = {
       maincategory_ko: faq.maincategory_ko,
@@ -95,6 +75,29 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       answer_ko: answer_ko,
       answer_en: answer_en,
       manager: manager
+    }
+
+    if(prev_faq.answer_ko !== new_faq.answer_ko) {
+      const gptbody = {
+        faq_id: Number(faq_id),
+        question: question_ko,
+      }
+  
+      const GPTResponse = await fetch('http://localhost:5001/api/faqs/related', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(gptbody)
+      });
+  
+      if (!GPTResponse.ok) {
+        const errorData = await GPTResponse.json();
+        return res.status(GPTResponse.status).json({ 
+          statusCode: GPTResponse.status, 
+          message: errorData.message 
+        });
+      }
     }
 
     const data = {

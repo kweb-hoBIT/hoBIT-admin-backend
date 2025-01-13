@@ -43,6 +43,7 @@ export type DeleteAccountReqeust = {
     user_id: string
   }
   body: {
+    deleteKey: string
   }
 }
 

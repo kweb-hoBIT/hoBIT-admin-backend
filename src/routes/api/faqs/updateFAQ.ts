@@ -44,6 +44,28 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
        WHERE id = ?`,
       [Number(faq_id)]
     );
+
+    const gptbody = {
+      faq_id: Number(faq_id),
+      question: question_ko,
+    }
+
+    const GPTResponse = await fetch('http://localhost:5001/api/faqs/related', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(gptbody)
+    });
+
+    if (!GPTResponse.ok) {
+      const errorData = await GPTResponse.json();
+      return res.status(GPTResponse.status).json({ 
+        statusCode: GPTResponse.status, 
+        message: errorData.message 
+      });
+    }
+
     const prev_faq : FAQ = {
       maincategory_ko: faq.maincategory_ko,
       maincategory_en: faq.maincategory_en,
@@ -96,11 +118,11 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
         subcategory_en,
         question_ko,
         question_en,
-        answer_ko,
-        answer_en,
+        JSON.stringify(answer_ko),
+        JSON.stringify(answer_en),
         manager,
         user_id,
-        faq_id
+        Number(faq_id)
       ]
     );
 
@@ -121,6 +143,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       statusCode: 200,
       message: "FAQ updated successfully"
     }
+    console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     const response = {

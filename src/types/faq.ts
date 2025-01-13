@@ -176,11 +176,6 @@ export type RelatedFAQRequest = {
 export type RelatedFAQResponse = {
   statusCode: number;
   message: string;
-  originalQuestion: string;
-  relatedQuestions: {
-    ko: string[];
-    en: string[];
-  };
 };
 
 export default Faq;

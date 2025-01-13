@@ -19,7 +19,7 @@ const app = express();
 
 // CORS 설정
 const corsOptions = {
-  origin: process.env.CLIENT_URL || config.get<string>("port"),
+  origin: process.env.CLIENT_URL || "http://localhost:3000", // 클라이언트 도메인으로 설정
   credentials: true, // 쿠키를 포함한 요청을 허용
 };
 
@@ -59,7 +59,7 @@ app.use("/api/feedbacks", feedbacksRoutes);
 app.use("/api/translate", translateRoutes);
 
 // 서버 포트 설정 및 시작
-app.set("port", process.env.PORT || 5000);
+app.set("port", process.env.PORT || config.get<string>("port"));
 const port = app.get("port");
 const server = app.listen(port, () =>
   console.log(`Server started on port ${port}`)

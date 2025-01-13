@@ -57,7 +57,7 @@ app.use("/api/feedbacks", feedbacksRoutes);
 app.use("/api/translate", translateRoutes);
 
 // 서버 포트 설정 및 시작
-app.set("port", process.env.PORT || 5000);
+app.set("port", process.env.PORT || 5001);
 const port = app.get("port");
 const server = app.listen(port, () =>
   console.log(`Server started on port ${port}`)

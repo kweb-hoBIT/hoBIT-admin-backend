@@ -11,19 +11,20 @@ const router = express.Router();
 router.post("/", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {
-    user_id,
+    username,
     faq_id,
     prev_faq,
     new_faq,
     action_type
   } : CreateFAQLogRequest['body'] = req.body;
   try { 
+    console.log(username)
     await connection.execute(
       `INSERT INTO faq_logs (
-        user_id, faq_id, action_type, prev_faq, new_faq) 
+        username, faq_id, action_type, prev_faq, new_faq) 
         VALUES (?, ?, ?, ?, ?)`,
       [
-        user_id,
+        username,
         faq_id,
         action_type,
         JSON.stringify(prev_faq),

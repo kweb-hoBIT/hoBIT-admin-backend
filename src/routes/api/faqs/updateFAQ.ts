@@ -38,6 +38,13 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
   console.log(faq_id, req.body);
 
   try {
+    const [userName] = await connection.execute<RowDataPacket[]>(
+      `SELECT username FROM hobit.users WHERE id = ?`,
+      [user_id]
+    )
+
+    const username = userName[0].username as string;
+
     const [[faq]] = await connection.execute<RowDataPacket[]>(
       `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
        FROM hobit.faqs 
@@ -91,7 +98,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
     }
 
     const data = {
-      user_id: user_id,
+      username: username,
       faq_id: faq_id,
       prev_faq: prev_faq,
       new_faq: new_faq,

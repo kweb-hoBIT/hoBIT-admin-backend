@@ -3,6 +3,9 @@ import bcrypt from "bcryptjs";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket,  ResultSetHeader } from "mysql2/promise";
 import { SignupRequest, SignupResponse } from "../../../types/user";
+import config from 'config';
+
+const managerKey = config.get<string>("managerKey");
 
 const router = express.Router();
 
@@ -16,7 +19,7 @@ interface User {
   updated_at: string;
 }
 
-const VALID_INVITATION_KEYS = ["YOUR_SECRET_KEY_1", "YOUR_SECRET_KEY_2"];
+
 
 // @route   POST api/user
 // @desc    Register user given their email and password, returns the token upon successful registration
@@ -24,7 +27,7 @@ const VALID_INVITATION_KEYS = ["YOUR_SECRET_KEY_1", "YOUR_SECRET_KEY_2"];
 router.post("/", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { email, password, username, phone_num, invitationKey } : SignupRequest['body'] = req.body;
-  if (!VALID_INVITATION_KEYS.includes(invitationKey)) {
+  if (!managerKey.includes(invitationKey)) {
     const response = {
       statusCode: 403,
       message: "Invalid invitation key. Access denied."

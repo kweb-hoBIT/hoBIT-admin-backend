@@ -7,5 +7,5 @@
   "jwtSecret": "jwtSecretToken",
   "jwtExpiration": 3600,
   "jwtRefreshExpiration": 86400,
-  "openaiApiKey": "your-api-key"
+  "openaiApiKey": "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"
 }

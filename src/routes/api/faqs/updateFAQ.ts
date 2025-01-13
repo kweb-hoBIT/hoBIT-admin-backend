@@ -105,7 +105,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
     );
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch('http://localhost:5000/api/faqlogs', {
+    const logResponse = await fetch('http://localhost:5001/api/faqlogs', {
       method: 'POST',
       headers: {
        'Content-Type': 'application/json',

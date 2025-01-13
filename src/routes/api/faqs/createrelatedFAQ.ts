@@ -15,7 +15,6 @@ router.post("/related", async (req, res) => {
   const connection: PoolConnection = await Pool.getConnection();
   try {
     const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
-
     const koreanCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -44,19 +43,31 @@ router.post("/related", async (req, res) => {
       temperature: 0.6,
     });
 
+    const responseContent = koreanCompletion.choices[0].message.content;
+    const relatedQuestions = JSON.parse(responseContent);
+    console.log(relatedQuestions);
     const [row] = await connection.execute<RowDataPacket[]>(
       `SELECT COUNT(*) as count FROM hobit.related_faqs WHERE faq_id = ?`,
       [faq_id]
-    )
+    );
 
-    const responseContent = koreanCompletion.choices[0].message.content;
-    const relatedQuestions : RelatedFAQResponse['relatedQuestions']= JSON.parse(responseContent);
+    const countRelated = row[0].count as number;
+
+    if(countRelated > 0) {
+      await connection.execute<RowDataPacket[]>(
+        `Update hobit.related_faqs SET related_faqs = ? WHERE faq_id = ?`,
+        [relatedQuestions, faq_id]
+      );
+    } else{
+      await connection.execute<RowDataPacket[]>(
+        `INSERT INTO hobit.related_faqs (faq_id, related_faqs) VALUES (?, ?)`,
+        [faq_id, relatedQuestions]
+      );
+    }
     
     const response : RelatedFAQResponse= {
       statusCode: 200,
       message: "Related questions generated successfully",
-      originalQuestion: question,
-      relatedQuestions,
     }
     console.log(response);
     res.status(200).json(response);

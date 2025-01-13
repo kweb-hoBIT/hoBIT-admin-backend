@@ -3,8 +3,6 @@ import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, ResultSetHeader } from "mysql2/promise";
 import fetch from "node-fetch";
 import { CreateFAQRequest, CreateFAQResponse } from '../../../types/faq';
-import config from 'config';
-
 
 const router = express.Router();
 
@@ -80,7 +78,7 @@ router.post("/", async (req: Request, res: Response) => {
     };
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch(`http://localhost:${config.get<string>("port")}/api/faqlogs`, {
+    const logResponse = await fetch('http://localhost:5000/api/faqlogs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

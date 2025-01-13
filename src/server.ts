@@ -2,7 +2,6 @@ import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import config from 'config';
 import { initializeDatabase } from '../config/createDB';
 
 import authRoutes from "./routes/api/auth/authIndex";
@@ -42,7 +41,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
   }
 })();
 
-
 // 기본 라우트
 app.get("/", (_req, res) => {
   res.send("API Running");
@@ -59,7 +57,7 @@ app.use("/api/feedbacks", feedbacksRoutes);
 app.use("/api/translate", translateRoutes);
 
 // 서버 포트 설정 및 시작
-app.set("port", process.env.PORT || config.get<string>("port"));
+app.set("port", process.env.PORT || 5000);
 const port = app.get("port");
 const server = app.listen(port, () =>
   console.log(`Server started on port ${port}`)

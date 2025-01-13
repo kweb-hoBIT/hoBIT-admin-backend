@@ -16,9 +16,11 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
-// CORS 설정
 const corsOptions = {
-  origin: process.env.CLIENT_URL || "http://localhost:3000", // 클라이언트 도메인으로 설정
+  origin: [
+    process.env.CLIENT_URL || "http://localhost:3001", 
+    "http://localhost:3000"
+  ],
   credentials: true, // 쿠키를 포함한 요청을 허용
 };
 

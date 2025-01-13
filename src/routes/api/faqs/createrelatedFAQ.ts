@@ -56,12 +56,12 @@ router.post("/related", async (req, res) => {
     if(countRelated > 0) {
       await connection.execute<RowDataPacket[]>(
         `Update hobit.related_faqs SET related_faqs = ? WHERE faq_id = ?`,
-        [relatedQuestions, faq_id]
+        [JSON.stringify(relatedQuestions), faq_id]
       );
     } else{
       await connection.execute<RowDataPacket[]>(
         `INSERT INTO hobit.related_faqs (faq_id, related_faqs) VALUES (?, ?)`,
-        [faq_id, relatedQuestions]
+        [faq_id, JSON.stringify(relatedQuestions)]
       );
     }
     

@@ -46,6 +46,28 @@ router.post("/", async (req: Request, res: Response) => {
     );
 
     const faq_id = faq.insertId;
+
+    const gptbody = {
+      faq_id: faq_id,
+      question: question_ko,
+    }
+
+    const GPTResponse = await fetch('http://localhost:5001/api/faqs/related', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(gptbody)
+    });
+
+    if (!GPTResponse.ok) {
+      const errorData = await GPTResponse.json();
+      return res.status(GPTResponse.status).json({ 
+        statusCode: GPTResponse.status, 
+        message: errorData.message 
+      });
+    }
+
     const prev_faq = {
       maincategory_ko: "",
       maincategory_en: "",

@@ -1,6 +1,6 @@
 export type CreateFAQLogRequest = {
   body: {
-    user_id: number;
+    username: string;
     faq_id: number;
     prev_faq: {
       maincategory_ko: string;
@@ -63,7 +63,6 @@ export type GetAllFAQLogResponse = {
   data: {
     faqLogs: {
       faq_log_id: number;
-      user_id: number;
       username: string;
       faq_id: number;
       faq_maincategory: string;

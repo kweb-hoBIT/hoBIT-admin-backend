@@ -7,6 +7,5 @@
   "jwtSecret": "jwtSecretToken",
   "jwtExpiration": 3600,
   "jwtRefreshExpiration": 86400,
-  "port": 5000,
   "openaiApiKey": "your-api-key"
 }

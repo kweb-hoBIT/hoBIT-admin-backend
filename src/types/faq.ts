@@ -167,6 +167,7 @@ export type UpdateFAQResponse = {
 
 export type RelatedFAQRequest = {
   body: {
+    faq_id: number;
     question : string 
     count : number
   }

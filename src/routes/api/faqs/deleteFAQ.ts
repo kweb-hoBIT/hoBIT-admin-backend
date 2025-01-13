@@ -2,7 +2,6 @@ import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { DeleteFAQRequest, DeleteFAQResponse } from '../../../types/faq';
-import config from 'config';
 
 const router = express.Router();
 
@@ -69,7 +68,7 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: DeleteFAQRequest['params
     }
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch(`http://localhost:${config.get<string>("port")}/api/faqlogs`, {
+    const logResponse = await fetch('http://localhost:5000/api/faqlogs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

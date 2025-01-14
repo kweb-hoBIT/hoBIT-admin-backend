@@ -50,7 +50,6 @@ router.get("/category", async (req: Request, res: Response) => {
     console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
-    console.error(err.message);
     const response = {
       statusCode: 500,
       message: err.message,

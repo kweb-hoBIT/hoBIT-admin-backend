@@ -46,8 +46,8 @@ router.put("/:senior_faq_id", async (req: Request<{ senior_faq_id: UpdateSeniorF
         subcategory_en,
         detailcategory_ko,
         detailcategory_en,
-        answer_ko,
-        answer_en,
+        JSON.stringify(answer_ko),
+        JSON.stringify(answer_en),
         manager,
         user_id,
         senior_faq_id

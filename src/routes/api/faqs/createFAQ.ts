@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
-import { PoolConnection, ResultSetHeader } from "mysql2/promise";
+import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import fetch from "node-fetch";
 import { CreateFAQRequest, CreateFAQResponse } from '../../../types/faq';
 
@@ -26,6 +26,13 @@ router.post("/", async (req: Request, res: Response) => {
   console.log(req.body);
 
   try {
+    const [userName] = await connection.execute<RowDataPacket[]>(
+      `SELECT username FROM hobit.users WHERE id = ?`,
+      [user_id]
+    )
+
+    const username = userName[0].username as string;
+
     const [faq] = await connection.execute<ResultSetHeader>(
       `INSERT INTO faqs (
         maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_by, updated_by) 
@@ -92,7 +99,7 @@ router.post("/", async (req: Request, res: Response) => {
     };
 
     const data = {
-      user_id: user_id,
+      username: username,
       faq_id: faq_id,
       prev_faq: prev_faq,
       new_faq: new_faq,

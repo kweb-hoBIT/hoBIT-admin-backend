@@ -15,8 +15,7 @@ router.get('/', async (req: Request, res: Response) => {
     const row = await connection.execute<RowDataPacket[]>(
       `SELECT 
         faq_logs.id AS faq_log_id,
-        faq_logs.user_id,
-        users.username,
+        faq_logs.username,
         faq_logs.faq_id,
         faqs.maincategory_ko AS faq_maincategory,
         faqs.subcategory_ko AS faq_subcategory,
@@ -24,7 +23,6 @@ router.get('/', async (req: Request, res: Response) => {
         faq_logs.action_type,
         faq_logs.created_at
       FROM hobit.faq_logs
-      LEFT JOIN hobit.users ON faq_logs.user_id = users.id
       LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id
       ORDER BY faq_logs.created_at DESC`
     );

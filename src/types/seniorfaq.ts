@@ -169,3 +169,21 @@ export type UpdateSeniorFAQResponse = {
   statusCode: number;
   message: string;
 }
+
+
+export type GetAllSeniorFAQCategoryRequest = {}
+
+export type GetAllSeniorFAQCategoryResponse = {
+  statusCode: number;
+  message: string;
+  data : {
+    categories : {
+      maincategory_ko: string[];
+      maincategory_en: string[];
+      subcategory_ko: string[];
+      subcategory_en: string[];
+      detailcategory_ko: string[];
+      detailcategory_en: string[];
+    };
+  }
+}

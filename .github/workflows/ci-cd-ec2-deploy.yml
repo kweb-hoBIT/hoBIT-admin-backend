@@ -1,4 +1,4 @@
-name: CI/CD Workflow for hobit-server (EC2 Deployment)
+name: CI/CD Workflow for hobit-admin-server (EC2 Deployment)
 
 on:
   push:

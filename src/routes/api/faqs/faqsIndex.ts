@@ -5,7 +5,7 @@ import getAllFAQsRotues from './getAllFAQs';
 import getFAQRoutes from './getFAQ';
 import deleteFAQRoutes from './deleteFAQ';
 import updateFAQRoutes from './updateFAQ';
-import createRelatedFAQRoutes from './createRelatedFAQ';
+import createRelatedFAQRoutes from './hi';
 
 
 const router = express.Router();

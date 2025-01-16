@@ -18,13 +18,13 @@ const app = express();
 
 const corsOptions = {
   origin: [
-    process.env.CLIENT_URL || "http://localhost:3001", 
-    "http://localhost:3000"
+    process.env.CLIENT_URL || "http://localhost:3001", "http://localhost:3000"
   ],
-  credentials: true, // 쿠키를 포함한 요청을 허용
+  credentials: true,
 };
 
-app.use(cors(corsOptions)); // CORS 미들웨어
+ // CORS 미들웨어
+app.use(cors(corsOptions));
 
 // 쿠키 파서 미들웨어
 app.use(cookieParser());

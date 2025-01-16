@@ -12,8 +12,8 @@ interface FAQ {
   subcategory_en: string;
   question_ko: string;
   question_en: string;
-  answer_ko: { answer: string; url: string; email: string; phone: string; }[];  // 객체 배열로 변경
-  answer_en: { answer: string; url: string; email: string; phone: string; }[];  // 객체 배열로 변경
+  answer_ko: { answer: string; url: string; email: string; phone: string; }[];
+  answer_en: { answer: string; url: string; email: string; phone: string; }[];
   manager: string;
 }
 

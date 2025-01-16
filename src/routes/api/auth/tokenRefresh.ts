@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import Payload from "../../../types/Payload";
 import Request from "../../../types/Request";
 import { NewAccessTokenResponse } from "../../../types/user";
+import env from "../../../env";
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
   }
   try {
     // Verify the refresh token
-    const decoded: any = jwt.verify(refreshToken, config.get("jwtSecret"));
+    const decoded: any = jwt.verify(refreshToken, env.JWT_SECRET);
 
     // Extract user_id from the decoded payload
     const { user_id } = decoded;
@@ -30,8 +31,8 @@ router.post("/refresh", async (req: Request, res: Response) => {
     const payload: Payload = { user_id };
 
     // 새로운 access token 생성
-    const accessToken = jwt.sign(payload, config.get("jwtSecret"), {
-      expiresIn: config.get("jwtExpiration"),
+    const accessToken = jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn: env.JWT_EXPIRATION,
     });
 
     // Access Token을 쿠키로 설정 (클라이언트에서 읽을 수 있도록)
@@ -39,7 +40,7 @@ router.post("/refresh", async (req: Request, res: Response) => {
       httpOnly: false,
       secure: true,
       sameSite: "strict",
-      maxAge: Number(config.get("jwtExpiration")) * 1000,
+      maxAge: Number(env.JWT_EXPIRATION) * 1000,
     });
 
     // 성공 응답

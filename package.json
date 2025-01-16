@@ -9,8 +9,7 @@
     "watch-tsc": "tsc -w",
     "deploy": "node dist/src/server.js",
     "watch-deploy": "nodemon dist/src/server.js",
-    "start": "concurrently \"npm run watch-tsc\" \"npm run watch-deploy\"",
-    "heroku-postbuild": "npm run tsc"
+    "start": "concurrently \"npm run watch-tsc\" \"npm run watch-deploy\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.726.0",

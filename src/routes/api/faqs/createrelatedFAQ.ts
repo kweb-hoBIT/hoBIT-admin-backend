@@ -1,17 +1,17 @@
-import { Router } from "express";
+import express, { Request, Response } from "express";
 import { OpenAI } from "openai";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import config from "config";
 import { RelatedFAQRequest, RelatedFAQResponse } from '../../../types/faq';
 
-const router = Router();
+const router = express.Router();
 
 const openai = new OpenAI({
   apiKey: config.get<string>("openaiApiKey"),
 });
 
-router.post("/related", async (req, res) => {
+router.post("/related", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   try {
     const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;

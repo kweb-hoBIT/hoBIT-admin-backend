@@ -4,8 +4,7 @@ import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket,  ResultSetHeader } from "mysql2/promise";
 import { SignupRequest, SignupResponse } from "../../../types/user";
 import config from 'config';
-
-const managerKey = config.get<string>("managerKey");
+import env from '../../../env';
 
 const router = express.Router();
 
@@ -27,7 +26,7 @@ interface User {
 router.post("/", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { email, password, username, phone_num, invitationKey } : SignupRequest['body'] = req.body;
-  if (!managerKey.includes(invitationKey)) {
+  if (!env.MANAGER_KEY.includes(invitationKey)) {
     const response = {
       statusCode: 403,
       message: "Invalid invitation key. Access denied."

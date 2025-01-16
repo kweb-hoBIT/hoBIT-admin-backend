@@ -3,8 +3,7 @@ import { Pool } from "../../../../config/connectDB";
 import { PoolConnection,  ResultSetHeader } from "mysql2/promise";
 import { DeleteAccountReqeust, DeleteAccountResponse } from "../../../types/user";
 import config from 'config';
-
-const managerKey = config.get<string>("managerKey");
+import env from '../../../env';
 
 const router = express.Router();
 
@@ -17,7 +16,7 @@ router.delete("/:user_id", async (req: Request<DeleteAccountReqeust['params']>, 
   const { deleteKey } : DeleteAccountReqeust['body'] = req.body;
   console.log(user_id)
 
-  if (!managerKey.includes(deleteKey)) {
+  if (!env.MANAGER_KEY.includes(deleteKey)) {
     const response = {
       statusCode: 403,
       message: "Invalid invitation key. Access denied."

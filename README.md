@@ -1,39 +1,35 @@
-# Prerequisites
+# hoBIT-admin-backend
 
-To build and run this app locally you will need a few things:
+## System Requirements
 
-- Install [Node.js](https://nodejs.org/en/)
-- Install [VS Code](https://code.visualstudio.com/)
-- Install [Mysql](https://downloads.mysql.com/archives/installer/)
-- You will need a **Mysql server** which could either be hosted locally or online.
+- MySQL database
 
-# Getting started
+## Installation
 
-- Clone the repository
+Clone the repository:
 
-```
-git clone --depth=1 https://github.com/kweb-hoBIT/hoBIT-admin-backend.git <project_name>
+```bash
+git clone https://github.com/kweb-hoBIT/hoBIT-admin-backend.git
 ```
 
-- Install dependencies
+Install dependencies:
 
-```
-cd <project_name>
+```bash
 npm install
 npm run tsc
 ```
 
-- Build and run the project with auto reload (nodemon)
+Copy the `.env.example` file and rename it to `.env`, then update its contents with your configuration:
 
-```
-npm run server
-```
-
-- Build and run the project
-
-```
-npm run start
+```bash
+cp .env.example .env
 ```
 
-Finally, navigate to `http://localhost:5000/` and you should see the API running!
-"# hoBIT-admin-backend" 
+Edit the `.env` file to include the correct settings for your environment (e.g., database credentials).
+
+
+Start Application:
+
+```bash
+npm start
+```

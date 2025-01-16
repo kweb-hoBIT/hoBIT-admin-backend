@@ -1,12 +1,3 @@
 {
-  "timezone": "+09:00",
-  "dbHost": "127.0.0.1",
-  "dbUser": "root",
-  "dbPassword": "1234",
-  "dbName": "hobit",
-  "jwtSecret": "jwtSecretToken",
-  "jwtExpiration": 3600,
-  "jwtRefreshExpiration": 86400,
-  "openaiApiKey": "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",
-  "managerKey": "YOUR_SECRET_KEY_1"
+
 }

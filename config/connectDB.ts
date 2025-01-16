@@ -1,11 +1,11 @@
 import mysql from 'mysql2/promise';
-import config from 'config';
+import env from '../src/env';
 
-const dbHost = config.get<string>('dbHost');
-const dbUser = config.get<string>('dbUser');
-const dbPassword = config.get<string>('dbPassword');
-const dbName = config.get<string>('dbName');
-const timezone = config.get<string>('timezone');
+const dbHost = env.DB_HOST;
+const dbUser = env.DB_USER;
+const dbPassword = env.DB_PASSWORD;
+const dbName = env.DB_NAME;
+const timezone = env.TIMEZONE;
 
 // MySQL connection pool
 const Pool = mysql.createPool({

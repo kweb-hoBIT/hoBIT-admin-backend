@@ -1,4 +1,4 @@
-import config from "config";
+import env from "../env";
 import { Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
@@ -7,7 +7,7 @@ import Request from "../types/Request";
 
 export default function(req: Request, res: Response, next: NextFunction) {
   // Get token from header
-  const token = req.header("Authorization")?.replace("Bearer ", ""); // token Authorization header에서 가져오기 (Bearer 제거)
+  const token = req.header("Authorization")?.replace("Bearer ", "");
 
   // Check if no token
   if (!token) {
@@ -17,7 +17,7 @@ export default function(req: Request, res: Response, next: NextFunction) {
   }
   // Verify token
   try {
-    const payload: Payload | any = jwt.verify(token, config.get("jwtSecret"));
+    const payload: Payload | any = jwt.verify(token, env.JWT_SECRET);
     req.user_id = payload.user_id;
     next();
   } catch (err) {

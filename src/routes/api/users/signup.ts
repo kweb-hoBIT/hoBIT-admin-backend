@@ -4,7 +4,7 @@ import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket,  ResultSetHeader } from "mysql2/promise";
 import { SignupRequest, SignupResponse } from "../../../types/user";
 import config from 'config';
-import env from '../../../env';
+import env from '../../../../config/env';
 
 const router = express.Router();
 

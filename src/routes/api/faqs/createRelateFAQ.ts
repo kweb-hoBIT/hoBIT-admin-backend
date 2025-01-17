@@ -3,7 +3,7 @@ import { OpenAI } from "openai";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { RelatedFAQRequest, RelatedFAQResponse } from '../../../types/faq';
-import env from '../../../env';
+import env from '../../../../config/env';
 
 const router = express.Router();
 

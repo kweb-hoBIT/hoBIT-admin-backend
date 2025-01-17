@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
-import fetch from "node-fetch";
+import env from "../../../../config/env";
 import { CreateFAQRequest, CreateFAQResponse } from '../../../types/faq';
 
 const router = express.Router();
@@ -59,7 +59,7 @@ router.post("/", async (req: Request, res: Response) => {
       question: question_ko,
     }
 
-    const GPTResponse = await fetch('http://localhost:5001/api/faqs/related', {
+    const GPTResponse = await fetch(`${env.API_URL}/faqs/related`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -107,7 +107,7 @@ router.post("/", async (req: Request, res: Response) => {
     };
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch('http://localhost:5001/api/faqlogs', {
+    const logResponse = await fetch(`${env.API_URL}/faqlogs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

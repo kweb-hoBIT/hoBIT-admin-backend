@@ -7,7 +7,7 @@ import Request from "../../../types/Request";
 import { Pool } from "../../../../config/connectDB";
 import { RowDataPacket } from "mysql2/promise";
 import { LoginRequest, LoginResponse } from "../../../types/user";
-import env from "../../../env";
+import env from "../../../../config/env";
 
 const router = express.Router();
 
@@ -29,6 +29,7 @@ router.post("/", async (req: Request, res: Response) => {
   const { email, password }: LoginRequest["body"] = req.body;
 
   try {
+    console.log(env.JWT_EXPIRATION, env.JWT_REFRESH_EXPIRATION);
     const [rows] = await connection.execute<RowDataPacket[]>(`SELECT * FROM hobit.users WHERE email = ?`, [email]);
     const user = rows[0] as User;
 
@@ -64,14 +65,14 @@ router.post("/", async (req: Request, res: Response) => {
       httpOnly: false, // 클라이언트에서 접근 가능하도록 설정 (JavaScript로 읽기 가능)
       secure: true, // HTTPS에서만 작동
       sameSite: "strict", // CSRF 공격 방지
-      maxAge: Number(env.JWT_EXPIRATION) * 1000, // 쿠키 유효 기간 설정
+      maxAge: env.JWT_EXPIRATION * 1000, // 쿠키 유효 기간 설정
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
-      maxAge: Number(env.JWT_REFRESH_EXPIRATION) * 1000,
+      maxAge: env.JWT_REFRESH_EXPIRATION * 1000,
     });
 
     const response: LoginResponse = {

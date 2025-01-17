@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import Payload from "../../../types/Payload";
 import Request from "../../../types/Request";
 import { NewAccessTokenResponse } from "../../../types/user";
-import env from "../../../env";
+import env from "../../../../config/env";
 
 const router = express.Router();
 

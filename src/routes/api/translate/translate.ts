@@ -1,5 +1,4 @@
 import express, { Request, Response } from "express";
-import fetch from "node-fetch";
 import { TranslateFAQRequest, TranslateFAQResponse } from '../../../types/translate';
 
 const router = express.Router();
@@ -8,7 +7,7 @@ const router = express.Router();
 // @desc    Translate the given text and return the translated result
 // @access  Private
 router.post("/", async (req: Request, res: Response) => {
-  const { text }: { text: string } = req.body;
+  const { text }: TranslateFAQRequest['body'] = req.body;
   console.log(text);
 
   try {
@@ -31,7 +30,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     const data: { translations: { text: string }[] } = await translateResponse.json();
     const translatedText = data.translations[0].text;
-    const response = {
+    const response : TranslateFAQResponse= {
       statusCode: 200,
       message: "Text translated successfully",
       data: {

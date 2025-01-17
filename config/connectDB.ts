@@ -1,5 +1,5 @@
 import mysql from 'mysql2/promise';
-import env from '../src/env';
+import env from './env';
 
 const dbHost = env.DB_HOST;
 const dbUser = env.DB_USER;

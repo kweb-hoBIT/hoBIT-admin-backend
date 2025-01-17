@@ -2,6 +2,7 @@ import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import env from "../config/env";
 import { initializeDatabase } from '../config/createDB';
 
 import authRoutes from "./routes/api/auth/authIndex";
@@ -18,7 +19,7 @@ const app = express();
 
 const corsOptions = {
   origin: [
-    process.env.CLIENT_URL || "http://localhost:3001", "http://localhost:3000"
+    env.CLIENT_URL, "http://localhost:3001", "http://localhost:3000"
   ],
   credentials: true,
 };
@@ -59,7 +60,7 @@ app.use("/api/feedbacks", feedbacksRoutes);
 app.use("/api/translate", translateRoutes);
 
 // 서버 포트 설정 및 시작
-app.set("port", process.env.PORT || 5001);
+app.set("port", env.PORT || 5001);
 const port = app.get("port");
 const server = app.listen(port, () =>
   console.log(`Server started on port ${port}`)

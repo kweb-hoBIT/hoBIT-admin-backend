@@ -78,7 +78,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       manager: manager
     }
 
-    if(prev_faq.answer_ko !== new_faq.answer_ko) {
+    if(prev_faq.question_ko !== new_faq.question_en) {
       const gptbody = {
         faq_id: Number(faq_id),
         question: question_ko,

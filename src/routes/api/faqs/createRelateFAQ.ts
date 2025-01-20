@@ -45,7 +45,10 @@ router.post("/related", async (req: Request, res: Response) => {
 
     const responseContent = koreanCompletion.choices[0].message.content;
     const relatedQuestions = JSON.parse(responseContent);
-    console.log(relatedQuestions);
+
+    const uninonRelatedQuestions = [...relatedQuestions.ko, ...relatedQuestions.en];
+    console.log(uninonRelatedQuestions);
+
     const [row] = await connection.execute<RowDataPacket[]>(
       `SELECT COUNT(*) as count FROM hobit.related_faqs WHERE faq_id = ?`,
       [faq_id]

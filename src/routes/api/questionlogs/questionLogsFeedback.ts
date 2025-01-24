@@ -33,8 +33,8 @@ router.get("/feedback", async (req: Request, res: Response) => {
       SELECT 
         faqs.id AS faq_id,
         faqs.question_ko,
-        DATE_FORMAT(CONVERT_TZ(DateRange.date, '+00:00', '+09:00'), '%Y-%m-%d') AS startDate,
-        DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '+00:00', '+09:00'), '%Y-%m-%d') AS endDate,
+        DATE_FORMAT(DateRange.date, '%Y-%m-%d') AS startDate,
+        DATE_FORMAT(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '%Y-%m-%d') AS endDate,
         COALESCE(AVG(question_logs.feedback_score), 0) AS score_average,
         COUNT(CASE WHEN question_logs.feedback_score = 1 THEN 1 END) AS score_like_count,
         COUNT(CASE WHEN question_logs.feedback_score = -1 THEN 1 END) AS score_dislike_count
@@ -42,8 +42,8 @@ router.get("/feedback", async (req: Request, res: Response) => {
       CROSS JOIN DateRange
       LEFT OUTER JOIN hobit.question_logs 
         ON faqs.id = question_logs.faq_id 
-        AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) >= DATE_FORMAT(CONVERT_TZ(DateRange.date, '+00:00', '+09:00'), '%Y-%m-%d')
-        AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) < DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType}, '+00:00', '+09:00'), '%Y-%m-%d')
+        AND DATE(question_logs.created_at) >= DATE_FORMAT(DateRange.date, '%Y-%m-%d')
+        AND DATE(question_logs.created_at) < DATE_FORMAT(DateRange.date + INTERVAL ${intervalType}, '%Y-%m-%d')
       WHERE DateRange.date BETWEEN ? AND ?
       GROUP BY DateRange.date, faqs.id
       ORDER BY DateRange.date, score_average ${sortorder}, faqs.id;`,

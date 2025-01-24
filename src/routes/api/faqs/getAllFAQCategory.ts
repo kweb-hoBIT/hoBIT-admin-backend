@@ -12,26 +12,20 @@ router.get("/category", async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
 
   try {
-    const mainCategoryKoRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(faqs.maincategory_ko) FROM hobit.faqs',
-    )
+    const [maincategory] = await connection.execute<RowDataPacket[]>(
+      'SELECT DISTINCT faqs.id, faqs.maincategory_ko, faqs.maincategory_en FROM hobit.faqs ORDER BY faqs.id',
+    );
+    
+    const [subcategory] = await connection.execute<RowDataPacket[]>(
+      'SELECT DISTINCT faqs.id, faqs.subcategory_ko, faqs.subcategory_en FROM hobit.faqs ORDER BY faqs.id',
+    );
 
-    const mainCategoryRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(faqs.maincategory_en) FROM hobit.faqs',
-    )
+    console.log(maincategory);
 
-    const subCategoryKoRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(faqs.subcategory_ko) FROM hobit.faqs',
-    )
-
-    const subCategoryEnRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(faqs.subcategory_en) FROM hobit.faqs',
-    )
-
-    const maincategory_ko = mainCategoryKoRows[0].map((row: RowDataPacket) => row.maincategory_ko) as string[];
-    const maincategory_en = mainCategoryRows[0].map((row: RowDataPacket) => row.maincategory_en) as string[];
-    const subcategory_ko = subCategoryKoRows[0].map((row: RowDataPacket) => row.subcategory_ko) as string[];
-    const subcategory_en = subCategoryEnRows[0].map((row: RowDataPacket) => row.subcategory_en) as string[];
+    const maincategory_ko = maincategory.map((row: RowDataPacket) => row.maincategory_ko) as string[];
+    const maincategory_en = maincategory.map((row: RowDataPacket) => row.maincategory_en) as string[];
+    const subcategory_ko = subcategory.map((row: RowDataPacket) => row.subcategory_ko) as string[];
+    const subcategory_en = subcategory.map((row: RowDataPacket) => row.subcategory_en) as string[];
 
     const categories = {
       maincategory_ko,

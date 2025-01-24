@@ -25,3 +25,14 @@ export type UpdateUserFeedbackResponse = {
   statusCode: number;
   message: string;
 }
+
+export type DeleteUserFeedbackRequest = {
+  params: {
+    user_feedback_id: string;
+  }
+}
+
+export type DeleteUserFeedbackResponse = {
+  statusCode: number;
+  message: string;
+}

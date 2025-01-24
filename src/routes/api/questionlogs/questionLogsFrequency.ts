@@ -33,15 +33,15 @@ router.get("/frequency", async (req: Request, res: Response) => {
       SELECT 
         faqs.id AS faq_id,
         faqs.question_ko,
-        DATE_FORMAT(CONVERT_TZ(DateRange.date, '+00:00', '+09:00'), '%Y-%m-%d') AS startDate,
-        DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '+00:00', '+09:00'), '%Y-%m-%d') AS endDate,
+        DATE_FORMAT(DateRange.date, '%Y-%m-%d') AS startDate,
+        DATE_FORMAT(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '%Y-%m-%d') AS endDate,
         COALESCE(COUNT(question_logs.faq_id), 0) AS count
       FROM hobit.faqs
       CROSS JOIN DateRange
       LEFT OUTER JOIN hobit.question_logs 
         ON faqs.id = question_logs.faq_id 
-        AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) >= DATE_FORMAT(CONVERT_TZ(DateRange.date, '+00:00', '+09:00'), '%Y-%m-%d')
-        AND DATE(CONVERT_TZ(question_logs.created_at, '+00:00', '+09:00')) < DATE_FORMAT(CONVERT_TZ(DateRange.date + INTERVAL ${intervalType}, '+00:00', '+09:00'), '%Y-%m-%d')
+        AND DATE(question_logs.created_at) >= DATE_FORMAT(DateRange.date, '%Y-%m-%d')
+        AND DATE(question_logs.created_at) < DATE_FORMAT(DateRange.date + INTERVAL ${intervalType}, '%Y-%m-%d')
       WHERE DateRange.date BETWEEN ? AND ?
       GROUP BY DateRange.date, faqs.id
       ORDER BY DateRange.date, count ${sortorder}, faqs.id;`,

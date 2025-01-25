@@ -19,26 +19,26 @@ router.get("/language", async (req: Request, res: Response) => {
     const start_date = moment(startDate).format("YYYY-MM-DD");
     const end_date = moment(endDate).format("YYYY-MM-DD");
 
-    const interval =
+    const intervalType =
       period === "day" ? "1 DAY" : period === "week" ? "1 WEEK" : "1 MONTH";
 
     const [languageFrequency] = await Pool.execute<RowDataPacket[]>(
       `WITH RECURSIVE DateRange AS (
         SELECT ? AS date
         UNION ALL
-        SELECT DATE(date + INTERVAL ${interval}) 
+        SELECT DATE(date + INTERVAL ${intervalType}) 
         FROM DateRange
         WHERE date < ?
       )
       SELECT 
         DATE_FORMAT(DateRange.date, '%Y-%m-%d') AS startDate,
-        DATE_FORMAT(DateRange.date + INTERVAL ${interval} - INTERVAL 1 DAY, '%Y-%m-%d') AS endDate,
-        COALESCE(SUM(CASE WHEN language = 'ko' THEN 1 ELSE 0 END), 0) AS frequency_ko,
-        COALESCE(SUM(CASE WHEN language = 'en' THEN 1 ELSE 0 END), 0) AS frequency_en
+        DATE_FORMAT(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '%Y-%m-%d') AS endDate,
+        COALESCE(SUM(CASE WHEN language = 'KO' THEN 1 ELSE 0 END), 0) AS frequency_ko,
+        COALESCE(SUM(CASE WHEN language = 'EN' THEN 1 ELSE 0 END), 0) AS frequency_en
       FROM DateRange
       LEFT JOIN question_logs
         ON DATE(question_logs.created_at) >= DateRange.date
-        AND DATE(question_logs.created_at) < DateRange.date + INTERVAL ${interval}
+        AND DATE(question_logs.created_at) < DateRange.date + INTERVAL ${intervalType}
       WHERE DateRange.date BETWEEN ? AND ?
       GROUP BY DateRange.date
       ORDER BY DateRange.date;`,

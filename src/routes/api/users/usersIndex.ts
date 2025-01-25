@@ -5,7 +5,7 @@ import deleteAccount from './deleteAccount';
 
 const router = express.Router();
 
-router.use('/', signupRoutes);
-router.use('/', deleteAccount);
+router.use('/users', signupRoutes);
+router.use('/users', deleteAccount);
 
 export default router;

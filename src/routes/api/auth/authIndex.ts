@@ -6,8 +6,8 @@ import tokenRefreshRoutes from './tokenRefresh';
 
 const router = express.Router();
 
-router.use('/', authRoutes);
-router.use('/', loginRoutes);
-router.use('/', tokenRefreshRoutes);
+router.use('/auth', authRoutes);
+router.use('/auth', loginRoutes);
+router.use('/auth', tokenRefreshRoutes);
 
 export default router;

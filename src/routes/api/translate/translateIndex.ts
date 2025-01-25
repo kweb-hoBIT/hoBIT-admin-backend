@@ -3,6 +3,6 @@ import translateRoutes from './translate';
 
 const router = express.Router();
 
-router.use('/', translateRoutes);
+router.use('/translate', translateRoutes);
 
 export default router;

@@ -76,7 +76,7 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: DeleteFAQRequest['params
     }
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch(`${env.API_URL}/faqlogs`, {
+    const logResponse = await fetch(`${env.API_URL}/adminlogs/faqlogs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

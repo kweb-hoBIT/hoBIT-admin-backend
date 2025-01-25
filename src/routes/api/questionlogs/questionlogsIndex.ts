@@ -11,13 +11,13 @@ import QuestionLogLanguageRoutes from './questionLogLanguage';
 
 const router = express.Router();
 
-router.use('/', getAllQuestionLogsRoutes);
-router.use('/', QuestionLogsFrequencyRoutes);
-router.use('/', QuestionLogsFeedbackRoutes);
-router.use('/', QuestionLogsLanguageRoutes);
-router.use('/', QuestionLogFrequencyRoutes);
-router.use('/', QuestionLogFeedbackRoutes);
-router.use('/', QuestionLogLanguageRoutes);
+router.use('/questionlogs', getAllQuestionLogsRoutes);
+router.use('/questionlogs', QuestionLogsFrequencyRoutes);
+router.use('/questionlogs', QuestionLogsFeedbackRoutes);
+router.use('/questionlogs', QuestionLogsLanguageRoutes);
+router.use('/questionlogs', QuestionLogFrequencyRoutes);
+router.use('/questionlogs', QuestionLogFeedbackRoutes);
+router.use('/questionlogs', QuestionLogLanguageRoutes);
 
 
 export default router;

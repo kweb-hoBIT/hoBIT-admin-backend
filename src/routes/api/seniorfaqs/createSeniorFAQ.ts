@@ -1,7 +1,8 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
-import { PoolConnection, ResultSetHeader } from "mysql2/promise";
+import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { CreateSeniorFAQRequest, CreateSeniorFAQResponse } from '../../../types/seniorfaq';
+import env from "../../../../config/env";
 
 const router = express.Router();
 
@@ -25,7 +26,13 @@ router.post("/", async (req: Request, res: Response) => {
   console.log(req.body);
 
   try {
-    await connection.execute<ResultSetHeader>(
+    const [userName] = await connection.execute<RowDataPacket[]>(
+      `SELECT username FROM hobit.users WHERE id = ?`,
+      [user_id]
+    )
+    const username = userName[0].username as string;
+
+    const [senior_faq] = await connection.execute<ResultSetHeader>(
       `INSERT INTO senior_faqs (
         maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager, created_by, updated_by) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -36,13 +43,64 @@ router.post("/", async (req: Request, res: Response) => {
         subcategory_en,
         detailcategory_ko,
         detailcategory_en,
-        JSON.stringify(answer_ko), // answer_ko를 JSON으로 변환해서 저장
-        JSON.stringify(answer_en), // answer_en을 JSON으로 변환해서 저장
+        JSON.stringify(answer_ko),
+        JSON.stringify(answer_en),
         manager,
         user_id,
         user_id
       ]
     );
+
+    const senior_faq_id = senior_faq.insertId;
+
+    const prev_senior_faq = {
+      maincategory_ko: "",
+      maincategory_en: "",
+      subcategory_ko: "",
+      subcategory_en: "",
+      detailcategory_ko: "",
+      detailcategory_en: "",
+      answer_ko: {},
+      answer_en: {},
+      manager: ""
+    };
+
+    const new_senior_faq = {
+      maincategory_ko: maincategory_ko,
+      maincategory_en: maincategory_en,
+      subcategory_ko: subcategory_ko,
+      subcategory_en: subcategory_en,
+      detailcategory_ko: detailcategory_ko,
+      detailcategory_en: detailcategory_en,
+      answer_ko: answer_ko,
+      answer_en: answer_en,
+      manager: manager,
+    };
+
+    const data = {
+      username: username,
+      senior_faq_id: senior_faq_id,
+      prev_senior_faq: prev_senior_faq,
+      new_senior_faq: new_senior_faq,
+      action_type: '추가'
+    };
+
+    // senior_faq_logs 테이블에 로그를 남기기 위해 API 호출
+    const logResponse = await fetch(`${env.API_URL}/adminlogs/seniorfaqlogs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (!logResponse.ok) {
+      const errorData = await logResponse.json();
+      return res.status(logResponse.status).json({ 
+        statusCode: logResponse.status, 
+        message: errorData.message 
+      });
+    }
 
     // 성공 응답
     const response: CreateSeniorFAQResponse = {

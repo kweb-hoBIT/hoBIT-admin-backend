@@ -2,8 +2,21 @@ import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { UpdateSeniorFAQRequest, UpdateSeniorFAQResponse } from '../../../types/seniorfaq';
+import env from "../../../../config/env";
 
 const router = express.Router();
+
+interface SeniorFAQ {
+  maincategory_ko: string;
+  maincategory_en: string;
+  subcategory_ko: string;
+  subcategory_en: string;
+  detailcategory_ko: string;
+  detailcategory_en: string;
+  answer_ko: { title: string, answer: string; url: string; map: { latitude: string, longitude: string;} }[];
+  answer_en: { title: string, answer: string; url: string; map: { latitude: string, longitude: string;} }[];
+  manager: string;
+}
 
 // @route   Put api/seniorfaqs/:senior_faq_id
 // @desc    Update a Senior FAQ
@@ -26,6 +39,66 @@ router.put("/:senior_faq_id", async (req: Request<{ senior_faq_id: UpdateSeniorF
   console.log(senior_faq_id, req.body);
 
   try {
+    const [userName] = await connection.execute<RowDataPacket[]>(
+      `SELECT username FROM hobit.users WHERE id = ?`,
+      [user_id]
+    )
+
+    const username = userName[0].username as string;
+
+    const [[senior_faq]] = await connection.execute<RowDataPacket[]>(
+      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager
+        FROM hobit.senior_faqs 
+        WHERE id = ?`,
+      [Number(senior_faq_id)]
+    );
+    
+
+    const prev_senior_faq : SeniorFAQ = {
+      maincategory_ko: senior_faq.maincategory_ko,
+      maincategory_en: senior_faq.maincategory_en,
+      subcategory_ko: senior_faq.subcategory_ko,
+      subcategory_en: senior_faq.subcategory_en,
+      detailcategory_ko: senior_faq.detailcategory_ko,
+      detailcategory_en: senior_faq.detailcategory_en,
+      answer_ko: safetyParse(senior_faq.answer_ko),
+      answer_en: safetyParse(senior_faq.answer_en),
+      manager: senior_faq.manager
+    }
+
+    const new_senior_faq : SeniorFAQ = {
+      maincategory_ko: maincategory_ko,
+      maincategory_en: maincategory_en,
+      subcategory_ko: subcategory_ko,
+      subcategory_en: subcategory_en,
+      detailcategory_ko: detailcategory_ko,
+      detailcategory_en: detailcategory_en,
+      answer_ko: answer_ko,
+      answer_en: answer_en,
+      manager: manager
+    }
+
+    const data = {
+      username: username,
+      senior_faq_id: senior_faq_id,
+      prev_senior_faq: prev_senior_faq,
+      new_senior_faq: new_senior_faq,
+      action_type: '수정'
+    }
+
+    const logResponse = await fetch(`${env.API_URL}/adminlogs/seniorfaqlogs`, {
+      method: 'POST',
+      headers: {
+       'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if(!logResponse.ok) {
+      const errorData = await logResponse.json();
+      return res.status(logResponse.status).json({ error: errorData.message });
+    }
+
     await connection.execute(
       `UPDATE hobit.senior_faqs SET 
         maincategory_ko = ?, 
@@ -71,5 +144,15 @@ router.put("/:senior_faq_id", async (req: Request<{ senior_faq_id: UpdateSeniorF
     connection.release();
   }
 });
+
+function safetyParse<T>(data: string): T | undefined {
+  try {
+    return JSON.parse(data) as T;
+  } catch (error) {
+    console.error('Invalid JSON string:', error);
+    return undefined;
+  }
+}
+
 
 export default router;

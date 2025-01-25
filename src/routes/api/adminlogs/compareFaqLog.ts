@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { CompareFAQLogRequest, CompareFAQLogResponse } from '../../../types/faqLog';
+import { CompareFAQLogRequest, CompareFAQLogResponse } from '../../../types/adminLog';
 
 const router = express.Router();
 
@@ -10,10 +10,10 @@ interface FAQLog {
   new_faq: string;
 }
 
-// @route   Post api/faqlogs/compare/:faq_log_id
+// @route   Post api/adminlogs/faqlogs/compare/:faq_log_id
 // @desc    Get a comparison of the faq_log
 // @access  Private
-router.get('/compare/:faq_log_id', async (req: Request<CompareFAQLogRequest['params']>, res: Response) => {
+router.get('/faqlogs/compare/:faq_log_id', async (req: Request<CompareFAQLogRequest['params']>, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {faq_log_id} = req.params;
 

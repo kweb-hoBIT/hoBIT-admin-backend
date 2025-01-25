@@ -122,6 +122,9 @@ export type DeleteSeniorFAQRequest = {
   params: {
     senior_faq_id: string;
   }
+  body: {
+    user_id: number;
+  }
 }
 
 

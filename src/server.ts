@@ -9,7 +9,7 @@ import authRoutes from "./routes/api/auth/authIndex";
 import usersRoutes from "./routes/api/users/usersIndex";
 import faqsRoutes from "./routes/api/faqs/faqsIndex";
 import seniorfaqsRoutes from "./routes/api/seniorfaqs/seniorfaqsIndex";
-import faqlogsRoutes from "./routes/api/faqlogs/faqlogsIndex";
+import adminlogsRoutes from "./routes/api/adminlogs/adminlogsIndex";
 import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
 import feedbacksRoutes from "./routes/api/feedbacks/feedbacksIndex";
 import translateRoutes from "./routes/api/translate/translateIndex";
@@ -50,14 +50,14 @@ app.get("/", (_req, res) => {
 });
 
 // 라우트 설정
-app.use("/api/auth", authRoutes);
-app.use("/api/users", usersRoutes);
-app.use("/api/faqs", faqsRoutes);
-app.use("/api/seniorfaqs", seniorfaqsRoutes);
-app.use("/api/faqlogs", faqlogsRoutes);
-app.use("/api/questionlogs", questionlogsRoutes);
-app.use("/api/feedbacks", feedbacksRoutes);
-app.use("/api/translate", translateRoutes);
+app.use("/api", authRoutes);
+app.use("/api", usersRoutes);
+app.use("/api", faqsRoutes);
+app.use("/api", seniorfaqsRoutes);
+app.use("/api", adminlogsRoutes);
+app.use("/api", questionlogsRoutes);
+app.use("/api", feedbacksRoutes);
+app.use("/api", translateRoutes);
 
 // 서버 포트 설정 및 시작
 app.set("port", env.PORT || 5001);

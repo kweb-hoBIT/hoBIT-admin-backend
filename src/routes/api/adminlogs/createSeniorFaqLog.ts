@@ -1,39 +1,38 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection } from "mysql2/promise";
-import { CreateFAQLogRequest, CreateFAQLogResponse } from '../../../types/faqLog';
+import { CreateSeniorFAQLogRequest, CreateSeniorFAQLogResponse } from '../../../types/adminLog';
 
 const router = express.Router();
 
-// @route   Post api/faqlogs/
-// @desc    Create a faq_log
+// @route   Post api/adminlogs/seniorfaqlogs
+// @desc    Create a senior_faq_log
 // @access  Private
-router.post("/", async (req: Request, res: Response) => {
+router.post("/seniorfaqlogs", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {
     username,
-    faq_id,
-    prev_faq,
-    new_faq,
+    senior_faq_id,
+    prev_senior_faq,
+    new_senior_faq,
     action_type
-  } : CreateFAQLogRequest['body'] = req.body;
+  } : CreateSeniorFAQLogRequest['body'] = req.body;
   try { 
-    console.log(username)
     await connection.execute(
-      `INSERT INTO faq_logs (
-        username, faq_id, action_type, prev_faq, new_faq) 
+      `INSERT INTO senior_faq_logs (
+        username, senior_faq_id, action_type, prev_senior_faq, new_senior_faq) 
         VALUES (?, ?, ?, ?, ?)`,
       [
         username,
-        faq_id,
+        senior_faq_id,
         action_type,
-        JSON.stringify(prev_faq),
-        JSON.stringify(new_faq)
+        JSON.stringify(prev_senior_faq),
+        JSON.stringify(new_senior_faq)
       ]
     );
-    const response : CreateFAQLogResponse= {
+    const response : CreateSeniorFAQLogResponse= {
       statusCode: 201,
-      message: "FAQ log created successfully"
+      message: "Senior FAQ log created successfully"
     };
     console.log(response);
     res.status(201).json(response);

@@ -43,13 +43,12 @@ router.get("/language/:faq_id", async (req: Request<SpecificLanguageRequest['par
       LEFT OUTER JOIN hobit.question_logs 
         ON faqs.id = question_logs.faq_id 
         AND DATE(question_logs.created_at) >= DATE_FORMAT(DateRange.date, '%Y-%m-%d')
-        AND DATE(question_logs.created_at) < DATE_FORMAT(DateRange.date + INTERVAL ${intervalType}, '%Y-%m-%d'),
+        AND DATE(question_logs.created_at) < DATE_FORMAT(DateRange.date + INTERVAL ${intervalType}, '%Y-%m-%d')
       WHERE faqs.id = ? AND DateRange.date BETWEEN ? AND ?
       GROUP BY DateRange.date, faqs.id
       ORDER BY DateRange.date;`,
       [start_date, end_date, faq_id, start_date, end_date]
     );
-
    
     const groupbyDate = _.groupBy(languageFrequency, "startDate");
     const logData: SpecificLanguageResponse['data']['logData'] = {

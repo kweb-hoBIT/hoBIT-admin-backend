@@ -9,11 +9,11 @@ import updateSeniorFAQRoutes from './updateSeniorFAQ';
 
 const router = express.Router();
 
-router.use('/', createSeniorFAQRoutes);
-router.use('/', getAllSeniorFAQCategoryRoutes);
-router.use('/', getAllSeniorFAQsRoutes);
-router.use('/', getSeniorFAQRoutes);
-router.use('/', deleteSeniorFAQRoutes);
-router.use('/', updateSeniorFAQRoutes);
+router.use('/seniorfaqs', createSeniorFAQRoutes);
+router.use('/seniorfaqs', getAllSeniorFAQCategoryRoutes);
+router.use('/seniorfaqs', getAllSeniorFAQsRoutes);
+router.use('/seniorfaqs', getSeniorFAQRoutes);
+router.use('/seniorfaqs', deleteSeniorFAQRoutes);
+router.use('/seniorfaqs', updateSeniorFAQRoutes);
 
 export default router;

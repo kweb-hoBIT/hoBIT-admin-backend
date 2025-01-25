@@ -107,7 +107,7 @@ router.post("/", async (req: Request, res: Response) => {
     };
 
     // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch(`${env.API_URL}/faqlogs`, {
+    const logResponse = await fetch(`${env.API_URL}/adminlogs/faqlogs`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

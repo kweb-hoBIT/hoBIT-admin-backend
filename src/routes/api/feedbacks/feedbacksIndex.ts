@@ -8,9 +8,9 @@ import deleteUserFeedbackRoutes from './deleteUserFeedback';
 
 const router = express.Router();
 
-router.use('/', getAllUserFeedbacksRoutes);
-router.use('/', updateUserFeedbackResolvedRoutes);
-router.use('/', deleteUserFeedbackRoutes);
+router.use('/feedbacks', getAllUserFeedbacksRoutes);
+router.use('/feedbacks', updateUserFeedbackResolvedRoutes);
+router.use('/feedbacks', deleteUserFeedbackRoutes);
 
 
 export default router;

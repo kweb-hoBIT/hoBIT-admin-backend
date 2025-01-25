@@ -99,7 +99,7 @@ const createSeniorFAQTable = async () => {
     );
   `;
   await connection.query(query);
-  console.log('Senior FAQ table with detail category created or already exists.');
+  console.log('Senior FAQ table created or already exists.');
   await connection.end();
 };
 
@@ -138,6 +138,25 @@ const createFaqLogTable = async () => {
   `;
   await connection.query(query);
   console.log('FaqLog table created or already exists.');
+  await connection.end();
+};
+
+const createSeniorFaqLogTable = async () => {
+  const connection = await createConnection();
+  const query = `
+    CREATE TABLE IF NOT EXISTS senior_faq_logs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      senior_faq_id INT,
+      username VARCHAR(45) NOT NULL,
+      prev_senior_faq VARCHAR(3000) NOT NULL,
+      new_senior_faq VARCHAR(3000) NOT NULL,
+      action_type VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (senior_faq_id) REFERENCES senior_faqs(id) ON DELETE SET NULL
+    );
+  `;
+  await connection.query(query);
+  console.log('SeniorFaqLog table created or already exists.');
   await connection.end();
 };
 
@@ -185,6 +204,7 @@ const createTables = async () => {
   await createSeniorFAQTable();
   await createQuestionLogTable();
   await createFaqLogTable();
+  await createSeniorFaqLogTable();
   await createRelatedFaqTable();
   await createUserFeedbacksTable();
 };

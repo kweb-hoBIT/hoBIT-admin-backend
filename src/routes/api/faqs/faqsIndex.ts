@@ -10,13 +10,13 @@ import createRelateFAQRoutes from './createRelateFAQ';
 
 const router = express.Router();
 
-router.use('/', createFAQRoutes);
-router.use('/', getAllFAQCategoryRoutes);
-router.use('/', getAllFAQsRotues);
-router.use('/', getFAQRoutes);
-router.use('/', deleteFAQRoutes);
-router.use('/', updateFAQRoutes);
-router.use('/', createRelateFAQRoutes);
+router.use('/faqs', createFAQRoutes);
+router.use('/faqs', getAllFAQCategoryRoutes);
+router.use('/faqs', getAllFAQsRotues);
+router.use('/faqs', getFAQRoutes);
+router.use('/faqs', deleteFAQRoutes);
+router.use('/faqs', updateFAQRoutes);
+router.use('/faqs', createRelateFAQRoutes);
 
 
 export default router;

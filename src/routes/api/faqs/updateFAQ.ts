@@ -109,6 +109,20 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       action_type: '수정'
     }
 
+    // faq_logs 테이블에 로그를 남기기 위해 API 호출
+    const logResponse = await fetch(`${env.API_URL}/adminlogs/faqlogs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data)
+    });
+
+    if(!logResponse.ok) {
+      const errorData = await logResponse.json();
+      return res.status(logResponse.status).json({ error: errorData.message });
+    }
+
     await connection.execute(
       `UPDATE hobit.faqs SET 
         maincategory_ko = ?, 
@@ -137,19 +151,6 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       ]
     );
 
-    // faq_logs 테이블에 로그를 남기기 위해 API 호출
-    const logResponse = await fetch(`${env.API_URL}/faqlogs`, {
-      method: 'POST',
-      headers: {
-       'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data)
-    });
-
-    if(!logResponse.ok) {
-      const errorData = await logResponse.json();
-      return res.status(logResponse.status).json({ error: errorData.message });
-    }
     const response : UpdateFAQResponse = {
       statusCode: 200,
       message: "FAQ updated successfully"

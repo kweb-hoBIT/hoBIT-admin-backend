@@ -190,3 +190,22 @@ export type GetAllSeniorFAQCategoryResponse = {
     };
   }
 }
+
+export type CheckSeniorFAQCategoryDuplicateRequest = {
+  body: {
+    maincategory_ko: string;
+    maincategory_en: string;
+    subcategory_ko: string;
+    subcategory_en: string;
+    detailcategory_ko: string;
+    detailcategory_en: string;
+  }
+}
+
+export type CheckSeniorFAQCategoryDuplicateResponse = {
+  statusCode: number;
+  message: string;
+  data: {
+    isDuplicated: boolean;
+  }
+}

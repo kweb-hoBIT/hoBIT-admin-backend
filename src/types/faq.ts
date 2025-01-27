@@ -193,4 +193,21 @@ export type GetAllFAQCategoryResponse = {
   }
 }
 
+export type CheckFAQCategoryDuplicateRequest = {
+  body: {
+    maincategory_ko: string;
+    maincategory_en: string;
+    subcategory_ko: string;
+    subcategory_en: string;
+  }
+}
+
+export type CheckFAQCategoryDuplicateResponse = {
+  statusCode: number;
+  message: string;
+  data: {
+    isDuplicated: boolean;
+  }
+}
+
 export default Faq;

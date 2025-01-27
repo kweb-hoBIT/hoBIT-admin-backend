@@ -13,14 +13,12 @@ router.get("/category", async (req: Request, res: Response) => {
 
   try {
     const [maincategory] = await connection.execute<RowDataPacket[]>(
-      'SELECT DISTINCT faqs.id, faqs.maincategory_ko, faqs.maincategory_en FROM hobit.faqs ORDER BY faqs.id',
+      'SELECT DISTINCT faqs.maincategory_ko, faqs.maincategory_en FROM hobit.faqs',
     );
     
     const [subcategory] = await connection.execute<RowDataPacket[]>(
-      'SELECT DISTINCT faqs.id, faqs.subcategory_ko, faqs.subcategory_en FROM hobit.faqs ORDER BY faqs.id',
+      'SELECT DISTINCT faqs.subcategory_ko, faqs.subcategory_en FROM hobit.faqs',
     );
-
-    console.log(maincategory);
 
     const maincategory_ko = maincategory.map((row: RowDataPacket) => row.maincategory_ko) as string[];
     const maincategory_en = maincategory.map((row: RowDataPacket) => row.maincategory_en) as string[];

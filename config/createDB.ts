@@ -184,11 +184,13 @@ const createUserFeedbacksTable = async () => {
   const query = `
     CREATE TABLE IF NOT EXISTS user_feedbacks (
       id INT AUTO_INCREMENT PRIMARY KEY,
+      faq_id INT NULL,
       feedback_reason VARCHAR(255) NULL,
       feedback_detail TEXT NOT NULL,
       language VARCHAR(45) NOT NULL,
       resolved INT DEFAULT 0,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL
     );
   `;
   await connection.query(query);

@@ -12,36 +12,22 @@ router.get("/category", async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
 
   try {
-    const mainCategoryKoRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(senior_faqs.maincategory_ko) FROM hobit.senior_faqs',
-    )
+    const [maincategory] = await connection.execute<RowDataPacket[]>(
+      'SELECT DISTINCT senior_faqs.maincategory_ko, senior_faqs.maincategory_en FROM hobit.senior_faqs',
+    );
+    const [subcategory] = await connection.execute<RowDataPacket[]>(
+      'SELECT DISTINCT senior_faqs.subcategory_ko, senior_faqs.subcategory_en FROM hobit.senior_faqs',
+    );
+    const [detailcategory] = await connection.execute<RowDataPacket[]>(
+      'SELECT DISTINCT senior_faqs.detailcategory_ko, senior_faqs.detailcategory_en FROM hobit.senior_faqs',
+    );
 
-    const mainCategoryRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(senior_faqs.maincategory_en) FROM hobit.senior_faqs',
-    )
-
-    const subCategoryKoRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(senior_faqs.subcategory_ko) FROM hobit.senior_faqs',
-    )
-
-    const subCategoryEnRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(senior_faqs.subcategory_en) FROM hobit.senior_faqs',
-    )
-
-    const detailCategoryKoRows= await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(senior_faqs.detailcategory_ko) FROM hobit.senior_faqs',
-    )
-
-    const detailCategoryEnRows = await connection.execute<RowDataPacket[]>(
-      'SELECT distinct(senior_faqs.detailcategory_en) FROM hobit.senior_faqs',
-    )
-
-    const maincategory_ko = mainCategoryKoRows[0].map((row: RowDataPacket) => row.maincategory_ko) as string[];
-    const maincategory_en = mainCategoryRows[0].map((row: RowDataPacket) => row.maincategory_en) as string[];
-    const subcategory_ko = subCategoryKoRows[0].map((row: RowDataPacket) => row.subcategory_ko) as string[];
-    const subcategory_en = subCategoryEnRows[0].map((row: RowDataPacket) => row.subcategory_en) as string[];
-    const detailcategory_ko = detailCategoryKoRows[0].map((row: RowDataPacket) => row.detailcategory_ko) as string[];
-    const detailcategory_en = detailCategoryEnRows[0].map((row: RowDataPacket) => row.detailcategory_en) as string[];
+    const maincategory_ko = maincategory.map((row: RowDataPacket) => row.maincategory_ko) as string[];
+    const maincategory_en = maincategory.map((row: RowDataPacket) => row.maincategory_en) as string[];
+    const subcategory_ko = subcategory.map((row: RowDataPacket) => row.subcategory_ko) as string[];
+    const subcategory_en = subcategory.map((row: RowDataPacket) => row.subcategory_en) as string[];
+    const detailcategory_ko = detailcategory.map((row: RowDataPacket) => row.detailcategory_ko) as string[];
+    const detailcategory_en = detailcategory.map((row: RowDataPacket) => row.detailcategory_en) as string[];
 
     const categories = {
       maincategory_ko,

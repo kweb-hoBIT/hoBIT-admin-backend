@@ -13,7 +13,7 @@ router.post("/category/check", async (req: Request, res: Response) => {
   const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : CheckSeniorFAQCategoryDuplicateRequest['body'] = req.body;
   try {
     const [[checked_maincategory_ko]] = await connection.execute<RowDataPacket[]>(
-      `SELECT senior_.maincategory_ko FROM hobit.senior_faqs WHERE senior_faqs.maincategory_en = ?`,
+      `SELECT senior_faqs.maincategory_ko FROM hobit.senior_faqs WHERE senior_faqs.maincategory_en = ?`,
       [maincategory_en]
     );
     const [[checked_maincategory_en]] = await connection.execute<RowDataPacket[]>(

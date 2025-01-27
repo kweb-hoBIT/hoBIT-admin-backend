@@ -6,9 +6,9 @@ export type GetAllUserFeedbackResponse = {
   data: {
     userFeedbacks: {
       user_feedback_id: number;
+      question_ko: string;
       feedback_reason: string;
       feedback_detail: string;
-      language: string;
       resolved: number;
       created_at: string;
     }[];

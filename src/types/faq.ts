@@ -13,7 +13,6 @@ export type Faq = {
   updated_by: number | null;
 };
 
-
 export type CreateFAQRequest = {
   body: {
     user_id: number;
@@ -36,7 +35,7 @@ export type CreateFAQRequest = {
       phone: string;
     }[];
     manager: string;
-  }
+  };
 };
 
 export type CreateFAQResponse = {
@@ -44,20 +43,19 @@ export type CreateFAQResponse = {
   message: string;
 };
 
-
-export type GetAllFAQRequest = {}
+export type GetAllFAQRequest = {};
 
 export type GetAllFAQResponse = {
   statusCode: number;
   message: string;
-  data : {
-    faqs : {
+  data: {
+    faqs: {
       faq_id: number;
       maincategory_ko: string;
       maincategory_en: string;
       subcategory_ko: string;
       subcategory_en: string;
-      question_ko: string; 
+      question_ko: string;
       question_en: string;
       answer_ko: {
         answer: string;
@@ -75,20 +73,20 @@ export type GetAllFAQResponse = {
       created_at: string;
       updated_at: string;
     }[];
-  }
+  };
 };
 
 export type GetFAQRequest = {
   params: {
     faq_id: string;
   };
-}
+};
 
 export type GetFAQResponse = {
   statusCode: number;
   message: string;
   data: {
-    faq : {
+    faq: {
       faq_id: number;
       maincategory_ko: string;
       maincategory_en: string;
@@ -112,30 +110,27 @@ export type GetFAQResponse = {
       created_at: string;
       updated_at: string;
     };
-  }
+  };
 };
-
 
 export type DeleteFAQRequest = {
   params: {
     faq_id: string;
-  }
+  };
   body: {
     user_id: number;
-  }
-}
-
+  };
+};
 
 export type DeleteFAQResponse = {
   statusCode: number;
   message: string;
 };
 
-
 export type UpdateFAQRequest = {
   params: {
     faq_id: string;
-  }
+  };
   body: {
     user_id: number;
     maincategory_ko: string;
@@ -157,40 +152,42 @@ export type UpdateFAQRequest = {
       phone: string;
     }[];
     manager: string;
-  }
-}
+  };
+};
 
 export type UpdateFAQResponse = {
   statusCode: number;
   message: string;
-}
+};
 
 export type RelatedFAQRequest = {
   body: {
     faq_id: number;
-    question : string 
-    count : number
-  }
-}
+    question: string;
+    count: number;
+  };
+};
 
 export type RelatedFAQResponse = {
   statusCode: number;
   message: string;
 };
 
-export type GetAllFAQCategoryRequest = {}
+export type GetAllFAQCategoryRequest = {};
 
-export type GetAllFAQCategoryResponse = {
+export interface GetAllFAQCategoryResponse {
   statusCode: number;
   message: string;
-  data : {
-    categories : {
+  data: {
+    categories: {
       maincategory_ko: string[];
       maincategory_en: string[];
-      subcategory_ko: string[];
-      subcategory_en: string[];
-    };
-  }
+      subcategories: {
+        subcategory_ko: string[];
+        subcategory_en: string[];
+      }[];
+    }[];
+  };
 }
 
 export type CheckFAQCategoryDuplicateRequest = {
@@ -199,15 +196,15 @@ export type CheckFAQCategoryDuplicateRequest = {
     maincategory_en: string;
     subcategory_ko: string;
     subcategory_en: string;
-  }
-}
+  };
+};
 
 export type CheckFAQCategoryDuplicateResponse = {
   statusCode: number;
   message: string;
   data: {
     isDuplicated: boolean;
-  }
-}
+  };
+};
 
 export default Faq;

@@ -22,7 +22,7 @@ export type CreateFAQLogRequest = {
         phone: string;
       }[];
       manager: string;
-    }
+    };
     new_faq: {
       maincategory_ko: string;
       maincategory_en: string;
@@ -43,15 +43,15 @@ export type CreateFAQLogRequest = {
         phone: string;
       }[];
       manager: string;
-    }
+    };
     action_type: string;
   };
-}
+};
 
 export type CreateSeniorFAQLogResponse = {
   statusCode: number;
   message: string;
-}
+};
 
 export type CreateSeniorFAQLogRequest = {
   body: {
@@ -83,7 +83,7 @@ export type CreateSeniorFAQLogRequest = {
         };
       }[];
       manager: string;
-    }
+    };
     new_senior_faq: {
       maincategory_ko: string;
       maincategory_en: string;
@@ -110,18 +110,17 @@ export type CreateSeniorFAQLogRequest = {
         };
       }[];
       manager: string;
-    }
+    };
     action_type: string;
   };
-}
+};
 
 export type CreateFAQLogResponse = {
   statusCode: number;
   message: string;
-}
+};
 
-
-export type GetAllAdminLogRequest = {}
+export type GetAllAdminLogRequest = {};
 
 export type GetAllAdminLogResponse = {
   statusCode: number;
@@ -140,14 +139,13 @@ export type GetAllAdminLogResponse = {
       log_type: string;
     }[];
   };
-}
-
+};
 
 export type CompareFAQLogRequest = {
   params: {
     faq_log_id: string;
-  }
-}
+  };
+};
 
 export type CompareFAQLogResponse = {
   statusCode: number;
@@ -173,7 +171,7 @@ export type CompareFAQLogResponse = {
         phone: string;
       }[];
       manager: string;
-    }
+    };
     new_faq: {
       maincategory_ko: string;
       maincategory_en: string;
@@ -194,15 +192,15 @@ export type CompareFAQLogResponse = {
         phone: string;
       }[];
       manager: string;
-    }
+    };
   };
-}
+};
 
 export type CompareSeniorFAQLogRequest = {
   params: {
     senior_faq_log_id: string;
-  }
-}
+  };
+};
 
 export type CompareSeniorFAQLogResponse = {
   statusCode: number;
@@ -234,7 +232,7 @@ export type CompareSeniorFAQLogResponse = {
         };
       }[];
       manager: string;
-    }
+    };
     new_senior_faq: {
       maincategory_ko: string;
       maincategory_en: string;
@@ -261,6 +259,6 @@ export type CompareSeniorFAQLogResponse = {
         };
       }[];
       manager: string;
-    }
+    };
   };
-}
+};

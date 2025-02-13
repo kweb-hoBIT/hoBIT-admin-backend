@@ -18,18 +18,20 @@ router.get("/category", async (req: Request, res: Response) => {
 
     const categories = await Promise.all(
       maincategories.map(async (maincategory: RowDataPacket) => {
-        const [subcategories] = await connection.execute<RowDataPacket[]>(
+        const [subcategoriesRow] = await connection.execute<RowDataPacket[]>(
           "SELECT DISTINCT faqs.subcategory_ko, faqs.subcategory_en FROM hobit.faqs WHERE faqs.maincategory_ko = ?",
           [maincategory.maincategory_ko]
         );
-
+    
+        const subcategories: { subcategory_ko: string[]; subcategory_en: string[] } = {
+          subcategory_ko: subcategoriesRow.map(row => row.subcategory_ko),
+          subcategory_en: subcategoriesRow.map(row => row.subcategory_en),
+        };
+    
         return {
           maincategory_ko: maincategory.maincategory_ko,
           maincategory_en: maincategory.maincategory_en,
-          subcategories: subcategories.map((subcategory: RowDataPacket) => ({
-            subcategory_ko: [subcategory.subcategory_ko],
-            subcategory_en: [subcategory.subcategory_en],
-          })),
+          subcategories,
         };
       })
     );

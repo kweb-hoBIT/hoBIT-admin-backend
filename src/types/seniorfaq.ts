@@ -182,13 +182,14 @@ export type GetAllSeniorFAQCategoryResponse = {
         subcategory_ko: string;
         subcategory_en: string;
         detailcategories: {
-          detailcategory_ko: string;
-          detailcategory_en: string;
-        }[];
+          detailcategory_ko: string[];
+          detailcategory_en: string[];
+        };
       }[];
     }[];
   };
 };
+
 
 export type CheckSeniorFAQCategoryDuplicateRequest = {
   body: {

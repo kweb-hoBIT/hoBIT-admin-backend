@@ -44,7 +44,9 @@ router.post("/related", async (req: Request, res: Response) => {
       temperature: 0.6,
     });
 
-    const responseContent = koreanCompletion.choices[0].message.content;
+    let responseContent = koreanCompletion.choices[0].message.content;
+    responseContent = responseContent.replace(/[“”‘’]/g, '"');
+
     const relatedQuestions = JSON.parse(responseContent);
 
     const uninonRelatedQuestions = [...relatedQuestions.ko, ...relatedQuestions.en];

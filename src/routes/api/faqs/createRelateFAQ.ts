@@ -27,8 +27,9 @@ router.post("/related", async (req: Request, res: Response) => {
           - 20대 대학생들이 실제로 사용할 법한 구어체와 캐주얼한 말투를 사용하세요
           - '~있나요?', '~할까요?', '~해주세요' 같은 딱딱한 표현보다는 '~있어?', '~할래?', '~해줘' 같은 친근한 표현을 사용하세요
           - 대학생들이 자주 쓰는 줄임말이나 구어체를 자연스럽게 포함하세요
+          - 문장의 시작과 끝에 “, ”, ‘, ’, ' 이와 같은 특수문자를 사용하지 말고 " " 이것만 사용하세요
           
-          결과는 다음 JSON 형식으로 반환하세요:
+          결과는 다음 JSON 형식으로 반환하고 따옴표는 "" 이것만 사용하세요:
           {
             "ko": ["질문1", "질문2", ...],
             "en": ["question1", "question2", ...]
@@ -44,6 +45,7 @@ router.post("/related", async (req: Request, res: Response) => {
     });
 
     const responseContent = koreanCompletion.choices[0].message.content;
+    console.log(responseContent);
     const relatedQuestions = JSON.parse(responseContent);
 
     const uninonRelatedQuestions = [...relatedQuestions.ko, ...relatedQuestions.en];

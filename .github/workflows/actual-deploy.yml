@@ -51,19 +51,24 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          nvm use 22 # Node.js 22 버전 사용
-          
-      - name: Check Node.js version on EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "node -v"
-
 
       - name: Deploy to EC2
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            # nvm 초기화
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # nvm 초기화
+      
+            # 원하는 Node.js 버전 사용
+            nvm use 22
+            
             cd /home/ubuntu/hobit/hoBIT-admin-backend
             git pull origin main
             npm install
             npm run build
             npm run deploy
           EOF
+          
+      - name: Check Node.js version on EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "node -v"

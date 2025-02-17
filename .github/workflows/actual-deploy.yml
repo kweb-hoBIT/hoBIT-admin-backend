@@ -67,6 +67,6 @@ jobs:
             npm install
             npm run build
             npm run deploy
-            pm2 restart "hobit-admin"
+            pm2 restart "admin-backend"
           EOF
         

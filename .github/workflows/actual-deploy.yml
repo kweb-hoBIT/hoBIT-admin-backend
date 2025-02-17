@@ -51,10 +51,6 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
-          
-      - name: Stop hobit-admin
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "pm2 stop hobit-admin"
 
       - name: Deploy to EC2
         run: |
@@ -71,8 +67,6 @@ jobs:
             npm install
             npm run build
             npm run deploy
+            pm2 restart "hobit-admin"
           EOF
-          
-      - name: Restart hobit-admin
-        run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "pm2 start hobit-admin"
+        

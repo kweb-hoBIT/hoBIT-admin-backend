@@ -48,6 +48,9 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo 'SSH connected successfully!'"
 
+      - name: Output Node.js version
+        run: |
+          node -v  # Node.js 버전 출력
 
       - name: Install dependencies
         run: |

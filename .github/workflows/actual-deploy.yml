@@ -55,6 +55,10 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
+          
+      - name: Output Node.js version
+        run: |
+          node -v  # Node.js 버전 출력
 
       - name: Deploy to EC2
         run: |

@@ -1,10 +1,13 @@
-import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
+import { Request, Response } from "express";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import env from "../config/env";
-import { initializeDatabase } from '../config/createDB';
+import { initializeDatabase } from "../config/createDB";
 
+// 라우트 임포트
 import authRoutes from "./routes/api/auth/authIndex";
 import usersRoutes from "./routes/api/users/usersIndex";
 import faqsRoutes from "./routes/api/faqs/faqsIndex";
@@ -14,23 +17,25 @@ import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
 import feedbacksRoutes from "./routes/api/feedbacks/feedbacksIndex";
 import translateRoutes from "./routes/api/translate/translateIndex";
 
-
 const app = express();
 
+// CORS 설정 수정 (쿠키 인증 허용)
 const corsOptions = {
   origin: [
-    env.CLIENT_URL, "http://localhost:3001", "http://localhost:3000"
+    env.CLIENT_URL1,
+    env.CLIENT_URL2,
+    "https://hobit-admin-frontend.vercel.app",
+    "https://hobit-admin-frontend-preview.vercel.app",
+    "https://admin.hobit.kr"
   ],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // OPTIONS 허용
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
-
- // CORS 미들웨어
 app.use(cors(corsOptions));
 
-// 쿠키 파서 미들웨어
+// 미들웨어 설정
 app.use(cookieParser());
-
-// Body parser 미들웨어
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
@@ -47,6 +52,31 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // 기본 라우트
 app.get("/", (_req, res) => {
   res.send("API Running");
+});
+
+// JWT 리프레시 토큰 엔드포인트 추가
+app.post("/api/auth/refresh", (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(400).json({ message: "Refresh token is required" });
+  }
+
+  jwt.verify(refreshToken, env.JWT_SECRET, (err: jwt.VerifyErrors | null, decoded: JwtPayload | undefined) => {
+    if (err) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    if (!decoded || !decoded.userId) {
+      return res.status(403).json({ message: "Invalid token payload" });
+    }
+
+    const newAccessToken = jwt.sign({ userId: decoded.userId }, env.JWT_SECRET, {
+      expiresIn: env.JWT_EXPIRATION || "1h",
+    });
+
+    res.json({ accessToken: newAccessToken });
+  });
 });
 
 // 라우트 설정

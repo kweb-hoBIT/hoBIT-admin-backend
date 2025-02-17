@@ -15,6 +15,15 @@ export type LoginResponse = {
   };
 };
 
+export type LogoutRequest = {
+  credentials: RequestCredentials
+}
+
+export type LogoutResponse = {
+  statusCode: number;
+  message: string;
+};
+
 export type SignupRequest = {
   body: {
     email: string;

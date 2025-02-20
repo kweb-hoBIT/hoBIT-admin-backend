@@ -6,7 +6,8 @@ import getFAQRoutes from './getFAQ';
 import deleteFAQRoutes from './deleteFAQ';
 import updateFAQRoutes from './updateFAQ';
 import createRelateFAQRoutes from './createRelateFAQ';
-import checkFAQCateogryDuplicateRoutes from './checkFAQCategoryDuplicate';
+import createCheckFAQCateogryDuplicateRoutes from './createCheckFAQCategoryDuplicate';
+import updateCheckFAQCateogryDuplicateRoutes from './updateCheckFAQCategoryDuplicate';
 
 
 const router = express.Router();
@@ -18,7 +19,8 @@ router.use('/faqs', getFAQRoutes);
 router.use('/faqs', deleteFAQRoutes);
 router.use('/faqs', updateFAQRoutes);
 router.use('/faqs', createRelateFAQRoutes);
-router.use('/faqs', checkFAQCateogryDuplicateRoutes);
+router.use('/faqs', createCheckFAQCateogryDuplicateRoutes);
+router.use('/faqs', updateCheckFAQCateogryDuplicateRoutes);
 
 
 export default router;

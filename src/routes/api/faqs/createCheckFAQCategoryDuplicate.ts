@@ -1,16 +1,16 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { CheckFAQCategoryDuplicateRequest, CheckFAQCategoryDuplicateResponse } from '../../../types/faq';
+import { CreateCheckFAQCategoryDuplicateRequest, CreateCheckFAQCategoryDuplicateResponse } from '../../../types/faq';
 
 const router = express.Router();
 
-// @route   Get api/faqs/category/check
+// @route   Get api/faqs/create/category/check
 // @desc    Check all categories for duplicates
 // @access  Private
-router.post("/category/check", async (req: Request, res: Response) => {
+router.post("/create/category/check", async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
-  const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en } : CheckFAQCategoryDuplicateRequest['body'] = req.body;
+  const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en } : CreateCheckFAQCategoryDuplicateRequest['body'] = req.body;
   try {
     const [[checked_maincategory_ko]] = await connection.execute<RowDataPacket[]>(
       `SELECT faqs.maincategory_ko FROM hobit.faqs WHERE faqs.maincategory_en = ?`,
@@ -29,12 +29,13 @@ router.post("/category/check", async (req: Request, res: Response) => {
       [subcategory_ko]
     );
 
+    // 오류 종류: 기존 카테고리와 한 영 하나만 같은경우
     let isDuplicated = false;
     if((checked_maincategory_ko &&  !checked_maincategory_en) || (!checked_maincategory_ko && checked_maincategory_en) || (checked_subcategory_ko && !checked_subcategory_en) || (!checked_subcategory_ko && checked_subcategory_en)) {
       isDuplicated = true;
     }
     
-    const response : CheckFAQCategoryDuplicateResponse = {
+    const response : CreateCheckFAQCategoryDuplicateResponse = {
       statusCode: 200,
       message: "Categories checked successfully",
       data : {

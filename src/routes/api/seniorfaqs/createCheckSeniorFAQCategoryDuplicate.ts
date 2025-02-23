@@ -1,16 +1,16 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { CheckSeniorFAQCategoryDuplicateRequest, CheckSeniorFAQCategoryDuplicateResponse } from '../../../types/seniorfaq';
+import { CreateCheckSeniorFAQCategoryDuplicateRequest, CreateCheckSeniorFAQCategoryDuplicateResponse } from '../../../types/seniorfaq';
 
 const router = express.Router();
 
-// @route   Get api/seniorfaqs/category/check
+// @route   Get api/seniorfaqs/create/category/check
 // @desc    Check all categories for duplicates
 // @access  Private
-router.post("/category/check", async (req: Request, res: Response) => {
+router.post("/create/category/check", async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
-  const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : CheckSeniorFAQCategoryDuplicateRequest['body'] = req.body;
+  const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : CreateCheckSeniorFAQCategoryDuplicateRequest['body'] = req.body;
   try {
     const [[checked_maincategory_ko]] = await connection.execute<RowDataPacket[]>(
       `SELECT senior_faqs.maincategory_ko FROM hobit.senior_faqs WHERE senior_faqs.maincategory_en = ?`,
@@ -43,7 +43,7 @@ router.post("/category/check", async (req: Request, res: Response) => {
       isDuplicated = true;
     }
     
-    const response : CheckSeniorFAQCategoryDuplicateResponse = {
+    const response : CreateCheckSeniorFAQCategoryDuplicateResponse = {
       statusCode: 200,
       message: "Categories checked successfully",
       data : {

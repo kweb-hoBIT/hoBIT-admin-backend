@@ -1,10 +1,11 @@
-import bodyParser from "body-parser";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import bodyParser from "body-parser";
 import env from "../config/env";
-import { initializeDatabase } from '../config/createDB';
+import { initializeDatabase } from "../config/createDB";
 
+// 라우트 임포트
 import authRoutes from "./routes/api/auth/authIndex";
 import usersRoutes from "./routes/api/users/usersIndex";
 import faqsRoutes from "./routes/api/faqs/faqsIndex";
@@ -14,23 +15,25 @@ import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
 import feedbacksRoutes from "./routes/api/feedbacks/feedbacksIndex";
 import translateRoutes from "./routes/api/translate/translateIndex";
 
-
 const app = express();
 
+// CORS 설정 수정 (쿠키 인증 허용)
 const corsOptions = {
   origin: [
-    env.CLIENT_URL, "http://localhost:3001", "http://localhost:3000"
+    env.CLIENT_URL1,
+    env.CLIENT_URL2,
+    "https://hobit-admin-frontend.vercel.app",
+    "https://hobit-admin-frontend-preview.vercel.app",
+    "https://admin.hobit.kr"
   ],
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // OPTIONS 허용
+  allowedHeaders: ["Content-Type", "Authorization"]
 };
-
- // CORS 미들웨어
 app.use(cors(corsOptions));
 
-// 쿠키 파서 미들웨어
+// 미들웨어 설정
 app.use(cookieParser());
-
-// Body parser 미들웨어
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 

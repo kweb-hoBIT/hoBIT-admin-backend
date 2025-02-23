@@ -191,7 +191,7 @@ export type GetAllSeniorFAQCategoryResponse = {
 };
 
 
-export type CheckSeniorFAQCategoryDuplicateRequest = {
+export type CreateCheckSeniorFAQCategoryDuplicateRequest = {
   body: {
     maincategory_ko: string;
     maincategory_en: string;
@@ -202,7 +202,27 @@ export type CheckSeniorFAQCategoryDuplicateRequest = {
   };
 };
 
-export type CheckSeniorFAQCategoryDuplicateResponse = {
+export type CreateCheckSeniorFAQCategoryDuplicateResponse = {
+  statusCode: number;
+  message: string;
+  data: {
+    isDuplicated: boolean;
+  };
+};
+
+export type UpdateCheckSeniorFAQCategoryDuplicateRequest = {
+  body: {
+    senior_faq_id: number;
+    maincategory_ko: string;
+    maincategory_en: string;
+    subcategory_ko: string;
+    subcategory_en: string;
+    detailcategory_ko: string;
+    detailcategory_en: string;
+  };
+};
+
+export type UpdateCheckSeniorFAQCategoryDuplicateResponse = {
   statusCode: number;
   message: string;
   data: {

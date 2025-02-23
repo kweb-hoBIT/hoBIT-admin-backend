@@ -1,5 +1,4 @@
 import express, { Response } from "express";
-import config from "config";
 import jwt from "jsonwebtoken";
 import Payload from "../../../types/Payload";
 import Request from "../../../types/Request";

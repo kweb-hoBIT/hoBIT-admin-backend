@@ -2,7 +2,7 @@
 
 ## System Requirements
 
-- MySQL database
+- MySQL DB
 
 ## Installation
 

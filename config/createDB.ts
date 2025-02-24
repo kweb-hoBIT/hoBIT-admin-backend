@@ -67,8 +67,8 @@ const createFAQTable = async () => {
       updated_by INT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
     );
   `;
   await connection.query(query);
@@ -94,8 +94,8 @@ const createSeniorFAQTable = async () => {
       updated_by INT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
-      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
     );
   `;
   await connection.query(query);
@@ -114,7 +114,7 @@ const createQuestionLogTable = async () => {
       feedback_score INT,
       feedback VARCHAR(300),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL
+      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL ON UPDATE CASCADE
     );
   `;
   await connection.query(query);
@@ -133,7 +133,7 @@ const createFaqLogTable = async () => {
       new_faq TEXT NOT NULL,
       action_type VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL
+      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL ON UPDATE CASCADE
     );
   `;
   await connection.query(query);
@@ -152,7 +152,7 @@ const createSeniorFaqLogTable = async () => {
       new_senior_faq TEXT NOT NULL,
       action_type VARCHAR(255) NOT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (senior_faq_id) REFERENCES senior_faqs(id) ON DELETE SET NULL
+      FOREIGN KEY (senior_faq_id) REFERENCES senior_faqs(id) ON DELETE SET NULL ON UPDATE CASCADE
     );
   `;
   await connection.query(query);
@@ -190,7 +190,7 @@ const createUserFeedbacksTable = async () => {
       language VARCHAR(45) NOT NULL,
       resolved INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL
+      FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL ON UPDATE CASCADE
     );
   `;
   await connection.query(query);

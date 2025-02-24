@@ -12,7 +12,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
   const { senior_faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : UpdateCheckSeniorFAQCategoryDuplicateRequest['body'] = req.body;
   try {
-    console.log(12312222222222222222222222222222222222222222222222222222222222222222222222)
     let isDuplicated = false;
 
     const [[now_category]] = await connection.execute<RowDataPacket[]>( 

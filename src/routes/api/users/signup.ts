@@ -24,11 +24,11 @@ interface User {
 // @access  Public
 router.post("/", async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { email, password, username, phone_num, invitationKey } : SignupRequest['body'] = req.body;
-  if (!env.MANAGER_KEY.includes(invitationKey)) {
+  const { email, password, username, phone_num, manageKey } : SignupRequest['body'] = req.body;
+  if (!env.MANAGER_KEY.includes(manageKey)) {
     const response = {
       statusCode: 403,
-      message: "Invalid invitation key. Access denied."
+      message: "Invalid Manage key. Access denied."
     }
     console.log(response);
     return res.status(403).json(response);

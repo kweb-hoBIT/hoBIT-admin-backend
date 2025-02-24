@@ -6,7 +6,6 @@ const router = express.Router();
 // @desc    Logout user and clear tokens
 // @access  Public
 router.post("/logout", (req: Request, res: Response) => {
-  console.log('hi')
   try {
     res.clearCookie("accessToken", {
       httpOnly: false, 

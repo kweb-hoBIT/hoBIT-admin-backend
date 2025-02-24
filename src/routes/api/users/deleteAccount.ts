@@ -12,13 +12,13 @@ const router = express.Router();
 router.delete("/:user_id", async (req: Request<DeleteAccountReqeust['params']>, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { user_id } = req.params;
-  const { deleteKey } : DeleteAccountReqeust['body'] = req.body;
+  const { manageKey } : DeleteAccountReqeust['body'] = req.body;
   console.log(user_id)
 
-  if (!env.MANAGER_KEY.includes(deleteKey)) {
+  if (!env.MANAGER_KEY.includes(manageKey)) {
     const response = {
       statusCode: 403,
-      message: "Invalid invitation key. Access denied."
+      message: "Invalid Manage key. Access denied."
     }
     console.log(response);
     return res.status(403).json(response);

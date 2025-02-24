@@ -30,7 +30,7 @@ export type SignupRequest = {
     password: string;
     username: string;
     phone_num: string;
-    invitationKey: string;
+    manageKey: string;
   }
 };
 
@@ -52,7 +52,7 @@ export type DeleteAccountReqeust = {
     user_id: string
   }
   body: {
-    deleteKey: string
+    manageKey: string
   }
 }
 
@@ -60,6 +60,40 @@ export type DeleteAccountResponse = {
   statusCode: number;
   message: string
 }
+
+export type FindUserRequest = {
+  body: {
+    email: string;
+    username: string;
+    phone_num: string;
+    manageKey: string;
+  }
+}
+
+export type FindUserResponse = {
+  statusCode: number;
+  message: string;
+  data: {
+    user_id: number;
+  }
+}
+
+export type UpdatePasswordRequest = {
+  params: {
+    user_id: string;
+  };
+  body: {
+    password: string;
+  }
+}
+
+export type UpdatePasswordResponse = {
+  statusCode: number;
+  message: string;
+}
+
+
+
 
 export type User = {
   id: number;

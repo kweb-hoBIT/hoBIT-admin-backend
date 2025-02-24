@@ -23,6 +23,7 @@ const corsOptions = {
     env.CLIENT_URL1,
     env.CLIENT_URL2,
     "https://admin.hobit.kr",
+    "https://hobit-admin-preview.vercel.app",
     /^https:\/\/.*\.vercel\.app$/
   ],
   credentials: true,

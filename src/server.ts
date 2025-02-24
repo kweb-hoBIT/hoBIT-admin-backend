@@ -22,9 +22,8 @@ const corsOptions = {
   origin: [
     env.CLIENT_URL1,
     env.CLIENT_URL2,
-    "https://hobit-admin-frontend.vercel.app",
-    "https://hobit-admin-frontend-preview.vercel.app",
-    "https://admin.hobit.kr"
+    "https://admin.hobit.kr",
+    /^https:\/\/.*\.vercel\.app$/
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // OPTIONS 허용

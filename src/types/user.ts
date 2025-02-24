@@ -92,9 +92,6 @@ export type UpdatePasswordResponse = {
   message: string;
 }
 
-
-
-
 export type User = {
   id: number;
   email: string;

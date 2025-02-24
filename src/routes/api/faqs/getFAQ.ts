@@ -20,6 +20,7 @@ interface FAQ {
   updated_at: string;
 }
 
+
 // @route   GET api/faqs/:faq_id
 // @desc    get a FAQ
 // @access  Private

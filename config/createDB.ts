@@ -141,7 +141,6 @@ const createFaqLogTable = async () => {
   await connection.end();
 };
 
-
 const createSeniorFaqLogTable = async () => {
   const connection = await createConnection();
   const query = `

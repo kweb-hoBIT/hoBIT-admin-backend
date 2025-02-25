@@ -60,7 +60,7 @@ router.post("/", async (req: Request, res: Response) => {
     });
 
     res.cookie("accessToken", accessToken, {
-      httpOnly: false, // 클라이언트에서 접근 가능하도록 설정 (JavaScript로 읽기 가능)
+      httpOnly: true, // 클라이언트에서 쿠키를 확인하지 못하도록 설정
       secure: true, // HTTPS에서만 작동
       sameSite: "strict", // CSRF 공격 방지
       maxAge: Number(env.JWT_EXPIRATION) * 1000, // 쿠키 유효 기간 설정

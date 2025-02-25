@@ -11,15 +11,25 @@ const router = express.Router();
 // @desc    Refresh Access Token using Refresh Token (from cookie)
 // @access  Public
 router.post("/refresh", async (req: Request, res: Response) => {
-  const refreshToken = req.cookies?.refreshToken;
-  if (!refreshToken) {
-    const response = {
-      statusCode: 400,
-      message: "No refresh token provided",
-    }
-    return res.status(400).json(response);
-  }
   try {
+    const existed_accessToken = req.cookies?.accessToken;
+    if (existed_accessToken) {
+      const response = {
+        statusCode: 200,
+        message: "Access token is still valid",
+      }
+      return res.status(200).json(response);
+    }
+
+    const refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken) {
+      const response = {
+        statusCode: 400,
+        message: "No refresh token provided",
+      }
+      return res.status(400).json(response);
+    }
+
     // Verify the refresh token
     const decoded: any = jwt.verify(refreshToken, env.JWT_SECRET);
 
@@ -34,9 +44,9 @@ router.post("/refresh", async (req: Request, res: Response) => {
       expiresIn: env.JWT_EXPIRATION,
     });
 
-    // Access Token을 쿠키로 설정 (클라이언트에서 읽을 수 있도록)
+    // 쿠키에 새로운 access token 저장
     res.cookie("accessToken", accessToken, {
-      httpOnly: false,
+      httpOnly: true,
       secure: true,
       sameSite: "strict",
       maxAge: Number(env.JWT_EXPIRATION) * 1000,

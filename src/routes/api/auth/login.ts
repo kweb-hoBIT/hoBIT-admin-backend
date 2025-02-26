@@ -62,14 +62,14 @@ router.post("/", async (req: Request, res: Response) => {
     res.cookie("accessToken", accessToken, {
       httpOnly: true, // 클라이언트에서 쿠키를 확인하지 못하도록 설정
       secure: true, // HTTPS에서만 작동
-      sameSite: "strict", // CSRF 공격 방지
+      sameSite: "none", // SameSite 설정
       maxAge: Number(env.JWT_EXPIRATION) * 1000, // 쿠키 유효 기간 설정
     });
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: true,
-      sameSite: "strict",
+      sameSite: "none", // SameSite 설정
       maxAge: Number(env.JWT_REFRESH_EXPIRATION) * 1000,
     });
 

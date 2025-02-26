@@ -43,7 +43,12 @@ export type CreateFAQResponse = {
   message: string;
 };
 
-export type GetAllFAQRequest = {};
+export type GetAllFAQRequest = {
+  parmas: {
+    order_column: string;
+    order: number;
+  };
+};
 
 export type GetAllFAQResponse = {
   statusCode: number;

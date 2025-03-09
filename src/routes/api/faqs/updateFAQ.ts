@@ -93,7 +93,6 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       });
   
       if (!GPTResponse.ok) {
-        console.log(1)
         const errorData = await GPTResponse.json();
         return res.status(GPTResponse.status).json({ 
           statusCode: GPTResponse.status, 
@@ -120,7 +119,6 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
     });
 
     if(!logResponse.ok) {
-      console.log(2)
       const errorData = await logResponse.json();
       return res.status(logResponse.status).json({ error: errorData.message });
     }

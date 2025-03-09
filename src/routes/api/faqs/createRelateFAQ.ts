@@ -45,7 +45,9 @@ router.post("/related", async (req: Request, res: Response) => {
     });
 
     let responseContent = koreanCompletion.choices[0].message.content;
+    console.log(11111, responseContent)
     responseContent = responseContent.replace(/[“”‘’]/g, '"');
+    responseContent = responseContent.replace(/"\s+"/g, '", "');
 
     const relatedQuestions = JSON.parse(responseContent);
 

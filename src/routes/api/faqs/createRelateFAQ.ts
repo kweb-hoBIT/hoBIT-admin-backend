@@ -45,12 +45,9 @@ router.post("/related", async (req: Request, res: Response) => {
     });
 
     let responseContent = koreanCompletion.choices[0].message.content;
-    console.log(11111, responseContent)
     responseContent = responseContent.trim();
     responseContent = responseContent.replace(/[“”‘’]/g, '"');
-    console.log(22222, responseContent)
     const relatedQuestions = JSON.parse(responseContent);
-    console.log(55555)
     const uninonRelatedQuestions = [...relatedQuestions.ko, ...relatedQuestions.en];
     console.log(uninonRelatedQuestions);
 

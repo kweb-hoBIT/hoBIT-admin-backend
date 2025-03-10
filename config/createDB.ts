@@ -52,10 +52,10 @@ const createFAQTable = async () => {
   const query = `
     CREATE TABLE IF NOT EXISTS faqs (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      maincategory_ko VARCHAR(45) NOT NULL,
-      maincategory_en VARCHAR(45) NOT NULL,
-      subcategory_ko VARCHAR(45) NOT NULL,
-      subcategory_en VARCHAR(45) NOT NULL,
+      maincategory_ko VARCHAR(300) NOT NULL,
+      maincategory_en VARCHAR(300) NOT NULL,
+      subcategory_ko VARCHAR(300) NOT NULL,
+      subcategory_en VARCHAR(300) NOT NULL,
       question_ko VARCHAR(300) NOT NULL,
       question_en VARCHAR(300) NOT NULL,
       answer_ko TEXT NOT NULL,
@@ -78,12 +78,12 @@ const createSeniorFAQTable = async () => {
   const query = `
     CREATE TABLE IF NOT EXISTS senior_faqs (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      maincategory_ko VARCHAR(45) NOT NULL,
-      maincategory_en VARCHAR(45) NOT NULL,
-      subcategory_ko VARCHAR(45) NOT NULL,
-      subcategory_en VARCHAR(45) NOT NULL,
-      detailcategory_ko VARCHAR(45) NOT NULL,
-      detailcategory_en VARCHAR(45) NOT NULL,
+      maincategory_ko VARCHAR(300) NOT NULL,
+      maincategory_en VARCHAR(300) NOT NULL,
+      subcategory_ko VARCHAR(300) NOT NULL,
+      subcategory_en VARCHAR(300) NOT NULL,
+      detailcategory_ko VARCHAR(300) NOT NULL,
+      detailcategory_en VARCHAR(300) NOT NULL,
       answer_ko TEXT NOT NULL,
       answer_en TEXT NOT NULL,
       manager VARCHAR(45) NOT NULL,
@@ -150,7 +150,6 @@ const createSeniorFaqLogTable = async () => {
     );
   `;
   await connection.query(query);
-  console.log('SeniorFaqLog table created or already exists.');
   await connection.end();
 };
 

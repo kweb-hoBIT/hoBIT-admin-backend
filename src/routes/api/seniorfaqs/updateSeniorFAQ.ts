@@ -96,7 +96,10 @@ router.put("/:senior_faq_id", async (req: Request<{ senior_faq_id: UpdateSeniorF
 
     if(!logResponse.ok) {
       const errorData = await logResponse.json();
-      return res.status(logResponse.status).json({ error: errorData.message });
+      return res.status(logResponse.status).json({ 
+        statusCode: logResponse.status,
+        message: errorData.message 
+      });
     }
 
     await connection.execute(

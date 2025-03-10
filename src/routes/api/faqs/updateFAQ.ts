@@ -120,7 +120,10 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
 
     if(!logResponse.ok) {
       const errorData = await logResponse.json();
-      return res.status(logResponse.status).json({ error: errorData.message });
+      return res.status(logResponse.status).json({ 
+        statusCode: logResponse.status,
+        message: errorData.message 
+      });
     }
 
     await connection.execute(

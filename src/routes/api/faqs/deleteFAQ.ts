@@ -90,9 +90,15 @@ router.delete("/:faq_id", async (req: Request<{ faq_id: DeleteFAQRequest['params
     }
 
     await connection.execute(
+      'DELETE FROM hobit.related_faqs WHERE faq_id = ?',
+      [faq_id]
+    );
+
+    await connection.execute(
       'DELETE FROM hobit.faqs WHERE id = ?',
       [faq_id]
     );
+
     const response : DeleteFAQResponse = {
       statusCode: 200,
       message: "FAQ deleted successfully"

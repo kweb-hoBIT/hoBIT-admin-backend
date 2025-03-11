@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-import swaggerUi from "swagger-ui-express";
+// import swaggerUi from "swagger-ui-express";
 // import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";

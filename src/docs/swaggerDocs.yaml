@@ -6,7 +6,7 @@ info:
 servers:
   - url: 'http://localhost:5001'
     description: 로컬 개발 서버
-  - url: 'https://admin.hobit.kr'
+  - url: 'https://api2.hobit.kr'
     description: 운영 서버
 paths:
   /api/auth:

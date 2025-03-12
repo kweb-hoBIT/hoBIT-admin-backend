@@ -1,0 +1,948 @@
+openapi: 3.0.0
+info:
+  title: Hobit Admin API
+  version: 1.0.0
+  description: Hobit Admin API 설명
+servers:
+  - url: 'http://localhost:5001'
+    description: 로컬 개발 서버
+  - url: 'https://api2.hobit.kr'
+    description: 운영 서버
+paths:
+  /api/auth:
+    post:
+      summary: 사용자 로그인 및 토큰 발급
+      description: 사용자가 로그인하고 `accessToken`과 `refreshToken`을 발급받는 API입니다.
+      operationId: login
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 로그인할 사용자의 이메일
+                  example: "user@example.com"
+                password:
+                  type: string
+                  description: 사용자의 비밀번호
+                  example: "password123"
+      responses:
+        '200':
+          description: 로그인 성공 및 토큰 발급
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Authentication successful"
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 1
+                      username:
+                        type: string
+                        example: "배현직"
+        '401':
+          description: 비밀번호가 틀린 경우
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 401
+                  message:
+                    type: string
+                    example: "Invalid password"
+        '404':
+          description: 사용자를 찾을 수 없는 경우
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+  
+  /api/auth/logout:
+    post:
+      summary: 사용자 로그아웃 및 토큰 삭제
+      description: 사용자가 로그아웃하고 `accessToken`과 `refreshToken` 쿠키를 삭제하는 API입니다.
+      operationId: logout
+      tags:
+        - auth
+      responses:
+        '200':
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Logout successful"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/auth/refresh:
+    post:
+      summary: Refresh Token을 사용하여 Access Token 갱신
+      description: 사용자가 `refreshToken`을 사용해 새로운 `accessToken`을 발급받는 API입니다.
+      operationId: tokenRefresh
+      tags:
+        - auth
+      responses:
+        '200':
+          description: 성공적으로 accessToken이 갱신된 경우
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Access token refreshed successfully"
+        '400':
+          description: refresh token이 없거나 유효하지 않은 경우
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "No refresh token provided"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/faqs/create/category/check:
+    post:
+      summary: FAQ 추가시 카테고리 충돌 확인
+      description: 추가하려는 FAQ의 카테고리가 기존 카테고리와 충돌되는지 확인하는 API입니다.
+      operationId: createCheckFAQCategoryDuplicate
+      tags:
+        - faqs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maincategory_ko:
+                  type: string
+                  description: 한글 주요 카테고리
+                  example: "한글 주요 카테고리"
+                maincategory_en:
+                  type: string
+                  description: 영어 주요 카테고리
+                  example: "english main category"
+                subcategory_ko:
+                  type: string
+                  description: 한글 서브 카테고리
+                  example: "한글 서브 카테고리"
+                subcategory_en:
+                  type: string
+                  description: 영어 서브 카테고리
+                  example: "english sub category"
+      responses:
+        '200':
+          description: 카테고리 확인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Categories checked successfully"
+                  data:
+                    type: object
+                    properties:
+                      isDuplicated:
+                        type: boolean
+                        example: false
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/faqs/:
+    post:
+      summary: FAQ 생성
+      description: 새로운 FAQ를 생성하는 API입니다.
+      operationId: createFAQ
+      tags:
+        - faqs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: FAQ를 생성하는 사용자 ID
+                  example: 1
+                maincategory_ko:
+                  type: string
+                  description: 주요 카테고리 (한국어)
+                  example: "주요 카테고리"
+                maincategory_en:
+                  type: string
+                  description: 주요 카테고리 (영어)
+                  example: "main category"
+                subcategory_ko:
+                  type: string
+                  description: 하위 카테고리 (한국어)
+                  example: "하위 카테고리"
+                subcategory_en:
+                  type: string
+                  description: 하위 카테고리 (영어)
+                  example: "sub category"
+                question_ko:
+                  type: string
+                  description: 질문 (한국어)
+                  example: "한글 질문 내용"
+                question_en:
+                  type: string
+                  description: 질문 (영어)
+                  example: "english question content"
+                answer_ko:
+                  type: array
+                  description: 답변 (한국어) 리스트
+                  items:
+                    type: object
+                    properties:
+                      answer:
+                        type: string
+                        description: 답변 (한국어)
+                        example: "한글 답변"
+                      url:
+                        type: string
+                        description: 관련 URL (한국어)
+                        example: "관련 URL"
+                      email:
+                        type: string
+                        description: 관련 이메일 주소 (한국어)
+                        example: "관련 이메일 주소"
+                      phone:
+                        type: string
+                        description: 관련 전화번호 (한국어)
+                        example: "관련 전화번호"
+                answer_en:
+                  type: array
+                  description: 답변 (영어) 리스트
+                  items:
+                    type: object
+                    properties:
+                      answer:
+                        type: string
+                        description: 답변 (영어)
+                        example: "english answer"
+                      url:
+                        type: string
+                        description: 관련 URL (영어)
+                        example: "english relevant url"
+                      email:
+                        type: string
+                        description: 관련 이메일 주소 (영어)
+                        example: "english relevant email address"
+                      phone:
+                        type: string
+                        description: 관련 전화번호 (영어)
+                        example: "english relevant phone number"
+                manager:
+                  type: string
+                  description: 담당자 (이름)
+                  example: "담당자 이름"
+      responses:
+        '201':
+          description: FAQ 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "FAQ created successfully"
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+    get:
+      summary: 모든 FAQ 목록 조회
+      description: 모든 FAQ 데이터를 가져오는 API입니다. 최신순으로 정렬됩니다.
+      operationId: getAllFAQs
+      tags:
+        - faqs
+      responses:
+        '200':
+          description: FAQ 목록 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQs retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      faqs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            faq_id:
+                              type: integer
+                              description: FAQ ID
+                              example: 1
+                            maincategory_ko:
+                              type: string
+                              description: 주요 카테고리 (한국어)
+                              example: "주요 카테고리"
+                            maincategory_en:
+                              type: string
+                              description: 주요 카테고리 (영어)
+                              example: "main category"
+                            subcategory_ko:
+                              type: string
+                              description: 하위 카테고리 (한국어)
+                              example: "하위 카테고리"
+                            subcategory_en:
+                              type: string
+                              description: 하위 카테고리 (영어)
+                              example: "sub category"
+                            question_ko:
+                              type: string
+                              description: 질문 (한국어)
+                              example: "한글 질문 내용"
+                            question_en:
+                              type: string
+                              description: 질문 (영어)
+                              example: "english question content"
+                            answer_ko:
+                              type: array
+                              description: 답변 (한국어) 리스트
+                              items:
+                                type: object
+                                properties:
+                                  answer:
+                                    type: string
+                                    description: 답변 (한국어)
+                                    example: "한글 답변"
+                                  url:
+                                    type: string
+                                    description: 관련 URL
+                                    example: "관련 URL"
+                                  email:
+                                    type: string
+                                    description: 관련 이메일 주소
+                                    example: "관련 이메일 주소"
+                                  phone:
+                                    type: string
+                                    description: 관련 전화번호
+                                    example: "관련 전화번호"
+                            answer_en:
+                              type: array
+                              description: 답변 (영어) 리스트
+                              items:
+                                type: object
+                                properties:
+                                  answer:
+                                    type: string
+                                    description: 답변 (영어)
+                                    example: "english answer"
+                                  url:
+                                    type: string
+                                    description: 관련 URL (영어)
+                                    example: "english relevant url"
+                                  email:
+                                    type: string
+                                    description: 관련 이메일 주소 (영어)
+                                    example: "english relevant email address"
+                                  phone:
+                                    type: string
+                                    description: 관련 전화번호 (영어)
+                                    example: "english relevant phone number"
+                            manager:
+                              type: string
+                              description: 담당자 (이름)
+                              example: "담당자 이름"
+                            created_at:
+                              type: string
+                              format: date-time
+                              description: FAQ 생성일
+                              example: "2025-03-12T00:00:00Z"
+                            updated_at:
+                              type: string
+                              format: date-time
+                              description: FAQ 수정일
+                              example: "2025-03-12T00:00:00Z"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+
+
+  /api/faqs/related:
+    post:
+      summary: FAQ 관련 질문 생성
+      description: 주어진 질문을 기반으로 유사한 질문을 생성하는 API입니다.
+      operationId: createRelateFAQ
+      tags:
+        - faqs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                faq_id:
+                  type: integer
+                  description: FAQ ID
+                  example: 1
+                question:
+                  type: string
+                  description: 기준이 되는 질문
+                  example: "기준 질문 내용"
+                count:
+                  type: integer
+                  description: 생성할 유사 질문 개수 (기본값 10)
+                  example: 10
+      responses:
+        '200':
+          description: 관련 질문 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Related questions generated successfully"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/faqs/{faq_id}:
+    get:
+      summary: 특정 FAQ 조회
+      description: 특정 FAQ의 정보를 조회하는 API입니다.
+      operationId: getFAQ
+      tags:
+        - faqs
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 조회할 FAQ의 ID
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: FAQ 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      faq_id:
+                        type: integer
+                        description: FAQ ID
+                        example: 1
+                      maincategory_ko:
+                        type: string
+                        description: 주요 카테고리 (한국어)
+                        example: "주요 카테고리"
+                      maincategory_en:
+                        type: string
+                        description: 주요 카테고리 (영어)
+                        example: "main category"
+                      subcategory_ko:
+                        type: string
+                        description: 하위 카테고리 (한국어)
+                        example: "하위 카테고리"
+                      subcategory_en:
+                        type: string
+                        description: 하위 카테고리 (영어)
+                        example: "sub category"
+                      question_ko:
+                        type: string
+                        description: 질문 (한국어)
+                        example: "한글 질문 내용"
+                      question_en:
+                        type: string
+                        description: 질문 (영어)
+                        example: "english question content"
+                      answer_ko:
+                        type: array
+                        description: 답변 (한국어) 리스트
+                        items:
+                          type: object
+                          properties:
+                            answer:
+                              type: string
+                              description: 답변 (한국어)
+                              example: "한글 답변"
+                            url:
+                              type: string
+                              description: 관련 URL
+                              example: "관련 URL"
+                            email:
+                              type: string
+                              description: 관련 이메일 주소
+                              example: "관련 이메일 주소"
+                            phone:
+                              type: string
+                              description: 관련 전화번호
+                              example: "관련 전화번호"
+                      answer_en:
+                        type: array
+                        description: 답변 (영어) 리스트
+                        items:
+                          type: object
+                          properties:
+                            answer:
+                              type: string
+                              description: 답변 (영어)
+                              example: "english answer"
+                            url:
+                              type: string
+                              description: 관련 URL (영어)
+                              example: "english relevant url"
+                            email:
+                              type: string
+                              description: 관련 이메일 주소 (영어)
+                              example: "english relevant email address"
+                            phone:
+                              type: string
+                              description: 관련 전화번호 (영어)
+                              example: "english relevant phone number"
+                      manager:
+                        type: string
+                        description: 담당자 (이름)
+                        example: "담당자 이름"
+                      created_at:
+                        type: string
+                        format: date-time
+                        description: FAQ 생성일
+                        example: "2025-03-12T00:00:00Z"
+                      updated_at:
+                        type: string
+                        format: date-time
+                        description: FAQ 수정일
+                        example: "2025-03-12T00:00:00Z"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+        
+    put:
+      summary: FAQ 수정
+      description: 특정 FAQ를 수정하는 API입니다.
+      operationId: updateFAQ
+      tags:
+        - faqs
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 수정할 FAQ의 ID
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: FAQ를 수정하는 사용자 ID
+                  example: 1
+                maincategory_ko:
+                  type: string
+                  description: 주요 카테고리 (한국어)
+                  example: "주요 카테고리"
+                maincategory_en:
+                  type: string
+                  description: 주요 카테고리 (영어)
+                  example: "main category"
+                subcategory_ko:
+                  type: string
+                  description: 하위 카테고리 (한국어)
+                  example: "하위 카테고리"
+                subcategory_en:
+                  type: string
+                  description: 하위 카테고리 (영어)
+                  example: "sub category"
+                question_ko:
+                  type: string
+                  description: 질문 (한국어)
+                  example: "한글 질문 내용"
+                question_en:
+                  type: string
+                  description: 질문 (영어)
+                  example: "english question content"
+                answer_ko:
+                  type: array
+                  description: 답변 (한국어) 리스트
+                  items:
+                    type: object
+                    properties:
+                      answer:
+                        type: string
+                        description: 답변 (한국어)
+                        example: "한글 답변"
+                      url:
+                        type: string
+                        description: 관련 URL
+                        example: "관련 URL"
+                      email:
+                        type: string
+                        description: 관련 이메일 주소
+                        example: "관련 이메일 주소"
+                      phone:
+                        type: string
+                        description: 관련 전화번호
+                        example: "관련 전화번호"
+                answer_en:
+                  type: array
+                  description: 답변 (영어) 리스트
+                  items:
+                    type: object
+                    properties:
+                      answer:
+                        type: string
+                        description: 답변 (영어)
+                        example: "english answer"
+                      url:
+                        type: string
+                        description: 관련 URL (영어)
+                        example: "english relevant url"
+                      email:
+                        type: string
+                        description: 관련 이메일 주소 (영어)
+                        example: "english relevant email address"
+                      phone:
+                        type: string
+                        description: 관련 전화번호 (영어)
+                        example: "english relevant phone number"
+                manager:
+                  type: string
+                  description: 담당자 (이름)
+                  example: "담당자 이름"
+      responses:
+        '200':
+          description: FAQ 수정 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ updated successfully"
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+    
+    delete:
+      summary: FAQ 삭제
+      description: 특정 FAQ를 삭제하는 API입니다.
+      operationId: deleteFAQ
+      tags:
+        - faqs
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 삭제할 FAQ의 ID
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: 삭제를 요청하는 사용자 ID
+                  example: 1
+      responses:
+        '200':
+          description: FAQ 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ deleted successfully"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/faqs/update/category/check:
+    post:
+      summary: FAQ 수정시 카테고리 충돌 여부 확인
+      description: 수정하려는 FAQ의 카테고리 충돌 여부를 확인하는 API입니다.
+      operationId: updateCheckFAQCategoryDuplicate
+      tags:
+        - faqs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                faq_id:
+                  type: integer
+                  description: FAQ ID
+                  example: 1
+                maincategory_ko:
+                  type: string
+                  description: 주요 카테고리 (한국어)
+                  example: "주요 카테고리"
+                maincategory_en:
+                  type: string
+                  description: 주요 카테고리 (영어)
+                  example: "main category"
+                subcategory_ko:
+                  type: string
+                  description: 하위 카테고리 (한국어)
+                  example: "하위 카테고리"
+                subcategory_en:
+                  type: string
+                  description: 하위 카테고리 (영어)
+                  example: "sub category"
+      responses:
+        '200':
+          description: 카테고리 중복 여부 확인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Categories checked successfully"
+                  data:
+                    type: object
+                    properties:
+                      isDuplicated:
+                        type: boolean
+                        description: 중복 여부
+                        example: true
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"

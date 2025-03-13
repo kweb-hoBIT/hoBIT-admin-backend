@@ -30,10 +30,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// 미들웨어 설정
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 
 // 비동기적으로 DB 초기화
 (async () => {
@@ -62,5 +58,10 @@ app.use("/api", adminlogsRoutes);
 app.use("/api", questionlogsRoutes);
 app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
+
+// 미들웨어 설정
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 export default app;

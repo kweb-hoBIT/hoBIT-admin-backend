@@ -499,7 +499,65 @@ paths:
                     type: string
                     example: "Internal server error"
 
-
+  /api/faqs/category:
+    get:
+      summary: 모든 카테고리 및 하위 카테고리 조회
+      description: 모든 FAQ의 메인 카테고리와 서브 카테고리를 조회합니다.
+      operationId: getAllFAQCategories
+      tags:
+        - faqs
+      responses:
+        '200':
+          description: 카테고리 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Categories retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            maincategory_ko:
+                              type: string
+                              example: "생활"
+                            maincategory_en:
+                              type: string
+                              example: "Life"
+                            subcategories:
+                              type: object
+                              properties:
+                                subcategory_ko:
+                                  type: array
+                                  items:
+                                    type: string
+                                subcategory_en:
+                                  type: array
+                                  items:
+                                    type: string
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
 
   /api/faqs/related:
     post:
@@ -935,6 +993,2354 @@ paths:
                         example: true
         '500':
           description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/adminlogs/faqlogs/compare/{faq_log_id}:
+    get:
+      summary: FAQ 로그 비교
+      description: 특정 FAQ 로그의 이전 버전과 새로운 버전을 비교하는 API입니다.
+      operationId: compareFaqLog
+      tags:
+        - adminlogs
+      parameters:
+        - name: faq_log_id
+          in: path
+          required: true
+          description: 비교할 FAQ 로그의 ID
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: FAQ 로그 비교 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ log comparison retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      prev_faq:
+                        type: object
+                        description: 이전 FAQ 데이터
+                      new_faq:
+                        type: object
+                        description: 새로운 FAQ 데이터
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/adminlogs/seniorfaqlogs/compare/{senior_faq_log_id}:
+    get:
+      summary: 시니어 FAQ 로그 비교
+      description: 특정 시니어 FAQ 로그의 이전 버전과 새로운 버전을 비교하는 API입니다.
+      operationId: compareSeniorFaqLog
+      tags:
+        - adminlogs
+      parameters:
+        - name: senior_faq_log_id
+          in: path
+          required: true
+          description: 비교할 시니어 FAQ 로그의 ID
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: 시니어 FAQ 로그 비교 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Senior FAQ log comparison retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      prev_senior_faq:
+                        type: object
+                        description: 이전 시니어 FAQ 데이터
+                      new_senior_faq:
+                        type: object
+                        description: 새로운 시니어 FAQ 데이터
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/adminlogs/faqlogs:
+    post:
+      summary: FAQ 로그 생성
+      description: 새로운 FAQ 로그를 생성하는 API입니다.
+      operationId: createFAQLog
+      tags:
+        - adminlogs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: 로그를 생성한 사용자 이름
+                  example: "admin_user"
+                faq_id:
+                  type: integer
+                  description: 관련된 FAQ의 ID
+                  example: 1
+                action_type:
+                  type: string
+                  description: 수행된 액션 유형 (예 추가, 수정, 삭제)
+                  example: "추가"
+                prev_faq:
+                  type: object
+                  description: 변경 전 FAQ 데이터
+                new_faq:
+                  type: object
+                  description: 변경 후 FAQ 데이터
+      responses:
+        '201':
+          description: FAQ 로그 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "FAQ log created successfully"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/adminlogs/seniorfaqlogs:
+    post:
+      summary: 시니어 FAQ 로그 생성
+      description: 새로운 시니어 FAQ 로그를 생성하는 API입니다.
+      operationId: createSeniorFAQLog
+      tags:
+        - adminlogs
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: 로그를 생성한 사용자 이름
+                  example: "admin_user"
+                senior_faq_id:
+                  type: integer
+                  description: 관련된 시니어 FAQ의 ID
+                  example: 1
+                action_type:
+                  type: string
+                  description: 수행된 액션 유형 (예 추가, 수정, 삭제)
+                  example: "추가"
+                prev_senior_faq:
+                  type: object
+                  description: 변경 전 시니어 FAQ 데이터
+                new_senior_faq:
+                  type: object
+                  description: 변경 후 시니어 FAQ 데이터
+      responses:
+        '201':
+          description: 시니어 FAQ 로그 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Senior FAQ log created successfully"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/adminlogs:
+    get:
+      summary: 모든 관리자 로그 조회
+      description: FAQ 및 시니어 FAQ 로그를 포함한 모든 관리자 로그를 조회하는 API입니다.
+      operationId: getAllAdminLogs
+      tags:
+        - adminlogs
+      responses:
+        '200':
+          description: 관리자 로그 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Admin logs retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      adminLogs:
+                        type: array
+                        description: 관리자 로그 목록
+                        items:
+                          type: object
+                          properties:
+                            log_id:
+                              type: integer
+                              description: 로그 ID
+                              example: 1
+                            username:
+                              type: string
+                              description: 로그를 생성한 사용자명
+                              example: "admin_user"
+                            category_id:
+                              type: integer
+                              description: 관련된 FAQ 또는 시니어 FAQ의 ID
+                              example: 10
+                            maincategory:
+                              type: string
+                              description: 주요 카테고리
+                              example: "고객 서비스"
+                            subcategory:
+                              type: string
+                              description: 하위 카테고리
+                              example: "계정 관리"
+                            detailcategory:
+                              type: string
+                              description: 상세 카테고리 (시니어 FAQ 로그의 경우)
+                              example: "비밀번호 변경"
+                            question:
+                              type: string
+                              nullable: true
+                              description: 질문 (FAQ 로그의 경우)
+                              example: "비밀번호를 변경하려면 어떻게 하나요?"
+                            action_type:
+                              type: string
+                              description: 수행된 액션 유형 (예 추가, 수정, 삭제)
+                              example: "추가"
+                            created_at:
+                              type: string
+                              format: date-time
+                              description: 로그 생성 날짜 및 시간
+                              example: "2024-03-12T10:30:00Z"
+                            log_type:
+                              type: string
+                              description: 로그 유형 (faq_log 또는 senior_faq_log)
+                              example: "faq_log"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/feedbacks/{user_feedback_id}:
+    delete:
+      summary: 사용자 피드백 삭제
+      description: 특정 사용자의 피드백을 삭제하는 API입니다.
+      operationId: deleteUserFeedback
+      tags:
+        - feedbacks
+      parameters:
+        - name: user_feedback_id
+          in: path
+          required: true
+          description: 삭제할 사용자 피드백의 ID
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: 사용자 피드백 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User feedback deleted successfully"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/feedbacks/user:
+    get:
+      summary: 모든 사용자 피드백 조회
+      description: 모든 사용자 피드백을 조회하는 API입니다.
+      operationId: getAllUserFeedbacks
+      tags:
+        - feedbacks
+      responses:
+        '200':
+          description: 사용자 피드백 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User feedbacks retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      userFeedbacks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            user_feedback_id:
+                              type: integer
+                              description: 사용자 피드백 ID
+                              example: 1
+                            question_ko:
+                              type: string
+                              description: 질문 (한국어)
+                              example: "질문 내용"
+                            feedback_reason:
+                              type: string
+                              description: 피드백 사유
+                              example: "피드백 사유 내용"
+                            feedback_detail:
+                              type: string
+                              description: 피드백 상세 내용
+                              example: "피드백 상세 내용"
+                            resolved:
+                              type: boolean
+                              description: 해결 여부
+                              example: true
+                            created_at:
+                              type: string
+                              format: date-time
+                              description: 피드백 생성일
+                              example: "2025-03-12T00:00:00Z"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/feedbacks/user/{user_feedback_id}:
+    put:
+      summary: 사용자 피드백 해결 상태 업데이트
+      description: 특정 사용자 피드백의 해결 상태(`resolved`)를 업데이트하는 API입니다.
+      operationId: updateUserFeedbackResolved
+      tags:
+        - feedbacks
+      parameters:
+        - name: user_feedback_id
+          in: path
+          required: true
+          description: 해결 상태를 업데이트할 사용자 피드백의 ID
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: 사용자 피드백 해결 상태 업데이트 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User feedback resolved status updated successfully"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/:
+    get:
+      summary: 모든 질문 로그 조회
+      description: 모든 질문 로그를 조회하는 API입니다.
+      operationId: getAllQuestionLogs
+      tags:
+        - questionlogs
+      responses:
+        '200':
+          description: 질문 로그 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question logs retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      questionLogs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            question_log_id:
+                              type: integer
+                              description: 질문 로그 ID
+                              example: 1
+                            user_question:
+                              type: string
+                              description: 사용자 질문
+                              example: "어떻게 하면 계정을 삭제할 수 있나요?"
+                            feedback_score:
+                              type: integer
+                              description: 피드백 점수
+                              example: 5
+                            feedback:
+                              type: string
+                              description: 피드백 내용
+                              example: "상당히 유용했습니다."
+                            created_at:
+                              type: string
+                              format: date-time
+                              description: 질문 로그 생성일
+                              example: "2025-03-12T00:00:00Z"
+                            faq_id:
+                              type: integer
+                              description: 관련 FAQ ID
+                              example: 1
+                            faq_question:
+                              type: string
+                              description: 관련 FAQ 질문 (언어에 따라 다를 수 있음)
+                              example: "How can I delete my account?"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/feedback/{faq_id}:
+    get:
+      summary: 특정 FAQ에 대한 평균 피드백 점수 조회
+      description: 특정 FAQ의 질문 로그에 대한 평균 피드백 점수를 조회하는 API입니다.
+      operationId: questionLogFeedback
+      tags:
+        - questionlogs
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 피드백 점수를 조회할 FAQ ID
+          schema:
+            type: integer
+          example: 1
+      responses:
+        '200':
+          description: 질문 로그 피드백 점수 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question log feedback score retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      logData:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date
+                            description: 조회 시작 날짜
+                            example: "2025-03-01"
+                          endDate:
+                            type: string
+                            format: date
+                            description: 조회 종료 날짜
+                            example: "2025-03-12"
+                          groupData:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  format: date
+                                  description: 시작 날짜
+                                  example: "2025-03-01"
+                                endDate:
+                                  type: string
+                                  format: date
+                                  description: 종료 날짜
+                                  example: "2025-03-07"
+                                data:
+                                  type: object
+                                  properties:
+                                    faq_id:
+                                      type: integer
+                                      description: FAQ ID
+                                      example: 1
+                                    question_ko:
+                                      type: string
+                                      description: FAQ 질문 (한국어)
+                                      example: "계정 삭제 방법은?"
+                                    score_average:
+                                      type: number
+                                      format: float
+                                      description: 평균 피드백 점수
+                                      example: 4.2
+                                    score_like_count:
+                                      type: integer
+                                      description: 좋아요 수
+                                      example: 50
+                                    score_dislike_count:
+                                      type: integer
+                                      description: 싫어요 수
+                                      example: 10
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/frequency/{faq_id}:
+    get:
+      summary: 특정 FAQ에 대한 질문 로그 빈도 조회
+      description: 특정 FAQ의 질문 로그에 대한 빈도를 조회하는 API입니다.
+      operationId: questionLogFrequency
+      tags:
+        - questionlogs
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 빈도를 조회할 FAQ ID
+          schema:
+            type: integer
+          example: 1
+        - name: startDate
+          in: query
+          required: true
+          description: 조회 시작 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-01"
+        - name: endDate
+          in: query
+          required: true
+          description: 조회 종료 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-12"
+        - name: period
+          in: query
+          required: true
+          description: 빈도 집계 기간 (day, week, month 중 하나)
+          schema:
+            type: string
+          enum:
+            - day
+            - week
+            - month
+          example: "day"
+      responses:
+        '200':
+          description: 질문 로그 빈도 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question log frequency retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      logData:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date
+                            description: 조회 시작 날짜
+                            example: "2025-03-01"
+                          endDate:
+                            type: string
+                            format: date
+                            description: 조회 종료 날짜
+                            example: "2025-03-12"
+                          groupData:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  format: date
+                                  description: 시작 날짜
+                                  example: "2025-03-01"
+                                endDate:
+                                  type: string
+                                  format: date
+                                  description: 종료 날짜
+                                  example: "2025-03-07"
+                                data:
+                                  type: object
+                                  properties:
+                                    faq_id:
+                                      type: integer
+                                      description: FAQ ID
+                                      example: 1
+                                    question_ko:
+                                      type: string
+                                      description: FAQ 질문 (한국어)
+                                      example: "계정 삭제 방법은?"
+                                    count:
+                                      type: integer
+                                      description: 해당 기간 동안의 질문 로그 빈도
+                                      example: 25
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/language/{faq_id}:
+    get:
+      summary: 특정 FAQ에 대한 언어별 질문 로그 빈도 조회
+      description: 특정 FAQ에 대한 질문 로그에서 각 언어(한국어, 영어)의 빈도를 조회하는 API입니다.
+      operationId: questionLogLanguage
+      tags:
+        - questionlogs
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 빈도를 조회할 FAQ ID
+          schema:
+            type: integer
+          example: 1
+        - name: startDate
+          in: query
+          required: true
+          description: 조회 시작 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-01"
+        - name: endDate
+          in: query
+          required: true
+          description: 조회 종료 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-12"
+        - name: period
+          in: query
+          required: true
+          description: 빈도 집계 기간 (day, week, month 중 하나)
+          schema:
+            type: string
+          enum:
+            - day
+            - week
+            - month
+          example: "day"
+      responses:
+        '200':
+          description: 언어별 질문 로그 빈도 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question log language frequency retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      logData:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date
+                            description: 조회 시작 날짜
+                            example: "2025-03-01"
+                          endDate:
+                            type: string
+                            format: date
+                            description: 조회 종료 날짜
+                            example: "2025-03-12"
+                          groupData:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  format: date
+                                  description: 시작 날짜
+                                  example: "2025-03-01"
+                                endDate:
+                                  type: string
+                                  format: date
+                                  description: 종료 날짜
+                                  example: "2025-03-07"
+                                data:
+                                  type: object
+                                  properties:
+                                    faq_id:
+                                      type: integer
+                                      description: FAQ ID
+                                      example: 1
+                                    question_ko:
+                                      type: string
+                                      description: FAQ 질문 (한국어)
+                                      example: "계정 삭제 방법은?"
+                                    ko_frequency:
+                                      type: integer
+                                      description: 한국어로 작성된 질문의 빈도
+                                      example: 15
+                                    en_frequency:
+                                      type: integer
+                                      description: 영어로 작성된 질문의 빈도
+                                      example: 10
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/feedback:
+    get:
+      summary: 특정 기간 동안의 질문 로그 피드백 점수 조회
+      description: 특정 기간 동안의 질문 로그에 대한 평균 피드백 점수와 좋아요/싫어요 수를 조회하는 API입니다.
+      operationId: questionLogsFeedback
+      tags:
+        - questionlogs
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          description: 조회 시작 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-01"
+        - name: endDate
+          in: query
+          required: true
+          description: 조회 종료 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-12"
+        - name: period
+          in: query
+          required: true
+          description: 피드백 빈도 집계 기간 (day, week, month 중 하나)
+          schema:
+            type: string
+          enum:
+            - day
+            - week
+            - month
+          example: "day"
+        - name: sortOrder
+          in: query
+          required: true
+          description: 정렬 순서 (1이면 내림차순, 0이면 오름차순)
+          schema:
+            type: integer
+          example: 1
+        - name: limit
+          in: query
+          required: true
+          description: 한 날짜 범위 내에 반환할 질문 수
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '200':
+          description: 질문 로그 피드백 점수 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question logs feedback score retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      logData:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date
+                            description: 조회 시작 날짜
+                            example: "2025-03-01"
+                          endDate:
+                            type: string
+                            format: date
+                            description: 조회 종료 날짜
+                            example: "2025-03-12"
+                          groupData:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  format: date
+                                  description: 시작 날짜
+                                  example: "2025-03-01"
+                                endDate:
+                                  type: string
+                                  format: date
+                                  description: 종료 날짜
+                                  example: "2025-03-07"
+                                data:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      rank:
+                                        type: integer
+                                        description: 질문의 순위
+                                        example: 1
+                                      faq_id:
+                                        type: integer
+                                        description: FAQ ID
+                                        example: 1
+                                      question_ko:
+                                        type: string
+                                        description: FAQ 질문 (한국어)
+                                        example: "계정 삭제 방법은?"
+                                      score_average:
+                                        type: number
+                                        format: float
+                                        description: 평균 피드백 점수
+                                        example: 4.2
+                                      score_like_count:
+                                        type: integer
+                                        description: 좋아요 수
+                                        example: 50
+                                      score_dislike_count:
+                                        type: integer
+                                        description: 싫어요 수
+                                        example: 10
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/frequency:
+    get:
+      summary: 특정 기간 동안의 질문 로그 빈도 조회
+      description: 특정 기간 동안의 질문 로그 빈도와 질문별 발생 횟수를 조회하는 API입니다.
+      operationId: questionLogsFrequency
+      tags:
+        - questionlogs
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          description: 조회 시작 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-01"
+        - name: endDate
+          in: query
+          required: true
+          description: 조회 종료 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-12"
+        - name: period
+          in: query
+          required: true
+          description: 빈도 집계 기간 (day, week, month 중 하나)
+          schema:
+            type: string
+          enum:
+            - day
+            - week
+            - month
+          example: "day"
+        - name: sortOrder
+          in: query
+          required: true
+          description: 정렬 순서 (1이면 내림차순, 0이면 오름차순)
+          schema:
+            type: integer
+          example: 1
+        - name: limit
+          in: query
+          required: true
+          description: 한 날짜 범위 내에 반환할 질문 수
+          schema:
+            type: integer
+          example: 5
+      responses:
+        '200':
+          description: 질문 로그 빈도 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question logs frequency retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      logData:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date
+                            description: 조회 시작 날짜
+                            example: "2025-03-01"
+                          endDate:
+                            type: string
+                            format: date
+                            description: 조회 종료 날짜
+                            example: "2025-03-12"
+                          groupData:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  format: date
+                                  description: 시작 날짜
+                                  example: "2025-03-01"
+                                endDate:
+                                  type: string
+                                  format: date
+                                  description: 종료 날짜
+                                  example: "2025-03-07"
+                                data:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      rank:
+                                        type: integer
+                                        description: 질문의 순위
+                                        example: 1
+                                      faq_id:
+                                        type: integer
+                                        description: FAQ ID
+                                        example: 1
+                                      question_ko:
+                                        type: string
+                                        description: FAQ 질문 (한국어)
+                                        example: "계정 삭제 방법은?"
+                                      count:
+                                        type: integer
+                                        description: 질문의 발생 횟수
+                                        example: 150
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/questionlogs/language:
+    get:
+      summary: 특정 기간 동안의 질문 로그를 언어별로 집계하여 조회
+      description: 주어진 기간 동안의 질문 로그를 한국어와 영어로 집계하여 각각의 빈도를 반환하는 API입니다.
+      operationId: questionLogsLanguage
+      tags:
+        - questionlogs
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          description: 조회 시작 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-01"
+        - name: endDate
+          in: query
+          required: true
+          description: 조회 종료 날짜 (YYYY-MM-DD 형식)
+          schema:
+            type: string
+          example: "2025-03-12"
+        - name: period
+          in: query
+          required: true
+          description: 집계 기간 (day, week, month 중 하나)
+          schema:
+            type: string
+          enum:
+            - day
+            - week
+            - month
+          example: "day"
+      responses:
+        '200':
+          description: 언어별 질문 로그 빈도 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Question logs language frequency retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      logData:
+                        type: object
+                        properties:
+                          startDate:
+                            type: string
+                            format: date
+                            description: 조회 시작 날짜
+                            example: "2025-03-01"
+                          endDate:
+                            type: string
+                            format: date
+                            description: 조회 종료 날짜
+                            example: "2025-03-12"
+                          groupData:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                startDate:
+                                  type: string
+                                  format: date
+                                  description: 시작 날짜
+                                  example: "2025-03-01"
+                                endDate:
+                                  type: string
+                                  format: date
+                                  description: 종료 날짜
+                                  example: "2025-03-07"
+                                data:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      ko_frequency:
+                                        type: integer
+                                        description: 한국어로 작성된 질문의 빈도
+                                        example: 120
+                                      en_frequency:
+                                        type: integer
+                                        description: 영어로 작성된 질문의 빈도
+                                        example: 50
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request data"
+        '500':
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/translate/:
+    post:
+      summary: 텍스트를 번역하여 결과 반환
+      description: 주어진 텍스트를 DeepL API를 사용하여 영어로 번역하고, 번역된 텍스트를 반환하는 API입니다.
+      operationId: translate
+      tags:
+        - translate
+      requestBody:
+        description: 번역할 텍스트를 포함하는 요청 본문
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                  description: 번역할 텍스트
+                  example: "안녕하세요, 반갑습니다."
+      responses:
+        '200':
+          description: 텍스트 번역 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Text translated successfully"
+                  data:
+                    type: object
+                    properties:
+                      translatedText:
+                        type: string
+                        description: 번역된 텍스트
+                        example: "Hello, nice to meet you."
+        '400':
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Invalid request"
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/users/{user_id}:
+    delete:
+      summary: 주어진 user_id에 해당하는 사용자 삭제
+      description: 주어진 user_id에 해당하는 사용자를 데이터베이스에서 삭제합니다. 관리자는 삭제를 위해 manageKey를 제공해야 합니다.
+      operationId: deleteAccount
+      tags:
+        - users
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: 삭제할 사용자의 ID
+          schema:
+            type: string
+            example: "12345"
+      requestBody:
+        description: 관리자의 인증을 위한 관리 키를 포함한 요청 본문
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                manageKey:
+                  type: string
+                  description: 관리 권한을 검증하기 위한 키
+                  example: "admin123"
+      responses:
+        '200':
+          description: 사용자 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User deleted successfully"
+        '403':
+          description: 권한 없음 (관리 키가 유효하지 않음)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Invalid Manage key. Access denied."
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/users/find:
+    post:
+      summary: 주어진 이메일, 사용자명, 전화번호로 사용자 찾기
+      description: 이메일, 사용자명, 전화번호로 사용자를 찾아 반환합니다. 관리자는 요청에 관리 키를 포함해야 합니다.
+      operationId: findUser
+      tags:
+        - users
+      requestBody:
+        description: 사용자를 찾기 위한 정보와 관리 키를 포함한 요청 본문
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 사용자의 이메일
+                  example: "user@example.com"
+                username:
+                  type: string
+                  description: 사용자의 사용자명
+                  example: "user123"
+                phone_num:
+                  type: string
+                  description: 사용자의 전화번호
+                  example: "010-1234-5678"
+                manageKey:
+                  type: string
+                  description: 관리 권한을 검증하는 키
+                  example: "admin123"
+      responses:
+        '200':
+          description: 사용자를 성공적으로 찾음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Successfully found user"
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 12345
+        '400':
+          description: 사용자가 존재하지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "User not found"
+        '403':
+          description: 권한 없음 (관리 키가 유효하지 않음)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Invalid Manage key. Access denied."
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/users:
+    post:
+      summary: 사용자 회원가입
+      description: 사용자가 이메일, 비밀번호, 사용자명, 전화번호를 통해 회원가입할 수 있습니다. 관리자는 관리 키를 포함해야 합니다.
+      operationId: signup
+      tags:
+        - users
+      requestBody:
+        description: 사용자 정보를 포함한 요청 본문
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  description: 사용자의 이메일
+                  example: "user@example.com"
+                password:
+                  type: string
+                  description: 사용자의 비밀번호
+                  example: "password123"
+                username:
+                  type: string
+                  description: 사용자의 사용자명
+                  example: "user123"
+                phone_num:
+                  type: string
+                  description: 사용자의 전화번호
+                  example: "010-1234-5678"
+                manageKey:
+                  type: string
+                  description: 관리 권한을 검증하는 키
+                  example: "admin123"
+      responses:
+        '201':
+          description: 사용자가 성공적으로 등록됨
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "User registered successfully"
+        '400':
+          description: 이메일이 이미 존재함
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "User already exists"
+        '403':
+          description: 관리 키가 유효하지 않음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 403
+                  message:
+                    type: string
+                    example: "Invalid Manage key. Access denied."
+        '500':
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/users/newpassword/{user_id}:
+    put:
+      summary: 사용자 비밀번호 업데이트
+      description: 사용자가 새로운 비밀번호를 설정할 수 있습니다.
+      operationId: updatePassword
+      tags:
+        - users
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: 비밀번호를 변경할 사용자 ID
+          schema:
+            type: integer
+            example: 123
+      requestBody:
+        description: 새로운 비밀번호를 포함한 요청 본문
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: 사용자가 설정할 새로운 비밀번호
+                  example: "newPassword123"
+      responses:
+        '200':
+          description: 비밀번호가 성공적으로 변경됨
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Successfully set new password"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/seniorfaqs/create/category/check:
+    post:
+      summary: 카테고리 중복 여부 확인
+      description: 주어진 Senior FAQ 카테고리가 중복되는지 확인합니다.
+      operationId: createCheckSeniorFAQCategoryDuplicate
+      tags:
+        - seniorfaq
+      requestBody:
+        description: 확인할 카테고리 값들
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maincategory_ko:
+                  type: string
+                  description: 주 카테고리 한국어 이름
+                  example: "건강"
+                maincategory_en:
+                  type: string
+                  description: 주 카테고리 영어 이름
+                  example: "Health"
+                subcategory_ko:
+                  type: string
+                  description: 하위 카테고리 한국어 이름
+                  example: "운동"
+                subcategory_en:
+                  type: string
+                  description: 하위 카테고리 영어 이름
+                  example: "Exercise"
+                detailcategory_ko:
+                  type: string
+                  description: 세부 카테고리 한국어 이름
+                  example: "스트레칭"
+                detailcategory_en:
+                  type: string
+                  description: 세부 카테고리 영어 이름
+                  example: "Stretching"
+      responses:
+        '200':
+          description: 카테고리 중복 여부 확인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Categories checked successfully"
+                  data:
+                    type: object
+                    properties:
+                      isDuplicated:
+                        type: boolean
+                        example: true
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/seniorfaqs:
+    post:
+      summary: 새로운 Senior FAQ를 생성
+      description: 새로운 FAQ 항목을 생성하고, 생성된 FAQ의 로그를 기록합니다.
+      operationId: createSeniorFAQ
+      tags:
+        - seniorfaq
+      requestBody:
+        description: 생성할 Senior FAQ 정보
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: 사용자 ID
+                  example: 1
+                maincategory_ko:
+                  type: string
+                  description: 주 카테고리 한국어 이름
+                  example: "건강"
+                maincategory_en:
+                  type: string
+                  description: 주 카테고리 영어 이름
+                  example: "Health"
+                subcategory_ko:
+                  type: string
+                  description: 하위 카테고리 한국어 이름
+                  example: "운동"
+                subcategory_en:
+                  type: string
+                  description: 하위 카테고리 영어 이름
+                  example: "Exercise"
+                detailcategory_ko:
+                  type: string
+                  description: 세부 카테고리 한국어 이름
+                  example: "스트레칭"
+                detailcategory_en:
+                  type: string
+                  description: 세부 카테고리 영어 이름
+                  example: "Stretching"
+                answer_ko:
+                  type: object
+                  description: 한국어 답변
+                  example: { "내용": "운동은 건강에 좋습니다." }
+                answer_en:
+                  type: object
+                  description: 영어 답변
+                  example: { "Content": "Exercise is good for health." }
+                manager:
+                  type: string
+                  description: 관리자의 이름
+                  example: "관리자"
+      responses:
+        '201':
+          description: FAQ 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 201
+                  message:
+                    type: string
+                    example: "Senior FAQ created successfully"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+    get:
+      summary: 모든 Senior FAQ 조회
+      description: 모든 Senior FAQ를 최신 생성일 기준으로 조회합니다.
+      operationId: getAllSeniorFAQs
+      tags:
+        - seniorfaq
+      responses:
+        '200':
+          description: Senior FAQ 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Senior FAQs retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      seniorFaqs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            senior_faq_id:
+                              type: integer
+                              example: 1
+                            maincategory_ko:
+                              type: string
+                              example: "생활"
+                            maincategory_en:
+                              type: string
+                              example: "Life"
+                            subcategory_ko:
+                              type: string
+                              example: "건강"
+                            subcategory_en:
+                              type: string
+                              example: "Health"
+                            detailcategory_ko:
+                              type: string
+                              example: "노화 방지"
+                            detailcategory_en:
+                              type: string
+                              example: "Anti-aging"
+                            answer_ko:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  title:
+                                    type: string
+                                    example: "Q1"
+                                  answer:
+                                    type: string
+                                    example: "노화 방지를 위한 팁입니다."
+                                  url:
+                                    type: string
+                                    example: "http://example.com"
+                                  map:
+                                    type: object
+                                    properties:
+                                      latitude:
+                                        type: string
+                                        example: "37.5665"
+                                      longitude:
+                                        type: string
+                                        example: "126.9780"
+                            answer_en:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  title:
+                                    type: string
+                                    example: "Q1"
+                                  answer:
+                                    type: string
+                                    example: "Tips for anti-aging."
+                                  url:
+                                    type: string
+                                    example: "http://example.com"
+                                  map:
+                                    type: object
+                                    properties:
+                                      latitude:
+                                        type: string
+                                        example: "37.5665"
+                                      longitude:
+                                        type: string
+                                        example: "126.9780"
+                            manager:
+                              type: string
+                              example: "관리자"
+                            created_at:
+                              type: string
+                              format: date-time
+                              example: "2025-03-13T12:00:00Z"
+                            updated_at:
+                              type: string
+                              format: date-time
+                              example: "2025-03-13T12:00:00Z"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/seniorfaqs/{senior_faq_id}:
+    put:
+      summary: Senior FAQ 수정
+      description: 주어진 senior_faq_id를 기반으로 기존 Senior FAQ 항목을 수정합니다.
+      operationId: updateSeniorFAQ
+      tags:
+        - seniorfaq
+      parameters:
+        - name: senior_faq_id
+          in: path
+          description: 수정할 Senior FAQ의 ID
+          required: true
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  example: 1
+                maincategory_ko:
+                  type: string
+                  example: "생활"
+                maincategory_en:
+                  type: string
+                  example: "Life"
+                subcategory_ko:
+                  type: string
+                  example: "건강"
+                subcategory_en:
+                  type: string
+                  example: "Health"
+                detailcategory_ko:
+                  type: string
+                  example: "노화 방지"
+                detailcategory_en:
+                  type: string
+                  example: "Anti-aging"
+                answer_ko:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        example: "노화 방지"
+                      answer:
+                        type: string
+                        example: "노화 방지를 위한 다양한 방법이 있습니다."
+                      url:
+                        type: string
+                        example: "http://example.com/anti-aging"
+                      map:
+                        type: object
+                        properties:
+                          latitude:
+                            type: string
+                            example: "37.7749"
+                          longitude:
+                            type: string
+                            example: "-122.4194"
+                answer_en:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      title:
+                        type: string
+                        example: "Anti-aging"
+                      answer:
+                        type: string
+                        example: "There are various methods to prevent aging."
+                      url:
+                        type: string
+                        example: "http://example.com/anti-aging"
+                      map:
+                        type: object
+                        properties:
+                          latitude:
+                            type: string
+                            example: "37.7749"
+                          longitude:
+                            type: string
+                            example: "-122.4194"
+                manager:
+                  type: string
+                  example: "admin"
+      responses:
+        '200':
+          description: FAQ 수정 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Senior FAQ updated successfully"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+    get:
+      summary: 특정 Senior FAQ 조회
+      description: 주어진 FAQ ID에 해당하는 Senior FAQ를 조회합니다.
+      operationId: getSeniorFAQ
+      tags:
+        - seniorfaq
+      parameters:
+        - name: faq_id
+          in: path
+          required: true
+          description: 조회할 FAQ의 ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Senior FAQ 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Senior FAQ retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      seniorFaq:
+                        type: object
+                        properties:
+                          senior_faq_id:
+                            type: integer
+                            example: 1
+                          maincategory_ko:
+                            type: string
+                            example: "생활"
+                          maincategory_en:
+                            type: string
+                            example: "Life"
+                          subcategory_ko:
+                            type: string
+                            example: "건강"
+                          subcategory_en:
+                            type: string
+                            example: "Health"
+                          detailcategory_ko:
+                            type: string
+                            example: "노화 방지"
+                          detailcategory_en:
+                            type: string
+                            example: "Anti-aging"
+                          answer_ko:
+                            type: string
+                            example: "노화 방지를 위한 팁입니다."
+                          answer_en:
+                            type: string
+                            example: "Tips for anti-aging."
+                          manager:
+                            type: string
+                            example: "관리자"
+                          created_at:
+                            type: string
+                            format: date-time
+                            example: "2025-03-13T12:00:00Z"
+                          updated_at:
+                            type: string
+                            format: date-time
+                            example: "2025-03-13T12:00:00Z"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+    delete:
+      summary: Senior FAQ 삭제
+      description: 주어진 `senior_faq_id`에 해당하는 FAQ 항목을 삭제합니다.
+      operationId: deleteSeniorFAQ
+      tags:
+        - seniorfaq
+      parameters:
+        - name: senior_faq_id
+          in: path
+          required: true
+          description: 삭제할 Senior FAQ의 ID
+          schema:
+            type: integer
+            example: 1
+      requestBody:
+        description: 삭제 요청에 필요한 정보 (사용자 ID 포함)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: FAQ를 삭제한 사용자 ID
+                  example: 1
+      responses:
+        '200':
+          description: FAQ 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Senior FAQ deleted successfully"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/seniorfaqs/category:
+    get:
+      summary: 모든 카테고리, 하위 카테고리 및 세부 카테고리 조회
+      description: 모든 Senior FAQ의 메인 카테고리, 서브 카테고리 및 세부 카테고리를 조회합니다.
+      operationId: getAllSeniorFAQCategories
+      tags:
+        - seniorfaq
+      responses:
+        '200':
+          description: 카테고리 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Categories retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      categories:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            maincategory_ko:
+                              type: string
+                              example: "생활"
+                            maincategory_en:
+                              type: string
+                              example: "Life"
+                            subcategories:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  subcategory_ko:
+                                    type: string
+                                    example: "노인 복지"
+                                  subcategory_en:
+                                    type: string
+                                    example: "Elderly Welfare"
+                                  detailcategories:
+                                    type: object
+                                    properties:
+                                      detailcategory_ko:
+                                        type: array
+                                        items:
+                                          type: string
+                                      detailcategory_en:
+                                        type: array
+                                        items:
+                                          type: string
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+  /api/seniorfaqs/update/category/check:
+    post:
+      summary: 카테고리 중복 확인
+      description: 주어진 카테고리 정보가 이미 존재하는지 중복을 확인합니다.
+      operationId: updateCheckSeniorFAQCategoryDuplicate
+      tags:
+        - seniorfaq
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                senior_faq_id:
+                  type: integer
+                  example: 1
+                maincategory_ko:
+                  type: string
+                  example: "생활"
+                maincategory_en:
+                  type: string
+                  example: "Life"
+                subcategory_ko:
+                  type: string
+                  example: "건강"
+                subcategory_en:
+                  type: string
+                  example: "Health"
+                detailcategory_ko:
+                  type: string
+                  example: "노화 방지"
+                detailcategory_en:
+                  type: string
+                  example: "Anti-aging"
+      responses:
+        '200':
+          description: 중복 여부 확인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "Categories checked successfully"
+                  data:
+                    type: object
+                    properties:
+                      isDuplicated:
+                        type: boolean
+                        example: true
+        '500':
+          description: 서버 오류 발생
           content:
             application/json:
               schema:

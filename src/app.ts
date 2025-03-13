@@ -1,10 +1,12 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import swaggerUi from "swagger-ui-express";
-import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
+
+// Swagger 설정 추가
+import swaggerJsDoc from "swagger-jsdoc";
+import swaggerUi from "swagger-ui-express";
 
 // 라우트 임포트
 import authRoutes from "./routes/api/auth/authIndex";
@@ -18,6 +20,20 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
+// Swagger 설정
+const swaggerOptions = {
+  definition: {
+    openapi: "3.0.0",
+    info: {
+      title: "Hobit Admin API",
+      version: "0.1.0",
+      description: "HoBIT Admin API Docs",
+    },
+  },
+  apis: ["./src/docs/swaggerDocs.yaml"], // Swagger YAML 문서 경로
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // CORS 설정 수정 (쿠키 인증 허용)
 app.use(
@@ -31,7 +47,6 @@ app.use(
     credentials: true,
   })
 );
-
 
 // 비동기적으로 DB 초기화
 (async () => {
@@ -48,9 +63,8 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// 그 다음 Swagger 설정
+// Swagger UI 설정
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
 
 // 미들웨어 설정
 app.use(cookieParser());

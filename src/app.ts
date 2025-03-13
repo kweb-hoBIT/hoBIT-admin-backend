@@ -18,8 +18,6 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
-console.log(swaggerDocs);
-
 // CORS 설정 수정 (쿠키 인증 허용)
 app.use(
   cors({

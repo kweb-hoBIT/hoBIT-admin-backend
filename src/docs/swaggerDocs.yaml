@@ -3,11 +3,7 @@ info:
   title: Hobit Admin API
   version: 1.0.0
   description: Hobit Admin API 설명
-servers:
-  - url: 'http://localhost:5001'
-    description: 로컬 개발 서버
-  - url: 'https://api2.hobit.kr'
-    description: 운영 서버
+  
 paths:
   /api/auth:
     post:

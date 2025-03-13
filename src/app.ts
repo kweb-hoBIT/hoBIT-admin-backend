@@ -49,6 +49,11 @@ app.get("/", (_req, res) => {
 //Swagger 라우트
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+// 미들웨어 설정
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
 // 라우트 설정
 app.use("/api", authRoutes);
 app.use("/api", usersRoutes);
@@ -59,9 +64,8 @@ app.use("/api", questionlogsRoutes);
 app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
 
-// 미들웨어 설정
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+
+
 
 export default app;

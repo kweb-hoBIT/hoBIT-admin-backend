@@ -32,7 +32,7 @@ app.use(
 )
 
 // Swagger 라우트에 CORS 미들웨어 추가
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 비동기적으로 DB 초기화
 (async () => {

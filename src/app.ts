@@ -18,6 +18,9 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
+// Swagger 설정
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 // CORS 설정 수정 (쿠키 인증 허용)
 app.use(
   cors({
@@ -46,9 +49,6 @@ app.use(
 app.get("/", (_req, res) => {
   res.send("API Running");
 });
-
-// Swagger 설정
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 
 // 미들웨어 설정

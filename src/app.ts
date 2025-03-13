@@ -55,7 +55,12 @@ app.get("/", (_req, res) => {
 });
 
 //Swagger 라우트
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+const swaggerOptions = {
+  swaggerOptions: {
+    withCredentials: true,
+  },
+};
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, swaggerOptions));
 
 // 라우트 설정
 app.use("/api", authRoutes);

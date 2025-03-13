@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-// import swaggerUi from "swagger-ui-express";
-// import { swaggerDocs } from "../config/swaggerConfig";
+import swaggerUi from "swagger-ui-express";
+import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
 
@@ -24,6 +24,7 @@ const corsOptions = {
   origin: [
     env.CLIENT_URL1,
     env.CLIENT_URL2,
+    "https://admin.hobit.kr",
     "https://admin.hobit.kr",
     /^https:\/\/.*\.vercel\.app$/,
   ],
@@ -53,8 +54,8 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// //Swagger 라우트
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+//Swagger 라우트
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 라우트 설정
 app.use("/api", authRoutes);

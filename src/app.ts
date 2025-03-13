@@ -1,8 +1,8 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-// import swaggerUi from "swagger-ui-express";
-// import { swaggerDocs } from "../config/swaggerConfig";
+import swaggerUi from "swagger-ui-express";
+import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
 
@@ -48,8 +48,8 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// // 그 다음 Swagger 설정
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+// 그 다음 Swagger 설정
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 
 // 미들웨어 설정

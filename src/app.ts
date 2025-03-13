@@ -2,8 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-// import swaggerUi from "swagger-ui-express";
-// import { swaggerDocs } from "../config/swaggerConfig";
+import swaggerUi from "swagger-ui-express";
+import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
 
@@ -32,6 +32,8 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
+// OPTIONS 요청 허용 (Preflight 문제 해결)
+app.options("*", cors(corsOptions));
 
 // 미들웨어 설정
 app.use(cookieParser());
@@ -53,8 +55,8 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// //Swagger 라우트
-// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+//Swagger 라우트
+app.use("/api-docs", cors(corsOptions), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 라우트 설정
 app.use("/api", authRoutes);

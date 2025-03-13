@@ -9,7 +9,7 @@ const swaggerOptions = {
       description: 'HoBIT Admin API Docs',
     },
   },
-  apis: ['./src/docs/swaggerDocs.yaml'],
+  apis: ['./src/docs/swagger.yaml'],
 };
 
 export const swaggerDocs = swaggerJsDoc(swaggerOptions);

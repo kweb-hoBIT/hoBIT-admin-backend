@@ -32,6 +32,9 @@ const corsOptions = {
 // CORS 미들웨어 적용
 app.use(cors(corsOptions));
 
+// Swagger 라우트에 CORS 미들웨어 추가
+app.use('/api/docs', cors(corsOptions), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 // 모든 OPTIONS 요청에 대해 CORS 응답을 처리하도록 설정
 app.options('*', cors(corsOptions));
 
@@ -50,8 +53,6 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// Swagger 라우트에 CORS 미들웨어 추가
-app.use('/api/docs', cors(corsOptions), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 미들웨어 설정
 app.use(cookieParser());

@@ -29,8 +29,6 @@ const corsOptions = {
   credentials: true,
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
-
 
 // 비동기적으로 DB 초기화
 (async () => {
@@ -48,7 +46,7 @@ app.get("/", (_req, res) => {
 });
 
 //Swagger 라우트
-app.use('/api/docs', cors(), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api/docs', cors(corsOptions), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 미들웨어 설정
 app.use(cookieParser());

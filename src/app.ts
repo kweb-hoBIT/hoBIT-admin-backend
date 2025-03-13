@@ -18,22 +18,20 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
-// CORS 설정 수정 (쿠키 인증 허용)
-const corsOptions = {
-  origin: [
-    env.CLIENT_URL1,
-    env.CLIENT_URL2,
-    "https://admin.hobit.kr",
-    /^https:\/\/.*\.vercel\.app$/,
-  ],
-  credentials: true,
-};
-app.use(cors(corsOptions));
 
-// 미들웨어 설정
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+// CORS 설정 수정 (쿠키 인증 허용)
+app.use(
+  cors({
+    origin: [
+      env.CLIENT_URL1,
+      env.CLIENT_URL2,
+      "https://admin.hobit.kr",
+      /^https:\/\/.*\.vercel\.app$/,
+    ],
+    credentials: true
+  })
+);
+
 
 // 비동기적으로 DB 초기화
 (async () => {
@@ -50,8 +48,14 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-//Swagger 라우트
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+// Swagger 설정
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+
+// 미들웨어 설정
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // 라우트 설정
 app.use("/api", authRoutes);

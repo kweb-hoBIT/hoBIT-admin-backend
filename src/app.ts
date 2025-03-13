@@ -28,7 +28,12 @@ const corsOptions = {
   ],
   credentials: true,
 };
+
+// CORS 미들웨어 적용
 app.use(cors(corsOptions));
+
+// 모든 OPTIONS 요청에 대해 CORS 응답을 처리하도록 설정
+app.options('*', cors(corsOptions));
 
 // 비동기적으로 DB 초기화
 (async () => {
@@ -45,7 +50,7 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-//Swagger 라우트
+// Swagger 라우트에 CORS 미들웨어 추가
 app.use('/api/docs', cors(corsOptions), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 미들웨어 설정
@@ -62,9 +67,5 @@ app.use("/api", adminlogsRoutes);
 app.use("/api", questionlogsRoutes);
 app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
-
-
-
-
 
 export default app;

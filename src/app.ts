@@ -1,9 +1,9 @@
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import bodyParser from "body-parser";
-import swaggerUi from "swagger-ui-express";
-import { swaggerDocs } from "../config/swaggerConfig";
+// import swaggerUi from "swagger-ui-express";
+// import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
 
@@ -24,17 +24,14 @@ const corsOptions = {
   origin: [
     env.CLIENT_URL1,
     env.CLIENT_URL2,
-    "https://api2.hobit.kr",
     "https://admin.hobit.kr",
-    /^https:\/\/.*\.vercel\.app$/
+    /^https:\/\/.*\.vercel\.app$/,
   ],
-  credentials: true,  // 쿠키 인증 허용
+  credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
-// OPTIONS 요청 허용 (Preflight 문제 해결)
-app.options("*", cors(corsOptions));
 
 // 미들웨어 설정
 app.use(cookieParser());
@@ -56,13 +53,8 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-//Swagger 라우트
-app.use("/api-docs", (_req: Request, res: Response, next: NextFunction) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  next();
-}, swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+// //Swagger 라우트
+// app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 라우트 설정
 app.use("/api", authRoutes);

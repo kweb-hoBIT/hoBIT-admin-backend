@@ -18,8 +18,17 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
-// Swagger 설정
+// Swagger UI를 위한 특별 CORS 설정
+app.use("/api-docs", cors({
+  origin: "*", // 모든 오리진 허용
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
+
+// 그 다음 Swagger 설정
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 
 // CORS 설정 수정 (쿠키 인증 허용)
 app.use(

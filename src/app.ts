@@ -18,17 +18,6 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
-// Swagger UI를 위한 특별 CORS 설정
-app.use("/api-docs", cors({
-  origin: "*", // 모든 오리진 허용
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  preflightContinue: false,
-  optionsSuccessStatus: 204
-}));
-
-// 그 다음 Swagger 설정
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
 
 // CORS 설정 수정 (쿠키 인증 허용)
 app.use(
@@ -36,6 +25,7 @@ app.use(
     origin: [
       env.CLIENT_URL1,
       env.CLIENT_URL2,
+      "http://localhost:5001",
       "https://admin.hobit.kr",
       /^https:\/\/.*\.vercel\.app$/,
     ],
@@ -58,6 +48,9 @@ app.use(
 app.get("/", (_req, res) => {
   res.send("API Running");
 });
+
+// 그 다음 Swagger 설정
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 
 // 미들웨어 설정

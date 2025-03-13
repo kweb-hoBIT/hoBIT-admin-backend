@@ -18,6 +18,9 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 
 const app = express();
 
+console.log("swaggerDocs:", swaggerDocs);
+
+
 
 // CORS 설정 수정 (쿠키 인증 허용)
 app.use(
@@ -49,15 +52,8 @@ app.get("/", (_req, res) => {
 });
 
 // Swagger 설정
-app.use(
-  "/api-docs",
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerDocs, {
-    swaggerOptions: {
-      withCredentials: true, // CORS credentials 허용
-    },
-  })
-);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 
 // 미들웨어 설정
 app.use(cookieParser());

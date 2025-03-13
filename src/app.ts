@@ -28,9 +28,7 @@ app.use(
       "https://admin.hobit.kr",
       /^https:\/\/.*\.vercel\.app$/,
     ],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
   })
 );
 
@@ -51,8 +49,15 @@ app.get("/", (_req, res) => {
 });
 
 // Swagger 설정
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocs, {
+    swaggerOptions: {
+      withCredentials: true, // CORS credentials 허용
+    },
+  })
+);
 
 // 미들웨어 설정
 app.use(cookieParser());

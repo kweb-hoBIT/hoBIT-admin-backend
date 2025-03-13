@@ -1,9 +1,8 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import bodyParser from "body-parser";
-// import swaggerUi from "swagger-ui-express";
-// import { swaggerDocs } from "../config/swaggerConfig";
+import swaggerUi from "swagger-ui-express";
+import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
 
@@ -33,8 +32,8 @@ app.use(cors(corsOptions));
 
 // 미들웨어 설정
 app.use(cookieParser());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // 비동기적으로 DB 초기화
 (async () => {
@@ -51,8 +50,8 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// //Swagger 라우트
-// app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+//Swagger 라우트
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 라우트 설정
 app.use("/api", authRoutes);

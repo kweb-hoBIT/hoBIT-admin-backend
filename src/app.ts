@@ -19,24 +19,20 @@ import translateRoutes from "./routes/api/translate/translateIndex";
 const app = express();
 
 // CORS 설정 수정 (쿠키 인증 허용)
-const corsOptions = {
-  origin: [
-    env.CLIENT_URL1,
-    env.CLIENT_URL2,
-    "https://admin.hobit.kr",
-    /^https:\/\/.*\.vercel\.app$/,
-  ],
-  credentials: true,
-};
-
-// CORS 미들웨어 적용
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: [
+      env.CLIENT_URL1,
+      env.CLIENT_URL2,
+      "https://admin.hobit.kr",
+      /^https:\/\/.*\.vercel\.app$/,
+    ],
+    credentials: true,
+  })
+)
 
 // Swagger 라우트에 CORS 미들웨어 추가
-app.use('/api/docs', cors(corsOptions), swaggerUi.serve, swaggerUi.setup(swaggerDocs));
-
-// 모든 OPTIONS 요청에 대해 CORS 응답을 처리하도록 설정
-app.options('*', cors(corsOptions));
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // 비동기적으로 DB 초기화
 (async () => {

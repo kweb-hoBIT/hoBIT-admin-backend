@@ -2,7 +2,7 @@
   "name": "hobit-server",
   "version": "1.0.0",
   "description": "Kweb hobit-server Development",
-  "author": "KWEB ",
+  "author": "KWEB",
   "license": "KWEB",
   "scripts": {
     "tsc": "tsc",

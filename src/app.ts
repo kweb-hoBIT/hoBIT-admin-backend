@@ -24,7 +24,7 @@ const corsOptions = {
   origin: [
     env.CLIENT_URL1,
     env.CLIENT_URL2,
-    "https://admin.hobit.kr",
+    "https://api2.hobit.kr",
     "https://admin.hobit.kr",
     /^https:\/\/.*\.vercel\.app$/,
   ],

@@ -5,10 +5,10 @@ import { DeleteUserFeedbackRequest, DeleteUserFeedbackResponse } from '../../../
 
 const router = express.Router();
 
-// @route   Delete api/feedbacks/:user_feedback_id
+// @route   Delete api/feedbacks/user/:user_feedback_id
 // @desc    Delete a user feedback
 // @access  Private
-router.delete("/:user_feedback_id", async (req: Request<{ user_feedback_id: DeleteUserFeedbackRequest['params'] }>, res: Response) => {
+router.delete("/user/:user_feedback_id", async (req: Request<{ user_feedback_id: DeleteUserFeedbackRequest['params'] }>, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
   const { user_feedback_id }  = req.params;
   console.log(user_feedback_id);

@@ -49,7 +49,11 @@ app.get("/", (_req, res) => {
 });
 
 // Swagger 설정
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, { 
+  swaggerOptions: { 
+    tryItOutEnabled: false 
+  } 
+}));
 
 
 // 미들웨어 설정

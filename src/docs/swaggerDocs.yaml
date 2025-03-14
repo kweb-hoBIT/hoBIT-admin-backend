@@ -10,6 +10,79 @@ servers:
     description: 운영 서버
 paths:
   /api/auth:
+    get:
+      summary: 인증된 사용자 정보 조회
+      description: 토큰을 이용해 인증된 사용자의 정보를 조회합니다.
+      operationId: auth
+      tags:
+        - auth
+      responses:
+        '200':
+          description: 인증된 사용자 정보 반환
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "User data retrieved successfully"
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        type: object
+                        properties:
+                          id:
+                            type: integer
+                            example: 1
+                          email:
+                            type: string
+                            example: "user@example.com"
+                          username:
+                            type: string
+                            example: "JohnDoe"
+                          phone_num:
+                            type: string
+                            example: "010-1234-5678"
+                          created_at:
+                            type: string
+                            format: date-time
+                            example: "2023-01-01T12:00:00Z"
+                          updated_at:
+                            type: string
+                            format: date-time
+                            example: "2023-05-01T12:00:00Z"
+        '404':
+          description: 사용자를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 404
+                  message:
+                    type: string
+                    example: "User not found"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
     post:
       summary: 사용자 로그인 및 토큰 발급
       description: 사용자가 로그인하고 `accessToken`과 `refreshToken`을 발급받는 API입니다.

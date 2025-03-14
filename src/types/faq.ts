@@ -217,12 +217,24 @@ export type UpdateCheckFAQCategoryDuplicateRequest = {
   };
 };
 
-export type UpdateCheckFAQCategoryDuplicateResponse = {
+export type CheckFAQCategoryDuplicateResponse = {
   statusCode: number;
   message: string;
   data: {
     isDuplicated: boolean;
+    changedData: {
+      field: string;
+      input: {
+        ko: string;
+        en: string;
+      };
+      conflict: {
+        ko: string;
+        en: string;
+      }[];
+    }[];
   };
 };
+
 
 export default Faq;

@@ -222,10 +222,21 @@ export type UpdateCheckSeniorFAQCategoryDuplicateRequest = {
   };
 };
 
-export type UpdateCheckSeniorFAQCategoryDuplicateResponse = {
+export type CheckSeniorFAQCategoryDuplicateResponse = {
   statusCode: number;
   message: string;
   data: {
     isDuplicated: boolean;
+    changedData: {
+      field: string;
+      input: {
+        ko: string;
+        en: string;
+      };
+      conflict: {
+        ko: string;
+        en: string;
+      }[];
+    }[];
   };
 };

@@ -1,23 +1,23 @@
 import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { CreateCheckSeniorFAQCategoryDuplicateRequest, CheckSeniorFAQCategoryDuplicateResponse } from '../../../types/seniorfaq';
+import { CreateCheckSeniorFAQCategoryConflictRequest, CheckSeniorFAQCategoryConflictResponse } from '../../../types/seniorfaq';
 
 const router = express.Router();
 
-// @route   Get api/seniorfaqs/create/category/check
-// @desc    Check all categories for duplicates
+// @route   Get api/seniorfaqs/create/category/conflict
+// @desc    Check all categories for conflicts
 // @access  Private
-router.post("/create/category/check", async (req: Request, res: Response) => {
+router.post("/create/category/conflict", async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
-  const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : CreateCheckSeniorFAQCategoryDuplicateRequest['body'] = req.body;
+  const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : CreateCheckSeniorFAQCategoryConflictRequest['body'] = req.body;
   try {
-    let isDuplicated = false;
+    let isConflict = false;
 
-    const changedData : CheckSeniorFAQCategoryDuplicateResponse['data']['changedData'] = [];
-    const mainConflict: CheckSeniorFAQCategoryDuplicateResponse['data']['changedData'][number]['conflict'] = [];
-    const subConflict: CheckSeniorFAQCategoryDuplicateResponse['data']['changedData'][number]['conflict'] = [];
-    const detailConflict: CheckSeniorFAQCategoryDuplicateResponse['data']['changedData'][number]['conflict'] = [];
+    const conflictedData : CheckSeniorFAQCategoryConflictResponse['data']['conflictedData'] = [];
+    const mainConflict: CheckSeniorFAQCategoryConflictResponse['data']['conflictedData'][number]['conflict'] = [];
+    const subConflict: CheckSeniorFAQCategoryConflictResponse['data']['conflictedData'][number]['conflict'] = [];
+    const detailConflict: CheckSeniorFAQCategoryConflictResponse['data']['conflictedData'][number]['conflict'] = [];
 
     const [new_maincategory_ko] = await connection.execute<RowDataPacket[]>(
       `SELECT maincategory_ko FROM hobit.senior_faqs WHERE senior_faqs.maincategory_en = ?`,
@@ -92,8 +92,8 @@ router.post("/create/category/check", async (req: Request, res: Response) => {
     }
 
     if (mainConflict.length > 0){
-      isDuplicated = true;
-      changedData.push({
+      isConflict = true;
+      conflictedData.push({
         field: "maincategory",
         input: {
           ko: maincategory_ko,
@@ -104,8 +104,8 @@ router.post("/create/category/check", async (req: Request, res: Response) => {
     }
 
     if (subConflict.length > 0){
-      isDuplicated = true;
-      changedData.push({
+      isConflict = true;
+      conflictedData.push({
         field: "subcategory",
         input: {
           ko: subcategory_ko,
@@ -116,8 +116,8 @@ router.post("/create/category/check", async (req: Request, res: Response) => {
     }
 
     if (detailConflict.length > 0){
-      isDuplicated = true;
-      changedData.push({
+      isConflict = true;
+      conflictedData.push({
         field: "detailcategory",
         input: {
           ko: detailcategory_ko,
@@ -127,12 +127,12 @@ router.post("/create/category/check", async (req: Request, res: Response) => {
       });
     }
 
-    const response : CheckSeniorFAQCategoryDuplicateResponse = {
+    const response : CheckSeniorFAQCategoryConflictResponse = {
       statusCode: 200,
       message: "Categories checked successfully",
       data : {
-        isDuplicated: isDuplicated,
-        changedData: changedData
+        isConflict: isConflict,
+        conflictedData: conflictedData
       }
     };
     console.log(response);

@@ -546,11 +546,11 @@ paths:
                     example: "Internal server error"
 
 
-  /api/faqs/create/category/check:
+  /api/faqs/create/category/conflict:
     post:
-      summary: FAQ 추가시 카테고리 충돌 확인
-      description: 추가하려는 FAQ의 카테고리가 기존 카테고리와 충돌되는지 확인하는 API입니다.
-      operationId: createCheckFAQCategoryDuplicate
+      summary: Senior FAQ 추가시 카테고리 충돌 확인
+      description: 추가하려는 Senior FAQ의 카테고리가 기존 카테고리와 충돌되는지 확인하는 API입니다.
+      operationId: createCheckFAQCategoryConflict
       tags:
         - faqs
       requestBody:
@@ -593,9 +593,37 @@ paths:
                   data:
                     type: object
                     properties:
-                      isDuplicated:
+                      isConflict:
                         type: boolean
-                        example: false
+                        example: true
+                      conflictedData:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                              example: "subcategory"
+                            input:
+                              type: object
+                              properties:
+                                ko:
+                                  type: string
+                                  example: "서브카테고리명(한)"
+                                en:
+                                  type: string
+                                  example: "subcategory_name_en"
+                            conflict:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  ko:
+                                    type: string
+                                    example: "conflict_value_ko"
+                                  en:
+                                    type: string
+                                    example: "conflict_value_en"
         '500':
           description: 서버 에러
           content:
@@ -1305,11 +1333,11 @@ paths:
                     type: string
                     example: "Internal server error"
 
-  /api/faqs/update/category/check:
+  /api/faqs/update/category/conflict:
     post:
       summary: FAQ 수정시 카테고리 충돌 여부 확인
       description: 수정하려는 FAQ의 카테고리 충돌 여부를 확인하는 API입니다.
-      operationId: updateCheckFAQCategoryDuplicate
+      operationId: updateCheckFAQCategoryConflict
       tags:
         - faqs
       requestBody:
@@ -1341,7 +1369,7 @@ paths:
                   example: "sub category"
       responses:
         '200':
-          description: 카테고리 중복 여부 확인 성공
+          description: 카테고리 확인 성공
           content:
             application/json:
               schema:
@@ -1356,10 +1384,37 @@ paths:
                   data:
                     type: object
                     properties:
-                      isDuplicated:
+                      isConflict:
                         type: boolean
-                        description: 중복 여부
                         example: true
+                      conflictedData:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                              example: "subcategory"
+                            input:
+                              type: object
+                              properties:
+                                ko:
+                                  type: string
+                                  example: "서브카테고리명(한)"
+                                en:
+                                  type: string
+                                  example: "subcategory_name_en"
+                        conflict:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              ko:
+                                type: string
+                                example: "conflict_value_ko"
+                              en:
+                                type: string
+                                example: "conflict_value_en"
         '500':
           description: 서버 에러
           content:
@@ -1375,11 +1430,11 @@ paths:
                     example: "Internal server error"
 
 
-  /api/seniorfaqs/create/category/check:
+  /api/seniorfaqs/create/category/conflict:
     post:
-      summary: 카테고리 중복 여부 확인
-      description: 주어진 Senior FAQ 카테고리가 중복되는지 확인합니다.
-      operationId: createCheckSeniorFAQCategoryDuplicate
+      summary: FAQ 추가시 카테고리 충돌 확인
+      description: 추가하려는 Senior FAQ의 카테고리가 기존 카테고리와 충돌되는지 확인하는 API입니다.
+      operationId: createCheckSeniorFAQCategoryConflict
       tags:
         - seniorfaqs
       requestBody:
@@ -1415,7 +1470,7 @@ paths:
                   example: "Stretching"
       responses:
         '200':
-          description: 카테고리 중복 여부 확인 성공
+          description: 카테고리 확인 성공
           content:
             application/json:
               schema:
@@ -1430,9 +1485,37 @@ paths:
                   data:
                     type: object
                     properties:
-                      isDuplicated:
+                      isConflict:
                         type: boolean
                         example: true
+                      conflictedData:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                              example: "subcategory"
+                            input:
+                              type: object
+                              properties:
+                                ko:
+                                  type: string
+                                  example: "서브카테고리명(한)"
+                                en:
+                                  type: string
+                                  example: "subcategory_name_en"
+                            conflict:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  ko:
+                                    type: string
+                                    example: "conflict_value_ko"
+                                  en:
+                                    type: string
+                                    example: "conflict_value_en"
         '500':
           description: 서버 오류 발생
           content:
@@ -2016,11 +2099,11 @@ paths:
                     type: string
                     example: "Internal server error"
 
-  /api/seniorfaqs/update/category/check:
+  /api/seniorfaqs/update/category/conflict:
     post:
-      summary: 카테고리 중복 확인
-      description: 주어진 카테고리 정보가 이미 존재하는지 중복을 확인합니다.
-      operationId: updateCheckSeniorFAQCategoryDuplicate
+      summary: Senior FAQ 수정시 카테고리 충돌 여부 확인
+      description: 수정하려는 Senior FAQ의 카테고리 충돌 여부를 확인하는 API입니다.
+      operationId: updateCheckSeniorFAQCategoryConflict
       tags:
         - seniorfaqs
       requestBody:
@@ -2052,7 +2135,7 @@ paths:
                   example: "Anti-aging"
       responses:
         '200':
-          description: 중복 여부 확인 성공
+          description: 카테고리 확인 성공
           content:
             application/json:
               schema:
@@ -2067,9 +2150,37 @@ paths:
                   data:
                     type: object
                     properties:
-                      isDuplicated:
+                      isConflict:
                         type: boolean
                         example: true
+                      conflictedData:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            field:
+                              type: string
+                              example: "subcategory"
+                            input:
+                              type: object
+                              properties:
+                                ko:
+                                  type: string
+                                  example: "서브카테고리명(한)"
+                                en:
+                                  type: string
+                                  example: "subcategory_name_en"
+                            conflict:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  ko:
+                                    type: string
+                                    example: "conflict_value_ko"
+                                  en:
+                                    type: string
+                                    example: "conflict_value_en"
         '500':
           description: 서버 오류 발생
           content:

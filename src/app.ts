@@ -1,8 +1,6 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import swaggerUi from "swagger-ui-express";
-import { swaggerDocs } from "../config/swaggerConfig";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
 
@@ -15,6 +13,7 @@ import adminlogsRoutes from "./routes/api/adminlogs/adminlogsIndex";
 import questionlogsRoutes from "./routes/api/questionlogs/questionlogsIndex";
 import feedbacksRoutes from "./routes/api/feedbacks/feedbacksIndex";
 import translateRoutes from "./routes/api/translate/translateIndex";
+import swaggerRoutes from "./routes/api/swagger/swaggerIndex";
 
 const app = express();
 
@@ -48,15 +47,6 @@ app.get("/", (_req, res) => {
   res.send("API Running");
 });
 
-// Swagger 설정
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, { 
-  swaggerOptions: { 
-    tryItOutEnabled: false,
-    supportedSubmitMethods: []
-  } 
-}));
-
-
 // 미들웨어 설정
 app.use(cookieParser());
 app.use(express.json());
@@ -71,5 +61,6 @@ app.use("/api", adminlogsRoutes);
 app.use("/api", questionlogsRoutes);
 app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
+app.use("/api", swaggerRoutes);
 
 export default app;

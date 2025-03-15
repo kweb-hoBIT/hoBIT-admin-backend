@@ -2,8 +2,7 @@ export type LoginRequest = {
   body: {
     email: string;
     password: string;
-  },
-  credentials: RequestCredentials
+  }
 };
 
 export type LoginResponse = {
@@ -15,9 +14,7 @@ export type LoginResponse = {
   };
 };
 
-export type LogoutRequest = {
-  credentials: RequestCredentials
-}
+export type LogoutRequest = {}
 
 export type LogoutResponse = {
   statusCode: number;

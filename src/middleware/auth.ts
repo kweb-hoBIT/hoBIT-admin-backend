@@ -7,17 +7,16 @@ import Request from "../types/Request";
 
 export default function(req: Request, res: Response, next: NextFunction) {
   // Get token from header
-  const token = req.header("Authorization")?.replace("Bearer ", "");
-
+  const accessToken = req.cookies?.accessToken;
   // Check if no token
-  if (!token) {
+  if (!accessToken) {
     return res
       .status(401)
       .json({ msg: "No token, authorization denied" });
   }
   // Verify token
   try {
-    const payload: Payload | any = jwt.verify(token, env.JWT_SECRET);
+    const payload: Payload | any = jwt.verify(accessToken, env.JWT_SECRET);
     req.user_id = payload.user_id;
     next();
   } catch (err) {

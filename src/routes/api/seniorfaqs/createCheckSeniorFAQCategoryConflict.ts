@@ -1,14 +1,16 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { CreateCheckSeniorFAQCategoryConflictRequest, CheckSeniorFAQCategoryConflictResponse } from '../../../types/seniorfaq';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Get api/seniorfaqs/create/category/conflict
 // @desc    Check all categories for conflicts
 // @access  Private
-router.post("/create/category/conflict", async (req: Request, res: Response) => {
+router.post("/create/category/conflict", auth, async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
   const { maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en } : CreateCheckSeniorFAQCategoryConflictRequest['body'] = req.body;
   try {

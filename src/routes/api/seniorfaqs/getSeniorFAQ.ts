@@ -1,7 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { GetSeniorFAQRequest, GetSeniorFAQResponse } from '../../../types/seniorfaq';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
@@ -23,7 +25,7 @@ interface SeniorFAQ {
 // @route   GET api/seniorfaqs/:faq_id
 // @desc    Get a Senior FAQ by ID
 // @access  Private
-router.get("/:senior_faq_id", async (req: Request<GetSeniorFAQRequest['params']>, res: Response) => {
+router.get("/:senior_faq_id", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { senior_faq_id } = req.params;
   console.log(senior_faq_id);

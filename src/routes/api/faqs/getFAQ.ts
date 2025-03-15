@@ -1,7 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { GetFAQRequest, GetFAQResponse } from '../../../types/faq';
+import { GetFAQResponse } from '../../../types/faq';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
@@ -24,7 +26,7 @@ interface FAQ {
 // @route   GET api/faqs/:faq_id
 // @desc    get a FAQ
 // @access  Private
-router.get("/:faq_id", async (req: Request<GetFAQRequest['params']>, res: Response) => {
+router.get("/:faq_id", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { faq_id } = req.params;
   console.log(faq_id);

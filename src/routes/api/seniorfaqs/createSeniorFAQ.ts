@@ -1,15 +1,17 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import { CreateSeniorFAQRequest, CreateSeniorFAQResponse } from '../../../types/seniorfaq';
 import env from "../../../../config/env";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Post api/seniorfaqs/
 // @desc    Create a new Senior FAQ
 // @access  Private
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {
     user_id,

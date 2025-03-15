@@ -1,8 +1,10 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { DeleteFAQRequest, DeleteFAQResponse } from '../../../types/faq';
 import env from "../../../../config/env";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 
 const router = express.Router();
@@ -23,7 +25,7 @@ interface FAQ {
 // @route   Delete api/faqs/:faq_id
 // @desc    Delete a FAQ
 // @access  Private
-router.delete("/:faq_id", async (req: Request<{ faq_id: DeleteFAQRequest['params'] }>, res: Response) => {
+router.delete("/:faq_id", auth, async (req: Request, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
   const { faq_id }  = req.params;
   const { user_id } : DeleteFAQRequest['body'] = req.body;

@@ -1,16 +1,18 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { SpecificLanguageRequest, SpecificLanguageResponse } from "../../../types/questionLog";
 import _ from "lodash";
 import moment from "moment";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Get api/questionlogs/language/:faq_id
 // @desc    Get frequency of question log by language
 // @access  Private
-router.get("/language/:faq_id", async (req: Request<SpecificLanguageRequest['params']>, res: Response) => {
+router.get("/language/:faq_id", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { faq_id } = req.params;
   const { startDate, endDate, period} = req.query as SpecificLanguageRequest['query'];

@@ -1,14 +1,16 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
-import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { DeleteUserFeedbackRequest, DeleteUserFeedbackResponse } from '../../../types/feedback';
+import { PoolConnection } from "mysql2/promise";
+import { DeleteUserFeedbackResponse } from '../../../types/feedback';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Delete api/feedbacks/user/:user_feedback_id
 // @desc    Delete a user feedback
 // @access  Private
-router.delete("/user/:user_feedback_id", async (req: Request<{ user_feedback_id: DeleteUserFeedbackRequest['params'] }>, res: Response) => {
+router.delete("/user/:user_feedback_id", auth, async (req: Request, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
   const { user_feedback_id }  = req.params;
   console.log(user_feedback_id);

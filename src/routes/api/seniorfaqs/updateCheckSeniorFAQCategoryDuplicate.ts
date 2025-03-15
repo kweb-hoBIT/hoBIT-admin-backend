@@ -72,7 +72,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (changed_maincategory_ko && !changed_maincategory_en) {
       if (number_same_maincategory.number_same_maincategory > 1) {
-        isDuplicated = true;
         mainConflict.push({
           ko: now_category.maincategory_ko,
           en: now_category.maincategory_en
@@ -80,7 +79,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
       }
 
       if (new_maincategory_en.length > 0 && new_maincategory_en[0].maincategory_en !== maincategory_en) {
-        isDuplicated = true;
         mainConflict.push({
           ko: maincategory_ko,
           en: new_maincategory_en[0].maincategory_en
@@ -90,14 +88,12 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (!changed_maincategory_ko && changed_maincategory_en) {
       if (number_same_maincategory.number_same_maincategory > 1) {
-        isDuplicated = true;
         mainConflict.push({
           ko: now_category.maincategory_ko,
           en: now_category.maincategory_en
         });
       }
       if (new_maincategory_ko.length > 0 && new_maincategory_ko[0].maincategory_ko !== maincategory_ko) {
-        isDuplicated = true;
         mainConflict.push({
           ko: new_maincategory_ko[0].maincategory_ko,
           en: maincategory_en
@@ -107,7 +103,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (changed_maincategory_ko && changed_maincategory_en) {
       if (new_maincategory_en.length > 0 && new_maincategory_en[0].maincategory_en !== maincategory_en) {
-        isDuplicated = true;
         mainConflict.push({
           ko: maincategory_ko,
           en: new_maincategory_en[0].maincategory_en
@@ -115,7 +110,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
       }
 
       if (new_maincategory_ko.length > 0 && new_maincategory_ko[0].maincategory_ko !== maincategory_ko) {
-        isDuplicated = true;
         mainConflict.push({
           ko: new_maincategory_ko[0].maincategory_ko,
           en: maincategory_en
@@ -125,7 +119,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (changed_subcategory_ko && !changed_subcategory_en) {
       if (number_same_subcategory.number_same_subcategory > 1) {
-        isDuplicated = true;
         subConflict.push({
           ko: now_category.subcategory_ko,
           en: now_category.subcategory_en
@@ -133,7 +126,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
       }
 
       if (new_subcategory_en.length > 0 && new_subcategory_en[0].subcategory_en !== subcategory_en) {
-        isDuplicated = true;
         subConflict.push({
           ko: subcategory_ko,
           en: new_subcategory_en[0].subcategory_en
@@ -143,14 +135,12 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (!changed_subcategory_ko && changed_subcategory_en) {
       if (number_same_subcategory.number_same_subcategory > 1) {
-        isDuplicated = true;
         subConflict.push({
           ko: now_category.subcategory_ko,
           en: now_category.subcategory_en
         });
       }
       if (new_subcategory_ko.length > 0 && new_subcategory_ko[0].subcategory_ko !== subcategory_ko) {
-        isDuplicated = true;
         subConflict.push({
           ko: new_subcategory_ko[0].subcategory_ko,
           en: subcategory_en
@@ -160,7 +150,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (changed_subcategory_ko && changed_subcategory_en) {
       if (new_subcategory_en.length > 0 && new_subcategory_en[0].subcategory_en !== subcategory_en) {
-        isDuplicated = true;
         subConflict.push({
           ko: subcategory_ko,
           en: new_subcategory_en[0].subcategory_en
@@ -168,7 +157,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
       }
 
       if (new_subcategory_ko.length > 0 && new_subcategory_ko[0].subcategory_ko !== subcategory_ko) {
-        isDuplicated = true;
         subConflict.push({
           ko: new_subcategory_ko[0].subcategory_ko,
           en: subcategory_en
@@ -178,7 +166,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (changed_detailcategory_ko && !changed_detailcategory_en) {
       if (number_same_detailcategory.number_same_detailcategory > 1) {
-        isDuplicated = true;
         detailConflict.push({
           ko: now_category.detailcategory_ko,
           en: now_category.detailcategory_en
@@ -186,7 +173,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
       }
 
       if (new_detailcategory_en.length > 0 && new_detailcategory_en[0].detailcategory_en !== detailcategory_en) {
-        isDuplicated = true;
         detailConflict.push({
           ko: detailcategory_ko,
           en: new_detailcategory_en[0].detailcategory_en
@@ -196,14 +182,12 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (!changed_detailcategory_ko && changed_detailcategory_en) {
       if (number_same_detailcategory.number_same_detailcategory > 1) {
-        isDuplicated = true;
         detailConflict.push({
           ko: now_category.detailcategory_ko,
           en: now_category.detailcategory_en
         });
       }
       if (new_detailcategory_ko.length > 0 && new_detailcategory_ko[0].detailcategory_ko !== detailcategory_ko) {
-        isDuplicated = true;
         detailConflict.push({
           ko: new_detailcategory_ko[0].detailcategory_ko,
           en: detailcategory_en
@@ -213,7 +197,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
 
     if (changed_detailcategory_ko && changed_detailcategory_en) {
       if (new_detailcategory_en.length > 0 && new_detailcategory_en[0].detailcategory_en !== detailcategory_en) {
-        isDuplicated = true;
         detailConflict.push({
           ko: detailcategory_ko,
           en: new_detailcategory_en[0].detailcategory_en
@@ -221,7 +204,6 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
       }
 
       if (new_detailcategory_ko.length > 0 && new_detailcategory_ko[0].detailcategory_ko !== detailcategory_ko) {
-        isDuplicated = true;
         detailConflict.push({
           ko: new_detailcategory_ko[0].detailcategory_ko,
           en: detailcategory_en
@@ -230,6 +212,7 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
     }
     
     if (mainConflict.length > 0) {
+      isDuplicated = true;
       changedData.push({
         field: 'maincategory',
         input: {
@@ -241,6 +224,7 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
     }
 
     if (subConflict.length > 0) {
+      isDuplicated = true;
       changedData.push({
         field: 'subcategory',
         input: {
@@ -252,6 +236,7 @@ router.post("/update/category/check", async (req: Request, res: Response) => {
     }
 
     if (detailConflict.length > 0) {
+      isDuplicated = true;
       changedData.push({
         field: 'detailcategory',
         input: {

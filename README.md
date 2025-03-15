@@ -82,12 +82,14 @@ npm start
   - Example
     - `int: initial commit`
 
+
 ## API 명세서
 
+```bash
 URL: [http://admin.hobit.kr/api-docs](http://admin.hobit.kr/api-docs)
+```
 
-
-### HoBIT DB 스키마
+## HoBIT DB 스키마
 
 #### Tables
 

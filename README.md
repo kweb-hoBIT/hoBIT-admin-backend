@@ -89,19 +89,24 @@ npm start
 
 ## ENV 변수
 
-PORT=                   # 서버가 실행될 포트 번호
-API_URL=                # API의 기본 URL
-CLIENT_URL1=            # 첫 번째 클라이언트 URL (로컬)
-CLIENT_URL2=            # 두 번째 클라이언트 URL (로컬)
-TIMEZONE=               # 서버의 기본 시간대
-DB_HOST=                # 데이터베이스 호스트 주소
-DB_USER=                # 데이터베이스 사용자명
-DB_PASSWORD=            # 데이터베이스 비밀번호
-JWT_SECRET=             # JWT 토큰 서명 키
-JWT_EXPIRATION=         # JWT 액세스 토큰 만료 시간
-JWT_REFRESH_EXPIRATION= # JWT 리프레시 토큰 만료 시간
-OPENAI_API_KEY=         # OpenAI API 키
-MANAGER_KEY=            # 관리자 전용 키
+`hobit` 에 사용되는 환경변수: 
+
+
+| 변수명                 | 설명 |
+|------------------------|--------------------------------|
+| `PORT`                | 서버가 실행될 포트 번호 |
+| `API_URL`             | API의 기본 URL |
+| `CLIENT_URL1`         | 첫 번째 클라이언트 URL |
+| `CLIENT_URL2`         | 두 번째 클라이언트 URL |
+| `TIMEZONE`            | 서버의 기본 시간대 |
+| `DB_HOST`             | 데이터베이스 호스트 주소 |
+| `DB_USER`             | 데이터베이스 사용자명 |
+| `DB_PASSWORD`         | 데이터베이스 비밀번호 |
+| `JWT_SECRET`          | JWT 토큰 서명 키 |
+| `JWT_EXPIRATION`      | JWT 액세스 토큰 만료 시간 |
+| `JWT_REFRESH_EXPIRATION` | JWT 리프레시 토큰 만료 시간 |
+| `OPENAI_API_KEY`      | OpenAI API 키 |
+| `MANAGER_KEY`         | 관리자 전용 키 |
 
 
 ## HoBIT DB 스키마

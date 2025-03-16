@@ -57,7 +57,8 @@ npm start
 
 
 ## hoBIT DB 스키마
-![테이블 상세](https://magnificent-screw-658.notion.site/DB-1b8d8b1360b880d29577f87ad0ef37eb?pvs=4)
+[테이블 상세](https://magnificent-screw-658.notion.site/DB-1b8d8b1360b880d29577f87ad0ef37eb?pvs=4)  
+
 ![호빗 db image](https://github.com/user-attachments/assets/c12fb79f-34d3-493f-bafd-589d0f1d6975)
 
 ## 배포

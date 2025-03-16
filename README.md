@@ -57,7 +57,7 @@ npm start
 
 
 ## HoBIT DB 스키마
-
+![호빗 db image](https://github.com/user-attachments/assets/c12fb79f-34d3-493f-bafd-589d0f1d6975)
 
 ## 배포
 

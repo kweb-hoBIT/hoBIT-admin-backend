@@ -1,5 +1,4 @@
 # hoBIT-admin-backend
-[호빗 관리자 사이트 설명](https://magnificent-screw-658.notion.site/1a5d8b1360b88022adb8e0efaf538eed?pvs=4)
 
 ## Installation
 

@@ -29,10 +29,6 @@ Start Application:
 npm start
 ```
 
-## API 명세서
-
-[http://admin.hobit.kr/api-docs](http://admin.hobit.kr/api-docs)
-
 ## ENV 변수
 
 `hobit` 에 사용되는 환경변수: 

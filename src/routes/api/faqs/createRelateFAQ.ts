@@ -85,6 +85,8 @@ router.post("/related", auth, async (req: Request, res: Response) => {
     }
     console.error(response);
     res.status(500).json(response);
+  } finally {
+    connection.release();
   }
 });
 

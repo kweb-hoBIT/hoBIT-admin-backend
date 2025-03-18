@@ -7,12 +7,27 @@ import Request from "../types/Request";
 
 export default function(req: Request, res: Response, next: NextFunction) {
   // Get token from header
-  const accessToken = req.cookies?.accessToken;
+  let accessToken = req.cookies?.accessToken;
+  const refreshToken = req.cookies?.refreshToken;
   // Check if no token
   if (!accessToken) {
-    return res
+    if (!refreshToken) {
+      return res
       .status(401)
       .json({ msg: "No token, authorization denied" });
+    }
+    const decoded: any = jwt.verify(refreshToken, env.JWT_SECRET);
+
+    // Extract user_id from the decoded payload
+    const { user_id } = decoded;
+
+    // 새로운 payload를 생성
+    const payload: Payload = { user_id };
+
+    // 새로운 access token 생성
+    accessToken = jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn: env.JWT_EXPIRATION,
+    });
   }
   // Verify token
   try {

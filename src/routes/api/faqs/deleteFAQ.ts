@@ -29,6 +29,7 @@ router.delete("/:faq_id", auth, async (req: Request, res: Response) => {
   const connection : PoolConnection = await Pool.getConnection();
   const { faq_id }  = req.params;
   const { user_id } : DeleteFAQRequest['body'] = req.body;
+  const existed_accessToken = req.cookies?.accessToken;
   console.log(faq_id, user_id);
 
   try {
@@ -82,9 +83,9 @@ router.delete("/:faq_id", auth, async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
       body: JSON.stringify(data),
-      credentials: 'include'
     });
 
     if(!logResponse.ok) {

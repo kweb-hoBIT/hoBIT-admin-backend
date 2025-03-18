@@ -91,7 +91,8 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(gptbody)
+        body: JSON.stringify(gptbody),
+        credentials: 'include'
       });
   
       if (!GPTResponse.ok) {
@@ -117,7 +118,8 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      credentials: 'include'
     });
 
     if(!logResponse.ok) {

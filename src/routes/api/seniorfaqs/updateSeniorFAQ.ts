@@ -93,7 +93,8 @@ router.put("/:senior_faq_id", auth, async (req: Request, res: Response) => {
       headers: {
        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      credentials: 'include'
     });
 
     if(!logResponse.ok) {

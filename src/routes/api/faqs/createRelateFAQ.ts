@@ -9,6 +9,8 @@ import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
+console.log(env.OPENAI_API_KEY)
+
 const openai = new OpenAI({
   apiKey: env.OPENAI_API_KEY,
 });

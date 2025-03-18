@@ -9,14 +9,13 @@ import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
-console.log(env.OPENAI_API_KEY)
-
 const openai = new OpenAI({
   apiKey: env.OPENAI_API_KEY,
 });
 
 router.post("/related", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
+  console.log(env.OPENAI_API_KEY)
   try {
     const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
     const koreanCompletion = await openai.chat.completions.create({

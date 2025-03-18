@@ -39,6 +39,7 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
     manager
   } : UpdateFAQRequest['body'] = req.body;
   console.log(faq_id, req.body);
+  const existed_accessToken = req.cookies?.accessToken;
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
@@ -90,8 +91,9 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          "Cookie": `accessToken=${existed_accessToken}`
         },
-        body: JSON.stringify(gptbody)
+        body: JSON.stringify(gptbody),
       });
   
       if (!GPTResponse.ok) {
@@ -116,8 +118,9 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if(!logResponse.ok) {

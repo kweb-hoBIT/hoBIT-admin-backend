@@ -27,6 +27,7 @@ router.delete("/:senior_faq_id", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { senior_faq_id } = req.params;
   const { user_id }: DeleteSeniorFAQRequest['body'] = req.body;
+  const existed_accessToken = req.cookies?.accessToken;
   console.log(senior_faq_id);
 
   try {
@@ -80,12 +81,14 @@ router.delete("/:senior_faq_id", auth, async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
       body: JSON.stringify(data)
     });
 
     if(!logResponse.ok) {
       const errorData = await logResponse.json();
+      console.log(errorData)
       return res.status(logResponse.status).json({ error: errorData.message });
     }
 

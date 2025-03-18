@@ -25,6 +25,7 @@ router.post("/", auth, async (req: Request, res: Response) => {
     answer_en,
     manager
   } : CreateFAQRequest['body'] = req.body;
+  const existed_accessToken = req.cookies?.accessToken;
   console.log(req.body);
 
   try {
@@ -65,6 +66,7 @@ router.post("/", auth, async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
       body: JSON.stringify(gptbody)
     });
@@ -113,8 +115,9 @@ router.post("/", auth, async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if (!logResponse.ok) {

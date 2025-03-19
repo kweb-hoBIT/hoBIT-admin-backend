@@ -7,6 +7,7 @@ export type GetAllUserFeedbackResponse = {
     userFeedbacks: {
       user_feedback_id: number;
       question_ko: string;
+      user_question: string;
       feedback_reason: string;
       feedback_detail: string;
       resolved: number;

@@ -177,6 +177,7 @@ const createUserFeedbacksTable = async () => {
     CREATE TABLE IF NOT EXISTS user_feedbacks (
       id INT AUTO_INCREMENT PRIMARY KEY,
       faq_id INT NULL,
+      user_question VARCHAR(300) NULL,
       feedback_reason VARCHAR(255) NULL,
       feedback_detail TEXT NOT NULL,
       language VARCHAR(45) NOT NULL,

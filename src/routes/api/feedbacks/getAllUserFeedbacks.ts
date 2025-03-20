@@ -15,7 +15,7 @@ router.get("/user", auth, async (req: Request, res: Response) => {
 
   try {
     const [rows] = await connection.execute<RowDataPacket[]>(
-      `SELECT user_feedbacks.id, faqs.question_ko, user_feedbacks.user_question, user_feedbacks.feedback_reason, user_feedbacks.feedback_detail, user_feedbacks.resolved, user_feedbacks.created_at
+      `SELECT user_feedbacks.id, faqs.question_ko, user_feedbacks.feedback_reason, user_feedbacks.feedback_detail, user_feedbacks.resolved, user_feedbacks.created_at
       FROM hobit.user_feedbacks
       LEFT JOIN hobit.faqs ON user_feedbacks.faq_id = faqs.id 
       order by user_feedbacks.created_at desc`,
@@ -25,7 +25,6 @@ router.get("/user", auth, async (req: Request, res: Response) => {
       return {
         user_feedback_id: userFeedback.id,
         question_ko: userFeedback.question_ko,
-        user_question: userFeedback.user_question,
         feedback_reason: userFeedback.feedback_reason,
         feedback_detail: userFeedback.feedback_detail,
         resolved: userFeedback.resolved,

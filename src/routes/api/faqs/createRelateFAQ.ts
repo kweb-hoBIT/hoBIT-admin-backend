@@ -10,7 +10,7 @@ import auth from "../../../middleware/auth";
 const router = express.Router();
 
 const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_KEY,
 });
 
 router.post("/related", auth, async (req: Request, res: Response) => {

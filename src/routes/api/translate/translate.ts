@@ -20,7 +20,7 @@ router.post("/", auth, async (req: Request, res: Response) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        auth_key: env.DEEPL_API_KEY,
+        auth_key: env.DEEPL_KEY,
         text: text,
         target_lang: 'EN',
       }).toString(),

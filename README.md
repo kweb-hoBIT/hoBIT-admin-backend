@@ -47,8 +47,8 @@ npm start
 | `JWT_SECRET`          | JWT 토큰 서명 키 |
 | `JWT_EXPIRATION`      | JWT 액세스 토큰 만료 시간 |
 | `JWT_REFRESH_EXPIRATION` | JWT 리프레시 토큰 만료 시간 |
-| `OPENAI_API_KEY`      | OpenAI API 키 |
-| `DEEPL_API_KEY`       | DEEPL API 키 |
+| `OPENAI_KEY`      | OpenAI API 키 |
+| `DEEPL_KEY`       | DEEPL API 키 |
 | `MANAGER_KEY`         | 관리자 전용 키 |
 
 

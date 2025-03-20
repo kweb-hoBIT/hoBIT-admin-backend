@@ -16,8 +16,8 @@ interface Env {
   JWT_SECRET: string;
   JWT_EXPIRATION: number;
   JWT_REFRESH_EXPIRATION: number;
-  OPENAI_API_KEY: string;
-  DEEPL_API_KEY: string;
+  OPENAI_KEY: string;
+  DEEPL_KEY: string;
   MANAGER_KEY: string;
 }
 
@@ -35,8 +35,8 @@ function getEnv(): Env {
     JWT_SECRET: process.env.JWT_SECRET,
     JWT_EXPIRATION: Number(process.env.JWT_EXPIRATION),
     JWT_REFRESH_EXPIRATION: Number(process.env.JWT_REFRESH_EXPIRATION),
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-    DEEPL_API_KEY: process.env.DEEPL_API_KEY,
+    OPENAI_KEY: process.env.OPENAI_KEY,
+    DEEPL_KEY: process.env.DEEPL_KEY,
     MANAGER_KEY: process.env.MANAGER_KEY,
   };
 

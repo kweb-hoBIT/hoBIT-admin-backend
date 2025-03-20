@@ -15,7 +15,6 @@ const openai = new OpenAI({
 
 router.post("/related", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  console.log(env.OPENAI_API_KEY)
   try {
     const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
     const koreanCompletion = await openai.chat.completions.create({

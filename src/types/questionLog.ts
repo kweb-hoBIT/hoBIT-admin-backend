@@ -9,6 +9,7 @@ export type GetAllQuestionLogResponse = {
       user_question: string;
       feedback_score: number;
       feedback: string;
+      language: string;
       created_at: string;
       faq_id: number;
       faq_question: string;
@@ -205,4 +206,18 @@ export type SpecificLanguageResponse = {
       }[];
     }
   };
+};
+
+export type getUnmatchedQuestionRequest = {
+  body: {
+    user_questions: {
+      user_question: string;
+      language: string;
+    }[];
+  };
+};
+
+export type getUnmatchedQuestionResponse = {
+  statusCode: number;
+  message: string;
 };

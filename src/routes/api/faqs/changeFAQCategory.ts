@@ -1,8 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { changeFAQCategoryResponse, changeFAQCategoryRequest } from "faq";
 import auth from "../../../middleware/auth";
+import Request from "../../../types/Request";
 
 const router = express.Router();
 

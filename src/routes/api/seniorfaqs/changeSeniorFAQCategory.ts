@@ -1,8 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { changeSeniorFAQCategoryRequest, changeSeniorFAQCategoryResponse } from "seniorfaq";
 import auth from "../../../middleware/auth";
+import Request from "../../../types/Request";
 
 const router = express.Router();
 
@@ -28,7 +29,7 @@ interface SeniorFAQ {
   [key: string]: any;
 }
 
-// @route   Get api/seniorfaqs/category
+// @route   Put api/seniorfaqs/category
 // @desc    change SeniorFAQ category
 // @access  Private
 router.put("/category", auth, async (req: Request, res: Response) => {

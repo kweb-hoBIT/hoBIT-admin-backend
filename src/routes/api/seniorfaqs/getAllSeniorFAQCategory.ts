@@ -1,14 +1,16 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { GetAllSeniorFAQCategoryResponse } from "../../../types/seniorfaq";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Get api/seniorfaqs/category
 // @desc    Get all categories with their subcategories and detailcategories
 // @access  Private
-router.get("/category", async (req: Request, res: Response) => {
+router.get("/category", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
 
   try {

@@ -1,14 +1,16 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection } from "mysql2/promise";
 import { CreateSeniorFAQLogRequest, CreateSeniorFAQLogResponse } from '../../../types/adminLog';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Post api/adminlogs/seniorfaqlogs
 // @desc    Create a senior_faq_log
 // @access  Private
-router.post("/seniorfaqlogs", async (req: Request, res: Response) => {
+router.post("/seniorfaqlogs", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {
     username,

@@ -1,17 +1,19 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { OpenAI } from "openai";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { RelatedFAQRequest, RelatedFAQResponse } from '../../../types/faq';
 import env from '../../../../config/env';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 const openai = new OpenAI({
-  apiKey: env.OPENAI_API_KEY,
+  apiKey: env.OPENAI_KEY,
 });
 
-router.post("/related", async (req: Request, res: Response) => {
+router.post("/related", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   try {
     const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
@@ -45,10 +47,9 @@ router.post("/related", async (req: Request, res: Response) => {
     });
 
     let responseContent = koreanCompletion.choices[0].message.content;
+    responseContent = responseContent.trim();
     responseContent = responseContent.replace(/[“”‘’]/g, '"');
-
     const relatedQuestions = JSON.parse(responseContent);
-
     const uninonRelatedQuestions = [...relatedQuestions.ko, ...relatedQuestions.en];
     console.log(uninonRelatedQuestions);
 
@@ -84,6 +85,8 @@ router.post("/related", async (req: Request, res: Response) => {
     }
     console.error(response);
     res.status(500).json(response);
+  } finally {
+    connection.release();
   }
 });
 

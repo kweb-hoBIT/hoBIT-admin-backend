@@ -1,11 +1,13 @@
-import express, { Response, Request } from "express";
+import express, { Response } from "express";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   POST api/auth/logout
 // @desc    Logout user and clear tokens
 // @access  Public
-router.post("/logout", (req: Request, res: Response) => {
+router.post("/logout", auth, (req: Request, res: Response) => {
   try {
     res.clearCookie("accessToken", {
       httpOnly: false, 

@@ -1,12 +1,15 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { TranslateFAQRequest, TranslateFAQResponse } from '../../../types/translate';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
+import env from '../../../../config/env';
 
 const router = express.Router();
 
 // @route   POST api/translate/
 // @desc    Translate the given text and return the translated result
 // @access  Private
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", auth, async (req: Request, res: Response) => {
   const { text }: TranslateFAQRequest['body'] = req.body;
   console.log(text);
 
@@ -17,7 +20,7 @@ router.post("/", async (req: Request, res: Response) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        auth_key: "1409a680-0ddb-4f6a-9afb-aa6948a92e21:fx",
+        auth_key: env.DEEPL_KEY,
         text: text,
         target_lang: 'EN',
       }).toString(),

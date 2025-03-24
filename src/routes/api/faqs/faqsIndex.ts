@@ -1,12 +1,12 @@
 import express from 'express';
 import createFAQRoutes from './createFAQ';
+import changeFAQCategoryRoutes  from './changeFAQCategory';
 import getAllFAQCategoryRoutes from './getAllFAQCategory';
 import getAllFAQsRotues from './getAllFAQs';
 import getFAQRoutes from './getFAQ';
 import deleteFAQRoutes from './deleteFAQ';
 import updateFAQRoutes from './updateFAQ';
 import createRelateFAQRoutes from './createRelateFAQ';
-import changeFAQCategoryRoutes  from './changeFAQCategory';
 import createCheckFAQCateogryConflictRoutes from './createCheckFAQCategoryConflict';
 import updateCheckFAQCateogryConflictRoutes from './updateCheckFAQCategoryConflict';
 

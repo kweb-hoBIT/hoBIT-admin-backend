@@ -225,4 +225,19 @@ export type UpdateCheckFAQCategoryDuplicateResponse = {
   };
 };
 
+export type changeFAQCategoryRequest = {
+  body: {
+    user_id: number;
+    category_field: string;
+    prev_category: string;
+    new_category: string;
+  };
+}
+
+export type changeFAQCategoryResponse = {
+  statusCode: number;
+  message: string; 
+}
+
+
 export default Faq;

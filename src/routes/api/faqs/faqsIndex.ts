@@ -8,10 +8,12 @@ import updateFAQRoutes from './updateFAQ';
 import createRelateFAQRoutes from './createRelateFAQ';
 import createCheckFAQCateogryDuplicateRoutes from './createCheckFAQCategoryDuplicate';
 import updateCheckFAQCateogryDuplicateRoutes from './updateCheckFAQCategoryDuplicate';
+import changeFAQCategoryRoutes  from './changeFAQCategory';
 
 
 const router = express.Router();
 
+router.use('/faqs', changeFAQCategoryRoutes);
 router.use('/faqs', createFAQRoutes);
 router.use('/faqs', getAllFAQCategoryRoutes);
 router.use('/faqs', getAllFAQsRotues);

@@ -35,6 +35,8 @@ router.put("/category", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { user_id, category_field, prev_category, new_category }: changeSeniorFAQCategoryRequest['body'] = req.body;
 
+  console.log(req.body);
+
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
       `SELECT username FROM hobit.users WHERE id = ?`,
@@ -121,6 +123,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
       statusCode: 200,
       message: "FAQ category changed successfully",
     };
+    console.log(response);
     res.status(200).json(response);
 
   } catch (err: any) {

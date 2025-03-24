@@ -1,15 +1,17 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection,  ResultSetHeader } from "mysql2/promise";
 import { DeleteAccountReqeust, DeleteAccountResponse } from "../../../types/user";
 import env from '../../../../config/env';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route DELETE api/users/:user_id
 // @desc Delete user by user_id
 // @access Private
-router.delete("/:user_id", async (req: Request<DeleteAccountReqeust['params']>, res: Response) => {
+router.delete("/:user_id", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { user_id } = req.params;
   const { manageKey } : DeleteAccountReqeust['body'] = req.body;

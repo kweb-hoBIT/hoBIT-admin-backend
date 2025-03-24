@@ -190,7 +190,7 @@ export interface GetAllFAQCategoryResponse {
   };
 }
 
-export type CreateCheckFAQCategoryDuplicateRequest = {
+export type CreateCheckFAQCategoryConflictRequest = {
   body: {
     maincategory_ko: string;
     maincategory_en: string;
@@ -199,15 +199,7 @@ export type CreateCheckFAQCategoryDuplicateRequest = {
   };
 };
 
-export type CreateCheckFAQCategoryDuplicateResponse = {
-  statusCode: number;
-  message: string;
-  data: {
-    isDuplicated: boolean;
-  };
-};
-
-export type UpdateCheckFAQCategoryDuplicateRequest = {
+export type UpdateCheckFAQCategoryConflictRequest = {
   body: {
     faq_id: number;
     maincategory_ko: string;
@@ -217,11 +209,22 @@ export type UpdateCheckFAQCategoryDuplicateRequest = {
   };
 };
 
-export type UpdateCheckFAQCategoryDuplicateResponse = {
+export type CheckFAQCategoryConflictResponse = {
   statusCode: number;
   message: string;
   data: {
-    isDuplicated: boolean;
+    isConflict: boolean;
+    conflictedData: {
+      field: string;
+      input: {
+        ko: string;
+        en: string;
+      };
+      conflict: {
+        ko: string;
+        en: string;
+      }[];
+    }[];
   };
 };
 

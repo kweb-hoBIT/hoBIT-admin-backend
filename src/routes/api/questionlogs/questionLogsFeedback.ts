@@ -1,16 +1,18 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { EntireFeedbackRequest, EntireFeedbackResponse } from "../../../types/questionLog";
 import _ from "lodash";
 import moment from "moment";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Get api/questionlogs/frequency
 // @desc    Get average feedback score of question logs
 // @access  Private
-router.get("/feedback", async (req: Request, res: Response) => {
+router.get("/feedback", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { startDate, endDate, period, sortOrder, limit } = req.query as EntireFeedbackRequest['query'];
   console.log(req.query);

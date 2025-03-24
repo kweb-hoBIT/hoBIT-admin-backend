@@ -1,15 +1,17 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import env from "../../../../config/env";
 import { CreateFAQRequest, CreateFAQResponse } from '../../../types/faq';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
 // @route   Post api/faqs/
 // @desc    Create a new FAQ
 // @access  Private
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {
     user_id,
@@ -23,6 +25,7 @@ router.post("/", async (req: Request, res: Response) => {
     answer_en,
     manager
   } : CreateFAQRequest['body'] = req.body;
+  const existed_accessToken = req.cookies?.accessToken;
   console.log(req.body);
 
   try {
@@ -63,6 +66,7 @@ router.post("/", async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
       body: JSON.stringify(gptbody)
     });
@@ -111,8 +115,9 @@ router.post("/", async (req: Request, res: Response) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if (!logResponse.ok) {

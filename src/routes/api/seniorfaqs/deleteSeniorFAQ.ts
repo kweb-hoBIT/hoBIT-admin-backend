@@ -1,8 +1,10 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { DeleteSeniorFAQRequest, DeleteSeniorFAQResponse } from "../../../types/seniorfaq";
 import env from "../../../../config/env";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
@@ -21,10 +23,11 @@ interface SeniorFAQ {
 // @route   DELETE api/seniorfaqs/:faq_id
 // @desc    Delete a Senior FAQ
 // @access  Private
-router.delete("/:senior_faq_id", async (req: Request<{ senior_faq_id: DeleteSeniorFAQRequest['params'] }>, res: Response) => {
+router.delete("/:senior_faq_id", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { senior_faq_id } = req.params;
   const { user_id }: DeleteSeniorFAQRequest['body'] = req.body;
+  const existed_accessToken = req.cookies?.accessToken;
   console.log(senior_faq_id);
 
   try {
@@ -78,12 +81,14 @@ router.delete("/:senior_faq_id", async (req: Request<{ senior_faq_id: DeleteSeni
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
       body: JSON.stringify(data)
     });
 
     if(!logResponse.ok) {
       const errorData = await logResponse.json();
+      console.log(errorData)
       return res.status(logResponse.status).json({ error: errorData.message });
     }
 

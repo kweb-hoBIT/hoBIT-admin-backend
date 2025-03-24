@@ -5,9 +5,9 @@ import getAllSeniorFAQsRoutes from './getAllSeniorFAQs';
 import getSeniorFAQRoutes from './getSeniorFAQ';
 import deleteSeniorFAQRoutes from './deleteSeniorFAQ';
 import updateSeniorFAQRoutes from './updateSeniorFAQ';
-import createCheckSeniorFAQCategoryDuplicateRoutes from './createCheckSeniorFAQCategoryDuplicate';
-import updateCheckSeniorFAQCategoryDuplicateRoutes from './updateCheckSeniorFAQCategoryDuplicate';
 import changeSeniorFAQCategoryRoutes from './changeSeniorFAQCategory';
+import createCheckSeniorFAQCategoryConflictRoutes from './createCheckSeniorFAQCategoryConflict';
+import updateCheckSeniorFAQCategoryConflictRoutes from './updateCheckSeniorFAQCategoryConflict';
 
 
 const router = express.Router();
@@ -19,7 +19,7 @@ router.use('/seniorfaqs', getAllSeniorFAQsRoutes);
 router.use('/seniorfaqs', getSeniorFAQRoutes);
 router.use('/seniorfaqs', deleteSeniorFAQRoutes);
 router.use('/seniorfaqs', updateSeniorFAQRoutes);
-router.use('/seniorfaqs', createCheckSeniorFAQCategoryDuplicateRoutes);
-router.use('/seniorfaqs', updateCheckSeniorFAQCategoryDuplicateRoutes);
+router.use('/seniorfaqs', createCheckSeniorFAQCategoryConflictRoutes);
+router.use('/seniorfaqs', updateCheckSeniorFAQCategoryConflictRoutes);
 
 export default router;

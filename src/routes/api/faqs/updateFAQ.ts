@@ -1,8 +1,10 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { UpdateFAQRequest, UpdateFAQResponse } from '../../../types/faq';
 import env from "../../../../config/env";
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
@@ -21,7 +23,7 @@ interface FAQ {
 // @route   Put api/faqs/:faq_id
 // @desc    Update a FAQ
 // @access  Private
-router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] }>, res: Response) => {
+router.put("/:faq_id", auth, async (req: Request, res: Response) => {
   const connection : PoolConnection= await Pool.getConnection();
   const { faq_id } = req.params;
   const {
@@ -37,6 +39,7 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
     manager
   } : UpdateFAQRequest['body'] = req.body;
   console.log(faq_id, req.body);
+  const existed_accessToken = req.cookies?.accessToken;
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
@@ -88,8 +91,9 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          "Cookie": `accessToken=${existed_accessToken}`
         },
-        body: JSON.stringify(gptbody)
+        body: JSON.stringify(gptbody),
       });
   
       if (!GPTResponse.ok) {
@@ -114,13 +118,17 @@ router.put("/:faq_id", async (req: Request<{ faq_id: UpdateFAQRequest['params'] 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        "Cookie": `accessToken=${existed_accessToken}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if(!logResponse.ok) {
       const errorData = await logResponse.json();
-      return res.status(logResponse.status).json({ error: errorData.message });
+      return res.status(logResponse.status).json({ 
+        statusCode: logResponse.status,
+        message: errorData.message 
+      });
     }
 
     await connection.execute(

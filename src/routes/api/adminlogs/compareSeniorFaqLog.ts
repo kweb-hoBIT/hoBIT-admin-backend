@@ -1,7 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { CompareSeniorFAQLogRequest, CompareSeniorFAQLogResponse } from '../../../types/adminLog';
+import Request from "../../../types/Request";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
@@ -13,7 +15,7 @@ interface SeniorFAQLog {
 // @route   Post api/adminlogs/seniorfaqlogs/compare/:senior_faq_log_id
 // @desc    Get a comparison of the senior_faq_log
 // @access  Private
-router.get('/seniorfaqlogs/compare/:senior_faq_log_id', async (req: Request<CompareSeniorFAQLogRequest['params']>, res: Response) => {
+router.get('/seniorfaqlogs/compare/:senior_faq_log_id', auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const {senior_faq_log_id} = req.params;
 

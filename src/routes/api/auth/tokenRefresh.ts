@@ -1,5 +1,6 @@
 import express, { Response } from "express";
 import jwt from "jsonwebtoken";
+import auth from "../../../middleware/auth";
 import Payload from "../../../types/Payload";
 import Request from "../../../types/Request";
 import { NewAccessTokenResponse } from "../../../types/user";
@@ -10,7 +11,7 @@ const router = express.Router();
 // @route   POST api/auth/refresh
 // @desc    Refresh Access Token using Refresh Token (from cookie)
 // @access  Public
-router.post("/refresh", async (req: Request, res: Response) => {
+router.post("/refresh", auth, async (req: Request, res: Response) => {
   try {
     const existed_accessToken = req.cookies?.accessToken;
     if (existed_accessToken) {

@@ -5,7 +5,6 @@ import { changeFAQCategoryResponse, changeFAQCategoryRequest } from "faq";
 
 const router = express.Router();
 
-
 interface FAQ {
   faq_id: number;
   maincategory_ko: string;
@@ -37,7 +36,7 @@ router.put("/category", async (req: Request, res: Response) => {
     const [rows] = await connection.execute<RowDataPacket[]>(
       `SELECT id as faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
        FROM hobit.faqs
-       WHERE faqs.${category_field} = ?`,
+       WHERE ${category_field} = ?`,
       [prev_category]
     );
 
@@ -49,12 +48,12 @@ router.put("/category", async (req: Request, res: Response) => {
         category_field: new_category,
       };
     });
-
+    console.log('hi')
     await connection.execute(
       `UPDATE hobit.faqs SET ${category_field} = ? WHERE ${category_field} = ?`,
       [new_category, prev_category]
     )
-
+    console.log('hi')
     const logData = []
 
     for (let i = 0; i < prev_faqs.length; i++) {
@@ -66,7 +65,6 @@ router.put("/category", async (req: Request, res: Response) => {
         '수정',
       ])
     }
-
     await connection.query(
       `INSERT INTO hobit.faq_logs (username, faq_id, prev_faq, new_faq, action_type) VALUES ?`,
       [logData]

@@ -1,7 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { changeSeniorFAQCategoryRequest, changeSeniorFAQCategoryResponse } from "seniorfaq";
+import auth from "../../../middleware/auth";
+import Request from "../../../types/Request";
 
 const router = express.Router();
 
@@ -27,12 +29,14 @@ interface SeniorFAQ {
   [key: string]: any;
 }
 
-// @route   Get api/seniorfaqs/category
+// @route   Put api/seniorfaqs/category
 // @desc    change SeniorFAQ category
 // @access  Private
-router.put("/category", async (req: Request, res: Response) => {
+router.put("/category", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { user_id, category_field, prev_category, new_category }: changeSeniorFAQCategoryRequest['body'] = req.body;
+
+  console.log(req.body);
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
@@ -120,6 +124,7 @@ router.put("/category", async (req: Request, res: Response) => {
       statusCode: 200,
       message: "FAQ category changed successfully",
     };
+    console.log(response);
     res.status(200).json(response);
 
   } catch (err: any) {

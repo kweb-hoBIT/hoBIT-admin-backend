@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { changeFAQCategoryResponse, changeFAQCategoryRequest } from "faq";
+import auth from "../../../middleware/auth";
 
 const router = express.Router();
 
@@ -21,9 +22,11 @@ interface FAQ {
 // @route   PUT api/faqs/category
 // @desc    change FAQ category
 // @access  Private
-router.put("/category", async (req: Request, res: Response) => {
+router.put("/category", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
   const { user_id, category_field, prev_category, new_category }: changeFAQCategoryRequest['body'] = req.body;
+
+  console.log(req.body);
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(

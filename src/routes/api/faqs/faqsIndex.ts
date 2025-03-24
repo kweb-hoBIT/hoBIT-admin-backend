@@ -8,6 +8,7 @@ import updateFAQRoutes from './updateFAQ';
 import createRelateFAQRoutes from './createRelateFAQ';
 import createCheckFAQCateogryConflictRoutes from './createCheckFAQCategoryConflict';
 import updateCheckFAQCateogryConflictRoutes from './updateCheckFAQCategoryConflict';
+import changeFAQCategoryRoutes  from './changeFAQCategory';
 
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.use('/faqs', updateFAQRoutes);
 router.use('/faqs', createRelateFAQRoutes);
 router.use('/faqs', createCheckFAQCateogryConflictRoutes);
 router.use('/faqs', updateCheckFAQCateogryConflictRoutes);
+router.use('/faqs', changeFAQCategoryRoutes);
 
 
 export default router;

@@ -52,35 +52,44 @@ router.put("/category", auth, async (req: Request, res: Response) => {
 
     const username = userName[0]?.username as string;
 
-    const [rows] = await connection.execute<RowDataPacket[]>(
+    const rows = await connection.execute<RowDataPacket[]>(
       `SELECT id as faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
        FROM hobit.faqs
        WHERE ${category_field} = ?`,
       [prev_category]
-    );
+    ).then(([rows]) => {
+      return rows.map((faq) => ({
+        ...faq,
+        answer_ko: JSON.parse(faq.answer_ko),
+        answer_en: JSON.parse(faq.answer_en),
+      }));
+    });
 
     const prev_faqs = rows as FAQ[];
 
     const new_faqs = prev_faqs.map((faq: FAQ) => {
       return {
         ...faq,
-        category_field: new_category,
+        [category_field]: new_category,
       };
     });
-    console.log('hi')
+
     await connection.execute(
       `UPDATE hobit.faqs SET ${category_field} = ? WHERE ${category_field} = ?`,
       [new_category, prev_category]
     )
-    console.log('hi')
+
     const logData = []
 
     for (let i = 0; i < prev_faqs.length; i++) {
+      const { faq_id, ...prevFaqWithoutId } = prev_faqs[i];
+      const { faq_id: _, ...newFaqWithoutId } = new_faqs[i];
+
       logData.push([
         username,
         prev_faqs[i].faq_id,
-        JSON.stringify(prev_faqs[i]),
-        JSON.stringify(new_faqs[i]),
+        JSON.stringify(prevFaqWithoutId),
+        JSON.stringify(newFaqWithoutId),
         '수정',
       ])
     }

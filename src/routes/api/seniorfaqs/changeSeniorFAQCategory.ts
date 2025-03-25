@@ -79,14 +79,20 @@ router.put("/category", auth, async (req: Request, res: Response) => {
       });
     }
 
-    const [rows] = await connection.execute<RowDataPacket[]>(
+    const rows = await connection.execute<RowDataPacket[]>(
       `SELECT id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager
        FROM hobit.senior_faqs
        WHERE \`${category_field}\` = ?`,
       [prev_category]
-    );
+    ).then(([rows]) => {
+      return rows.map((faq) => ({
+        ...faq,
+        answer_ko: JSON.parse(faq.answer_ko),
+        answer_en: JSON.parse(faq.answer_en),
+      }));
+    });;
 
-    const senior_faq = rows as { id: number }[];
+    const senior_faq = rows as SeniorFAQ[];
     const new_senior_faq = JSON.parse(JSON.stringify(rows)) as SeniorFAQ[];
     const prev_senior_faq = rows as SeniorFAQ[];
 

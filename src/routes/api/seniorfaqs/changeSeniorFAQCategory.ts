@@ -39,6 +39,21 @@ router.put("/category", auth, async (req: Request, res: Response) => {
   console.log(req.body);
 
   try {
+    const [checkCategory] = await connection.execute<RowDataPacket[]>(
+      `SELECT * FROM hobit.senior_faqs WHERE ${category_field} = ?`, 
+      [new_category]
+    );
+
+    if ( checkCategory.length > 0 ) {
+      const response: changeSeniorFAQCategoryResponse = {
+        statusCode: 400,
+        message: "Category already exists",
+      };
+      console.log(response);
+      res.status(400).json(response);
+      return;
+    }
+
     const [userName] = await connection.execute<RowDataPacket[]>(
       `SELECT username FROM hobit.users WHERE id = ?`,
       [user_id]

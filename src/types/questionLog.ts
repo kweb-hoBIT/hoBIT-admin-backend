@@ -220,4 +220,5 @@ export type getUnmatchedQuestionRequest = {
 export type getUnmatchedQuestionResponse = {
   statusCode: number;
   message: string;
+  unmatched: string[];
 };

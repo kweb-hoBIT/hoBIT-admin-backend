@@ -134,11 +134,6 @@ router.post('/unmatched', async (req: Request, res: Response) => {
       const parsedResponse = JSON.parse(responseText);
       unmatched.push(...(parsedResponse.unmatched || []));
     }
-    
-
-    console.log(userQuestion);
-    console.log(question);
-    console.log(unmatched);
 
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [

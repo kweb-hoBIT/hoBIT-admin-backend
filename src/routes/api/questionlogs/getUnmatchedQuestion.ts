@@ -137,16 +137,15 @@ router.post('/unmatched', async (req: Request, res: Response) => {
 
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [
-        question,
-        '질문과 무관한 답변',
-        'AI가 해당 질문이 FAQ에 없음을 확인하여 추가 검토가 필요함',
+        'AI가 찾은 질문과 무관한 답변',
+        `${question} 질문을 추가해주세요!`,
         'KO'
       ] 
     }) : [];
 
     if (data.length > 0) {
       await connection.query(
-        `INSERT INTO hobit.user_feedbacks (user_question, feedback_reason, feedback_detail, language) VALUES ?`,
+        `INSERT INTO hobit.user_feedbacks (feedback_reason, feedback_detail, language) VALUES ?`,
         [data]
       );
     }

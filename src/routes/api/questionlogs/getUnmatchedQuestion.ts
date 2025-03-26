@@ -19,7 +19,7 @@ const openai = new OpenAI({
 });
 
 // @route   post api/questionlogs/unmatched
-// @desc    Get all unmatched questions
+// @desc    Get unmatched questions and insert them into user_feedbacks table
 // @access  Private
 router.post('/unmatched', async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();

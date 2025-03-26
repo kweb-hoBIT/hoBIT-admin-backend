@@ -137,7 +137,7 @@ router.post('/unmatched', async (req: Request, res: Response) => {
 
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [
-        'AI가 찾은 질문과 무관한 답변',
+        'AI => 유저 질문과 매칭되는 FAQ가 없음',
         `${question} 질문을 추가해주세요!`,
         'KO'
       ] 

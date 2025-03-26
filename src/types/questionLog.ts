@@ -207,13 +207,3 @@ export type SpecificLanguageResponse = {
     }
   };
 };
-
-export type getUnmatchedQuestionRequest = {};
-
-export type getUnmatchedQuestionResponse = {
-  statusCode: number;
-  message: string;
-  data: { 
-    unmatched: string[];
-  };
-};

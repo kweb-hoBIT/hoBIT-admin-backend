@@ -7,8 +7,6 @@ import QuestionLogsLanguageRoutes from './questionLogsLanguage';
 import QuestionLogFrequencyRoutes from './questionLogFrequency';
 import QuestionLogFeedbackRoutes from './questionLogFeedback';
 import QuestionLogLanguageRoutes from './questionLogLanguage';
-import getUnmatchedQuestionRoutes from './getUnmatchedQuestion';
-
 
 const router = express.Router();
 
@@ -19,7 +17,7 @@ router.use('/questionlogs', QuestionLogsLanguageRoutes);
 router.use('/questionlogs', QuestionLogFrequencyRoutes);
 router.use('/questionlogs', QuestionLogFeedbackRoutes);
 router.use('/questionlogs', QuestionLogLanguageRoutes);
-router.use('/questionlogs', getUnmatchedQuestionRoutes);
+
 
 
 export default router;

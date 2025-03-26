@@ -1,26 +1,18 @@
-import express, { Response } from "express";
-import { Pool } from "../../../../config/connectDB";
+import { Pool } from "../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import Request from "../../../types/Request";
-import env from '../../../../config/env';
+import env from '../../config/env';
 import { OpenAI } from "openai";
-import { getUnmatchedQuestionResponse } from "questionLog";
 
 export type userQuestion = {
   user_question: string;
   language: string;
 }
 
-const router = express.Router();
-
 const openai = new OpenAI({
   apiKey: env.OPENAI_KEY,
 });
 
-// @route   post api/questionlogs/unmatched
-// @desc    Get unmatched questions and insert them into user_feedbacks table
-// @access  Private
-router.post('/unmatched', async (req: Request, res: Response) => {
+export async function processUnmatchedQuestions() {
   const connection: PoolConnection = await Pool.getConnection();
 
   try {
@@ -67,15 +59,6 @@ router.post('/unmatched', async (req: Request, res: Response) => {
     
       userQuestion = parsedResponse.unique_questions || [];
     } else {
-      const response = {
-        statusCode: 204,
-        message: "No unmatched questions found",
-        data: {
-          unmatched: [] as string[],
-        }
-      }
-      console.log(response);
-      res.status(204).json(response);
       return;
     }
 
@@ -136,7 +119,7 @@ router.post('/unmatched', async (req: Request, res: Response) => {
 
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [
-        'AI => 유저 질문과 매칭되는 FAQ가 없음',
+        'AI가 유저 질문과 매칭되는 FAQ가 없는것을 발견',
         `${question} 질문을 추가해주세요!`,
         'KO'
       ] 
@@ -152,26 +135,16 @@ router.post('/unmatched', async (req: Request, res: Response) => {
     await connection.execute(
       `UPDATE hobit.question_logs SET ismatched = 1 WHERE ismatched = 0`,
     )
-
-    const response: getUnmatchedQuestionResponse = {
-      statusCode: 200,
-      message: "Unmatched questions returned successfully",
-      data : {
-        unmatched: unmatched
-      }
-    }
-    res.status(200).json(response);
+    console.log('Unmatched questions processed successfully! : ', unmatched);
   } catch (err: any) {
-    const response = {
-      statusCode: 500,
-      message: err.message,
-    }
-    console.log(response);
-    res.status(500).json(response);
+    console.error('Error occurred while processing unmatched questions: ', err);
   } finally {
     connection.release();
   }
-});
+};
 
 
-export default router;
+// PM2에서 실행될 때 즉시 실행
+if (require.main === module) {
+  processUnmatchedQuestions();
+}

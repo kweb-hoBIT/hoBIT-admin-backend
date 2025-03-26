@@ -2,7 +2,6 @@ import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import Request from "../../../types/Request";
-import auth from "../../../middleware/auth";
 import env from '../../../../config/env';
 import { OpenAI } from "openai";
 import { getUnmatchedQuestionResponse } from "questionLog";

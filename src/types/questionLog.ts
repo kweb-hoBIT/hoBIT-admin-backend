@@ -208,17 +208,12 @@ export type SpecificLanguageResponse = {
   };
 };
 
-export type getUnmatchedQuestionRequest = {
-  body: {
-    user_questions: {
-      user_question: string;
-      language: string;
-    }[];
-  };
-};
+export type getUnmatchedQuestionRequest = {};
 
 export type getUnmatchedQuestionResponse = {
   statusCode: number;
   message: string;
-  unmatched: string[];
+  data: { 
+    unmatched: string[];
+  };
 };

@@ -28,7 +28,7 @@ router.post('/unmatched', async (req: Request, res: Response) => {
     const userQuestionRow = await connection.execute<RowDataPacket[]>(
       `SELECT user_question FROM hobit.question_logs WHERE ismatched = 0`
     ).then(([rows]) => {
-      return rows.map(row => row.user_question);
+      return rows.length > 0 ? rows.map(row => row.user_question) : [];
     });
     
     let userQuestion = userQuestionRow as userQuestion[];
@@ -67,6 +67,17 @@ router.post('/unmatched', async (req: Request, res: Response) => {
       const parsedResponse = JSON.parse(responseText);
     
       userQuestion = parsedResponse.unique_questions || [];
+    } else {
+      const response = {
+        statusCode: 204,
+        message: "No unmatched questions found",
+        data: {
+          unmatched: [] as string[],
+        }
+      }
+      console.log(response);
+      res.status(204).json(response);
+      return;
     }
 
     const question = await connection.execute<RowDataPacket[]>(
@@ -91,12 +102,17 @@ router.post('/unmatched', async (req: Request, res: Response) => {
             - 기존 FAQ 리스트(question)에서 **유사한 질문이 하나라도 존재하면** 해당 userQuestion 항목은 "매칭된 것으로 간주"합니다.
             - **매칭된 질문은 제외하고**, 일치하는 질문이 전혀 없는 userQuestion 항목만 unmatched로 반환하세요.
       
-            📌 **매칭 기준:**  
-            ✅ 의미가 같거나 매우 유사한 질문은 같은 질문으로 간주  
-            ✅ 동의어나 표현 차이를 고려 (예: "빌릴 수 있나요?" ↔ "대여하고 싶어요", "여는 시간" ↔ "오픈 시간")  
-            ✅ 문장 구조가 달라도 의미가 같으면 같은 질문으로 처리  
-            ✅ 띄어쓰기, 철자 차이, 존댓말/반말 차이 무시  
-            ✅ 단, 완전히 다른 의미의 질문은 매칭되지 않도록 주의  
+            📌 **매칭 기준:**
+            ✅ **의미가 같거나 매우 유사한 질문은 같은 질문으로 간주**  
+            ✅ **동의어나 표현 차이를 고려**  
+              - 예: "빌릴 수 있나요?" ↔ "대여하고 싶어요", "여는 시간" ↔ "오픈 시간", "신청하려고 하는데" ↔ "수강신청을 하려고 해요"  
+              - **같은 의미를 갖지만 표현이 달라질 수 있음을 고려**  
+            ✅ **문장 구조가 달라도 의미가 같으면 같은 질문으로 처리**  
+              - 예: "현장실습을 합격할 수 있을지 모르겠는데 수강신청 할 수 있어?" ↔ "현장 실습 신청했는데 합격할지 모르겠어서 수강신청을 하고 싶어"  
+            ✅ **띄어쓰기, 철자 차이, 존댓말/반말 차이 무시**  
+              - 예: "수업 신청" ↔ "수업신청", "어떻게 해야 될까요?" ↔ "어떻게 해야 돼?"   
+            ✅ **완전히 다른 의미의 질문은 매칭되지 않도록 주의**  
+              - 예: "졸업 요건을 만족했는지 알고 싶어요" ↔ "졸업이 반려된 이유를 알고 싶어요"는 서로 다른 의미이므로 매칭되지 않음
       
             📌 **응답 형식 (JSON):**  
             반환할 데이터는 unmatched 리스트만 포함해야 하며, Markdown 코드 블록(\`\`\`json ... \`\`\`)을 사용하지 마세요.
@@ -118,25 +134,38 @@ router.post('/unmatched', async (req: Request, res: Response) => {
       const parsedResponse = JSON.parse(responseText);
       unmatched.push(...(parsedResponse.unmatched || []));
     }
+    
 
-    const data = unmatched.map((question) => {
+    console.log(userQuestion);
+    console.log(question);
+    console.log(unmatched);
+
+    const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [
         question,
         '질문과 무관한 답변',
         'AI가 해당 질문이 FAQ에 없음을 확인하여 추가 검토가 필요함',
         'KO'
       ] 
-    });
+    }) : [];
 
-    await connection.query(
-      `INSERT INTO hobit.user_feedbacks (user_question, feedback_reason, feedback_detail, language) VALUES ?`,
-      [data]
-    );
+    if (data.length > 0) {
+      await connection.query(
+        `INSERT INTO hobit.user_feedbacks (user_question, feedback_reason, feedback_detail, language) VALUES ?`,
+        [data]
+      );
+    }
+
+    await connection.execute(
+      `UPDATE hobit.question_logs SET ismatched = 1 WHERE ismatched = 0`,
+    )
 
     const response: getUnmatchedQuestionResponse = {
       statusCode: 200,
       message: "Unmatched questions returned successfully",
-      unmatched: unmatched
+      data : {
+        unmatched: unmatched
+      }
     }
     res.status(200).json(response);
   } catch (err: any) {

@@ -109,6 +109,7 @@ const createQuestionLogTable = async () => {
       language VARCHAR(45) NOT NULL,
       feedback_score INT,
       feedback VARCHAR(300),
+      ismatched INT DEFAULT 0,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (faq_id) REFERENCES faqs(id) ON DELETE SET NULL ON UPDATE CASCADE
     );

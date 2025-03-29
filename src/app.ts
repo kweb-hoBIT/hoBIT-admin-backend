@@ -69,7 +69,7 @@ app.use("/api", swaggerRoutes);
 
 
 cron.schedule('0 0 * * *', async () => {
-  console.log('Running getUnmatchedQuestion at midnight');
+  console.log('Running getUnmatchedQuestion');
   try {
     await getUnmatchedQuestion();
   } catch (err) {

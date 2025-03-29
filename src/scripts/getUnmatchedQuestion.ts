@@ -11,7 +11,7 @@ const openai = new OpenAI({
   apiKey: env.OPENAI_KEY,
 });
 
-export async function processUnmatchedQuestions() {
+export async function getUnmatchedQuestion() {
   const connection: PoolConnection = await Pool.getConnection();
 
   try {
@@ -145,5 +145,5 @@ export async function processUnmatchedQuestions() {
 
 // PM2에서 실행될 때 즉시 실행
 if (require.main === module) {
-  processUnmatchedQuestions();
+  getUnmatchedQuestion();
 }

@@ -5,7 +5,6 @@ import { OpenAI } from "openai";
 
 export type userQuestion = {
   user_question: string;
-  language: string;
 }
 
 const openai = new OpenAI({
@@ -18,6 +17,12 @@ export async function processUnmatchedQuestions() {
   try {
     const userQuestionRow = await connection.execute<RowDataPacket[]>(
       `SELECT user_question FROM hobit.question_logs WHERE ismatched = 0`
+    ).then(([rows]) => {
+      return rows.length > 0 ? rows.map(row => row.user_question) : [];
+    });
+
+    const userFeedback = await connection.execute<RowDataPacket[]>(
+      `SELECT user_question FROM hobit.user_feedbacks WHERE resolved = 0`
     ).then(([rows]) => {
       return rows.length > 0 ? rows.map(row => row.user_question) : [];
     });
@@ -148,3 +153,5 @@ export async function processUnmatchedQuestions() {
 if (require.main === module) {
   processUnmatchedQuestions();
 }
+
+processUnmatchedQuestions()

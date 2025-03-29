@@ -13,7 +13,6 @@ const openai = new OpenAI({
 
 export async function getUnmatchedQuestion() {
   const connection: PoolConnection = await Pool.getConnection();
-
   try {
     const userQuestionRow = await connection.execute<RowDataPacket[]>(
       `SELECT user_question FROM hobit.question_logs WHERE ismatched = 0`
@@ -141,7 +140,3 @@ export async function getUnmatchedQuestion() {
     connection.release();
   }
 };
-
-
-
-getUnmatchedQuestion();

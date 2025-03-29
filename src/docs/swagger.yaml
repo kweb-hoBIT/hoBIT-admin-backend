@@ -883,6 +883,77 @@ paths:
                     type: string
                     example: "Internal server error"
 
+    put:
+      summary: FAQ 카테고리 변경
+      description: 기존 FAQ의 카테고리(maincategory 또는 subcategory)를 새로운 값으로 일괄 변경하는 API입니다.
+      operationId: updateFAQCategory
+      tags:
+        - faqs
+      requestBody:
+        description: 변경할 카테고리 정보
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: 변경 작업을 수행하는 유저의 ID
+                  example: 3
+                category_field:
+                  type: string
+                  description: 변경할 카테고리 필드 (예 maincategory_ko, subcategory_en 등)
+                  example: "subcategory_ko"
+                prev_category:
+                  type: string
+                  description: 기존 카테고리 값
+                  example: "기존카테고리"
+                new_category:
+                  type: string
+                  description: 새로운 카테고리 값
+                  example: "새카테고리"
+      responses:
+        '200':
+          description: 카테고리 변경 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ category changed successfully"
+        '400':
+          description: 이미 존재하는 카테고리로 변경 시도
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Category already exists"
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
   /api/faqs/related:
     post:
       summary: FAQ 관련 질문 생성
@@ -2012,6 +2083,77 @@ paths:
                                         type: array
                                         items:
                                           type: string
+        '500':
+          description: 서버 오류 발생
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 500
+                  message:
+                    type: string
+                    example: "Internal server error"
+
+    put:
+      summary: Senior FAQ 카테고리 변경
+      description: 기존 Senior FAQ의 카테고리(maincategory, subcategory 또는 detailcategory)를 새로운 값으로 일괄 변경하는 API입니다.
+      operationId: updateSeniorFAQCategory
+      tags:
+        - seniorfaqs
+      requestBody:
+        description: 변경할 카테고리 정보
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_id:
+                  type: integer
+                  description: 변경 작업을 수행하는 유저의 ID
+                  example: 5
+                category_field:
+                  type: string
+                  description: 변경할 카테고리 필드 (예 maincategory_ko, detailcategory_en 등)
+                  example: "detailcategory_ko"
+                prev_category:
+                  type: string
+                  description: 기존 카테고리 값
+                  example: "기존세부카테고리"
+                new_category:
+                  type: string
+                  description: 새로운 카테고리 값
+                  example: "새세부카테고리"
+      responses:
+        '200':
+          description: 카테고리 변경 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "FAQ category changed successfully"
+        '400':
+          description: 잘못된 요청 또는 이미 존재하는 카테고리로 변경 시도
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode:
+                    type: integer
+                    example: 400
+                  message:
+                    type: string
+                    example: "Category already exists"
         '500':
           description: 서버 오류 발생
           content:

@@ -143,7 +143,5 @@ export async function getUnmatchedQuestion() {
 };
 
 
-// PM2에서 실행될 때 즉시 실행
-if (require.main === module) {
-  getUnmatchedQuestion();
-}
+
+getUnmatchedQuestion();

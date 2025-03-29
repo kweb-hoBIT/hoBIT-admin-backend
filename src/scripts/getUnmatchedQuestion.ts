@@ -20,12 +20,6 @@ export async function processUnmatchedQuestions() {
     ).then(([rows]) => {
       return rows.length > 0 ? rows.map(row => row.user_question) : [];
     });
-
-    const userFeedback = await connection.execute<RowDataPacket[]>(
-      `SELECT user_question FROM hobit.user_feedbacks WHERE resolved = 0`
-    ).then(([rows]) => {
-      return rows.length > 0 ? rows.map(row => row.user_question) : [];
-    });
     
     let userQuestion = userQuestionRow as userQuestion[];
 

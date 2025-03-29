@@ -153,5 +153,3 @@ export async function processUnmatchedQuestions() {
 if (require.main === module) {
   processUnmatchedQuestions();
 }
-
-processUnmatchedQuestions()

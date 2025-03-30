@@ -69,7 +69,7 @@ export async function getUnmatchedQuestion() {
                 3. **최종적으로 정제된 질문 리스트만 반환하세요.**
                   - JSON 형식으로 반환합니다.
                   - unique_questions 키에 필터링된 질문 리스트를 포함해야 합니다.
-                  - 리스트 내부의 모든 질문은 한글이어야 합니다.
+                  - 리스트 내부의 모든 질문은 한글이어야 합니다. 한글 이외의 다른 언어가 포함되어있으면 안됩니다.
 
               ## **📌 응답 형식 (JSON)**
                 반드시 다음과 같은 JSON 객체로 반환하세요.
@@ -84,7 +84,7 @@ export async function getUnmatchedQuestion() {
             content: JSON.stringify({ userQuestion }),
           },
         ],
-        temperature: 0.1,
+        temperature: 0.4,
       });
     
       const responseText = similarityCheckResponse.choices[0].message.content?.trim();
@@ -120,7 +120,7 @@ export async function getUnmatchedQuestion() {
 
                 1. **유사한 질문을 매칭하기**
                   - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 완전히 같은 질문이 있다면 반드시 매칭됩니다.
-                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 의미적으로 동일하거나 유사한 질문을 하나라도 찾는다면 매칭됩니다.
+                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 핵심적인 내용이 의미적으로 동일하거나 유사한 질문을 하나라도 찾는다면 매칭됩니다.
                   - **매칭된 질문은 제외하고**, 일치하는 질문이 전혀 없는 userQuestion 항목만 unmatched로 반환해야 합니다.
 
                     예시 1: 
@@ -213,7 +213,7 @@ export async function getUnmatchedQuestion() {
             content: JSON.stringify({ question_ko: question, userQuestion }),
           },
         ],
-        temperature: 0.2,
+        temperature: 0.4,
       });
 
       const responseText = similarityResponse.choices[0].message.content?.trim();

@@ -84,7 +84,7 @@ export async function getUnmatchedQuestion() {
             content: JSON.stringify({ userQuestion }),
           },
         ],
-        temperature: 0.2,
+        temperature: 0.1,
       });
     
       const responseText = similarityCheckResponse.choices[0].message.content?.trim();
@@ -120,7 +120,7 @@ export async function getUnmatchedQuestion() {
 
                 1. **유사한 질문을 매칭하기**
                   - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 완전히 같은 질문이 있다면 반드시 매칭됩니다.
-                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 의미적으로 동일하거나 매우 유사한 질문을 하나라도 찾는다면 매칭됩니다.
+                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 의미적으로 동일하거나 유사한 질문을 하나라도 찾는다면 매칭됩니다.
                   - **매칭된 질문은 제외하고**, 일치하는 질문이 전혀 없는 userQuestion 항목만 unmatched로 반환해야 합니다.
 
                     예시 1: 
@@ -170,20 +170,32 @@ export async function getUnmatchedQuestion() {
                     예시 5
                       - 입력:
                         {
-                          "question_ko": ["현장실습을 신청하려고 하는데, 다른 교과목은 아예 신청이 불가능한가요?", "졸업식은 언제 있나요?", "휴학 / 복학을 신청하려면 어떻게 해야 하나요??", "국내대학 학점교류 학점인정 절차가 궁금해요!"],
-                          "userQuestion": ["현장실습 어떻게 신청해?", "졸업 요건을 알고싶어", "휴학은 어떻게 신청해?", "국내대학 교류를 마쳤습니다. 학점인정 절차를 알려주세요"]
+                          "question_ko": ["현장실습을 신청하려고 하는데, 다른 교과목은 아예 신청이 불가능한가요?", "졸업식은 언제 있나요?", "휴학 / 복학을 신청하려면 어떻게 해야 하나요??"],
+                          "userQuestion": ["현장실습 어떻게 신청해?", "졸업 요건을 알고싶어", "휴학은 어떻게 신청해?"]
                         }
 
                       - 출력:
                         {
                           "unmatched": ["현장실습 어떻게 신청해?", "졸업 요건을 알고싶어"]
-                        }   
+                        }  
+                          
+                    예시 6
+                      - 입력:
+                        {
+                          "question_ko": ["국내대학 학점교류 학점인정 절차가 궁금해요!", "졸업 전 마지막 학기에 현장실습 신청이 가능한가요?"],
+                          "userQuestion": ["국내대학 교류를 마쳤습니다. 학점인정 절차를 알려주세요", "마지막 학기에 현장실습 신청이 가능한가요"]
+                        }
+
+                      - 출력:
+                        {
+                          "unmatched": []
+                        }  
                           
                 2. unmatched 된 질문 중에 정보대학과 아무런 관련이 없는 질문은 제외합니다.
                   - 예시 1: 개인적인 질문 ("너 몇 살이야?", "취미가 뭐야?" 등)
                   - 예시 2: 사회적, 정치적 질문이나 개인적인 의견을 묻는 질문 ("정치적 입장은 무엇인가요?", "세계 경제에 대해 어떻게 생각해?" 등)
                   - 예시 3: 욕설 및 비방
-                  - 예시 4: 질문의 길이가 2글자 이하인 경우 ("전공", "예약" 등)
+                  - 예시 4: 질문의 길이가 특정 의미를 갖지 않고 짧은 경우 ("전공", "예약" 등)
 
                 3. **최종적으로 정제된 질문 리스트만 반환하세요.**
                   - JSON 형식으로 반환합니다.
@@ -201,7 +213,7 @@ export async function getUnmatchedQuestion() {
             content: JSON.stringify({ question_ko: question, userQuestion }),
           },
         ],
-        temperature: 0.3,
+        temperature: 0.2,
       });
 
       const responseText = similarityResponse.choices[0].message.content?.trim();

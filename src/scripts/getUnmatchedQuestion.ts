@@ -118,7 +118,7 @@ export async function getUnmatchedQuestion() {
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [
         'AI가 유저 질문과 매칭되는 FAQ가 없는것을 발견',
-        `${question} 질문을 추가해주세요!`,
+        `'${question}' 질문을 추가해주세요!`,
         'KO'
       ] 
     }) : [];

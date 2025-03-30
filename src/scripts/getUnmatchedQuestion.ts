@@ -119,8 +119,9 @@ export async function getUnmatchedQuestion() {
               ## **🔥 중요 규칙**
 
                 1. **유사한 질문을 매칭하기**
-                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 완전히 같은 질문이 있다면 반드시 매칭됩니다.
-                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 핵심적인 내용이 의미적으로 동일하거나 유사한 질문을 하나라도 찾는다면 매칭됩니다.
+                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 완전히 같은 질문이 있다면 반드시, 무조건 매칭되야합니다.
+                  - 주어진 질문 리스트(userQuestion)에서 기존 FAQ(question_ko)와 의미적으로 동일하거나 유사한 질문을 하나라도 찾는다면 매칭됩니다.
+                  - 질문 리스트(userQuestion) 또는 기존 FAQ(question_ko)에 포함된 질문이 여러 문장으로 이루어져 있더라도, 그 중 하나의 문장이라도 의미상 유사한 부분이 있다면 매칭됩니다.
                   - **매칭된 질문은 제외하고**, 일치하는 질문이 전혀 없는 userQuestion 항목만 unmatched로 반환해야 합니다.
 
                     예시 1: 
@@ -183,7 +184,7 @@ export async function getUnmatchedQuestion() {
                       - 입력:
                         {
                           "question_ko": ["국내대학 학점교류 학점인정 절차가 궁금해요!", "졸업 전 마지막 학기에 현장실습 신청이 가능한가요?"],
-                          "userQuestion": ["국내대학 교류를 마쳤습니다. 학점인정 절차를 알려주세요", "마지막 학기에 현장실습 신청이 가능한가요"]
+                          "userQuestion": ["국내대학 교류를 마쳤습니다. 학점인정 절차를 알려주세요", "마지막 학기에 현장실습 신청이 가능한가요", "자비유학을 가려고 합니다. 어떻게 해야 하나요?"]
                         }
 
                       - 출력:

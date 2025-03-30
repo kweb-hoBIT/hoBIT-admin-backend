@@ -84,7 +84,7 @@ export async function getUnmatchedQuestion() {
             content: JSON.stringify({ userQuestion }),
           },
         ],
-        temperature: 0.4,
+        temperature: 0.2,
       });
     
       const responseText = similarityCheckResponse.choices[0].message.content?.trim();
@@ -102,8 +102,6 @@ export async function getUnmatchedQuestion() {
     ).then (([rows]) => {
       return rows.map(row => row.question_ko);
     });
-
-    console.log("question: ", question)
 
     const unmatched: string[] = [];
 
@@ -224,7 +222,7 @@ export async function getUnmatchedQuestion() {
             content: JSON.stringify({ question_ko: question, userQuestion }),
           },
         ],
-        temperature: 0.4,
+        temperature: 0.2,
       });
 
       const responseText = similarityResponse.choices[0].message.content?.trim();

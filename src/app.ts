@@ -68,7 +68,7 @@ app.use("/api", translateRoutes);
 app.use("/api", swaggerRoutes);
 
 
-cron.schedule('49 0 * * *', async () => {
+cron.schedule('5 1 * * *', async () => {
   console.log('Running getUnmatchedQuestion');
   try {
     await getUnmatchedQuestion();

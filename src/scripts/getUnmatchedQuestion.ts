@@ -72,7 +72,7 @@ export async function getUnmatchedQuestion() {
                   - 리스트 내부의 모든 질문은 한글이어야 합니다.
 
               ## **📌 응답 형식 (JSON)**
-                다음과 같은 JSON 객체만 반환하세요.
+                반드시 다음과 같은 JSON 객체로 반환하세요.
                 {
                   "unique_questions": ["질문1", "질문2", ...]
                 }

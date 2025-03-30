@@ -60,6 +60,8 @@ export async function getUnmatchedQuestion() {
       return;
     }
 
+    console.log('userQuestion: ', userQuestion)
+
     const question = await connection.execute<RowDataPacket[]>(
       `SELECT faqs.question_ko FROM hobit.faqs`
     ).then (([rows]) => {

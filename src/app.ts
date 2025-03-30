@@ -3,10 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import env from "../config/env";
 import { initializeDatabase } from "../config/createDB";
-
-// 자동 실행 스크립트
-import cron from "node-cron";
-import { getUnmatchedQuestion } from "./scripts/getUnmatchedQuestion";
+import { startCronJobs } from "./scripts/cronJobs";
 
 // 라우트 임포트
 import authRoutes from "./routes/api/auth/authIndex";
@@ -67,14 +64,7 @@ app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
 app.use("/api", swaggerRoutes);
 
-
-cron.schedule('44 0 * * *', async () => {
-  console.log('Running getUnmatchedQuestion');
-  try {
-    await getUnmatchedQuestion();
-  } catch (err) {
-    console.error('Error in getUnmatchedQuestion:', err);
-  }
-});
+// 자동실행 스크립트
+startCronJobs();
 
 export default app;

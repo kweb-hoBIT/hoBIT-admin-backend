@@ -15,7 +15,7 @@ router.get("/category", auth, async (req: Request, res: Response) => {
 
   try {
     const [maincategories] = await connection.execute<RowDataPacket[]>(
-      "SELECT DISTINCT senior_faqs.maincategory_ko, senior_faqs.maincategory_en FROM hobit.senior_faqs"
+      "SELECT DISTINCT senior_faqs.maincategory_ko, senior_faqs.maincategory_en, senior_faqs.category_order FROM hobit.senior_faqs order by senior_faqs.category_order",
     );
 
     const categories = await Promise.all(

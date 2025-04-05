@@ -50,11 +50,28 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
     const username = userName[0].username as string;
 
     const [[faq]] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
+      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, category_order
        FROM hobit.faqs 
        WHERE id = ?`,
       [Number(faq_id)]
     );
+
+    let category_order = faq.category_order as number;
+
+    if (faq.maincategory_ko !== maincategory_ko) {
+      const [categoryOrderRow] = await connection.execute<RowDataPacket[]>(
+        `SELECT category_order FROM hobit.faqs WHERE maincategory_ko = ? LIMIT 1`,
+        [maincategory_ko]
+      );
+
+      category_order = categoryOrderRow.length > 0
+      ? categoryOrderRow[0].category_order
+      : await connection.execute<RowDataPacket[]>(
+          `SELECT MAX(category_order) AS max_order FROM hobit.faqs`
+        ).then(([rows]) => {
+          return (rows[0].max_order ?? 0) + 1;
+        });
+    }
     
 
     const prev_faq : FAQ = {
@@ -141,7 +158,8 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
         question_en = ?, 
         answer_ko = ?, 
         answer_en = ?, 
-        manager = ?, 
+        manager = ?,
+        category_order = ?,
         updated_by = ? 
       WHERE id = ?`,
       [ 
@@ -154,6 +172,7 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
         JSON.stringify(answer_ko),
         JSON.stringify(answer_en),
         manager,
+        category_order,
         user_id,
         Number(faq_id)
       ]

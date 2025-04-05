@@ -35,10 +35,23 @@ router.post("/", auth, async (req: Request, res: Response) => {
     )
     const username = userName[0].username as string;
 
+    const [categoryOrderRow] = await connection.execute<RowDataPacket[]>(
+      `SELECT category_order FROM hobit.senior_faqs WHERE maincategory_ko = ? LIMIT 1`,
+      [maincategory_ko]
+    );
+
+    const category_order = categoryOrderRow.length > 0
+    ? categoryOrderRow[0].category_order
+    : await connection.execute<RowDataPacket[]>(
+        `SELECT MAX(category_order) AS max_order FROM hobit.senior_faqs`
+      ).then(([rows]) => {
+        return (rows[0].max_order ?? 0) + 1;
+      });
+
     const [senior_faq] = await connection.execute<ResultSetHeader>(
       `INSERT INTO senior_faqs (
-        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager, created_by, updated_by) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager, category_order, created_by, updated_by) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         maincategory_ko,
         maincategory_en,
@@ -49,6 +62,7 @@ router.post("/", auth, async (req: Request, res: Response) => {
         JSON.stringify(answer_ko),
         JSON.stringify(answer_en),
         manager,
+        category_order,
         user_id,
         user_id
       ]

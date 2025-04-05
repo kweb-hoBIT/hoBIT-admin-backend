@@ -242,5 +242,18 @@ export type changeFAQCategoryResponse = {
   message: string; 
 }
 
+export type UpdateFAQCategoryOrderRequest = {
+  body: {
+    CategoryOrder: {
+      maincategory_ko: string;
+      order: number;
+    }[];
+  }
+}
+
+export type UpdateFAQCategoryOrderResponse = {
+  statusCode: number;
+  message: string;
+};
 
 export default Faq;

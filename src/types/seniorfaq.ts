@@ -247,3 +247,17 @@ export type changeSeniorFAQCategoryResponse = {
   statusCode: number;
   message: string; 
 }
+
+export type UpdateSeniorFAQCategoryOrderRequest = {
+  body: {
+    CategoryOrder: {
+      maincategory_ko: string;
+      order: number;
+    }[];
+  }
+}
+
+export type UpdateSeniorFAQCategoryOrderResponse = {
+  statusCode: number;
+  message: string;
+};

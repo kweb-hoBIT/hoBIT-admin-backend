@@ -250,10 +250,7 @@ export type changeSeniorFAQCategoryResponse = {
 
 export type UpdateSeniorFAQCategoryOrderRequest = {
   body: {
-    CategoryOrder: {
-      maincategory_ko: string;
-      order: number;
-    }[];
+    categoryOrder: string[];
   }
 }
 

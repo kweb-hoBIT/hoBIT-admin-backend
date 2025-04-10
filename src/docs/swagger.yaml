@@ -3618,7 +3618,7 @@ paths:
                       translatedText:
                         type: string
                         description: 번역된 텍스트
-                        example: "Hello, nice to meet you."
+                        example: "안녕, 만나서 반가워!"
         '400':
           description: 잘못된 요청
           content:

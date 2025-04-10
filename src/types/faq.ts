@@ -1,18 +1,3 @@
-export type Faq = {
-  id: number;
-  maincategory_ko: string;
-  maincategory_en: string;
-  subcategory_ko: string;
-  subcategory_en: string;
-  question_ko: string;
-  question_en: string;
-  answer_ko: [];
-  answer_en: [];
-  manager: string;
-  created_by: number | null;
-  updated_by: number | null;
-};
-
 export type CreateFAQRequest = {
   body: {
     user_id: number;
@@ -252,5 +237,3 @@ export type UpdateFAQCategoryOrderResponse = {
   statusCode: number;
   message: string;
 };
-
-export default Faq;

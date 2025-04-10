@@ -1,6 +1,6 @@
 import express from 'express';
 import createFAQRoutes from './createFAQ';
-import changeFAQCategoryRoutes  from './changeFAQCategory';
+import changeFAQCategoryRoutes  from './updateFAQCategory';
 import getAllFAQCategoryRoutes from './getAllFAQCategory';
 import getAllFAQsRotues from './getAllFAQs';
 import getFAQRoutes from './getFAQ';

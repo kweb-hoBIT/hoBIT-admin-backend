@@ -178,6 +178,7 @@ export type GetAllSeniorFAQCategoryResponse = {
     categories: {
       maincategory_ko: string;
       maincategory_en: string;
+      category_order: number;
       subcategories: {
         subcategory_ko: string;
         subcategory_en: string;

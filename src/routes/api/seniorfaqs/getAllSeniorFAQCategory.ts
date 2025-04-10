@@ -48,6 +48,7 @@ router.get("/category", auth, async (req: Request, res: Response) => {
         return {
           maincategory_ko: maincategory.maincategory_ko,
           maincategory_en: maincategory.maincategory_en,
+          category_order : maincategory.category_order,
           subcategories,
         };
       })

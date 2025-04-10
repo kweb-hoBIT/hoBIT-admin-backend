@@ -214,7 +214,7 @@ export type CheckFAQCategoryConflictResponse = {
   };
 };
 
-export type changeFAQCategoryRequest = {
+export type UpdateFAQCategoryRequest = {
   body: {
     user_id: number;
     category_field: string;
@@ -223,7 +223,7 @@ export type changeFAQCategoryRequest = {
   };
 }
 
-export type changeFAQCategoryResponse = {
+export type UpdateFAQCategoryResponse = {
   statusCode: number;
   message: string; 
 }

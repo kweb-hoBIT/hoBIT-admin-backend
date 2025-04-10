@@ -1,7 +1,7 @@
 import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { changeFAQCategoryResponse, changeFAQCategoryRequest } from "faq";
+import { UpdateFAQCategoryResponse, UpdateFAQCategoryRequest } from "faq";
 import auth from "../../../middleware/auth";
 import Request from "../../../types/Request";
 
@@ -25,7 +25,7 @@ interface FAQ {
 // @access  Private
 router.put("/category", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { user_id, category_field, prev_category, new_category }: changeFAQCategoryRequest['body'] = req.body;
+  const { user_id, category_field, prev_category, new_category }: UpdateFAQCategoryRequest['body'] = req.body;
 
   console.log(req.body);
 
@@ -36,7 +36,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
     );
 
     if ( checkCategory.length > 0 ) {
-      const response: changeFAQCategoryResponse = {
+      const response: UpdateFAQCategoryResponse = {
         statusCode: 400,
         message: "Category already exists",
       };
@@ -99,7 +99,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
     )
     
  
-    const response: changeFAQCategoryResponse = {
+    const response: UpdateFAQCategoryResponse = {
       statusCode: 200,
       message: "FAQ category changed successfully",
     };

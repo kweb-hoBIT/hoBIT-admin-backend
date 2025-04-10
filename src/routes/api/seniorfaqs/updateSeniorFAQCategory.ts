@@ -1,7 +1,7 @@
 import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { changeSeniorFAQCategoryRequest, changeSeniorFAQCategoryResponse } from "seniorfaq";
+import { UpdateSeniorFAQCategoryRequest, UpdateSeniorFAQCategoryResponse } from "seniorfaq";
 import auth from "../../../middleware/auth";
 import Request from "../../../types/Request";
 
@@ -34,7 +34,7 @@ interface SeniorFAQ {
 // @access  Private
 router.put("/category", auth, async (req: Request, res: Response) => {
   const connection: PoolConnection = await Pool.getConnection();
-  const { user_id, category_field, prev_category, new_category }: changeSeniorFAQCategoryRequest['body'] = req.body;
+  const { user_id, category_field, prev_category, new_category }: UpdateSeniorFAQCategoryRequest['body'] = req.body;
 
   console.log(req.body);
 
@@ -45,7 +45,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
     );
 
     if ( checkCategory.length > 0 ) {
-      const response: changeSeniorFAQCategoryResponse = {
+      const response: UpdateSeniorFAQCategoryResponse = {
         statusCode: 400,
         message: "Category already exists",
       };
@@ -141,7 +141,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
       await connection.execute(insertSql, values);
     }
 
-    const response: changeSeniorFAQCategoryResponse = {
+    const response: UpdateSeniorFAQCategoryResponse = {
       statusCode: 200,
       message: "FAQ category changed successfully",
     };

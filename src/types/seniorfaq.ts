@@ -235,7 +235,7 @@ export type CheckSeniorFAQCategoryConflictResponse = {
   };
 };
 
-export type changeSeniorFAQCategoryRequest = {
+export type UpdateSeniorFAQCategoryRequest = {
   body: {
     user_id: number;
     category_field: string;
@@ -244,7 +244,7 @@ export type changeSeniorFAQCategoryRequest = {
   };
 }
 
-export type changeSeniorFAQCategoryResponse = {
+export type UpdateSeniorFAQCategoryResponse = {
   statusCode: number;
   message: string; 
 }

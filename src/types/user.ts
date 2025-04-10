@@ -88,13 +88,3 @@ export type UpdatePasswordResponse = {
   statusCode: number;
   message: string;
 }
-
-export type User = {
-  id: number;
-  email: string;
-  password: string;
-  username: string;
-  phone_num: string;
-  created_at?: Date;
-  updated_at?: Date;
-};

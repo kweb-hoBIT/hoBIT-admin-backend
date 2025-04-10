@@ -1,6 +1,6 @@
 import express from 'express';
 import createSeniorFAQRoutes from './createSeniorFAQ';
-import changeSeniorFAQCategoryRoutes from './changeSeniorFAQCategory';
+import changeSeniorFAQCategoryRoutes from './updateSeniorFAQCategory';
 import getAllSeniorFAQCategoryRoutes from './getAllSeniorFAQCategory';
 import getAllSeniorFAQsRoutes from './getAllSeniorFAQs';
 import getSeniorFAQRoutes from './getSeniorFAQ';

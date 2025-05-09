@@ -116,8 +116,6 @@ export async function getUnmatchedQuestion_v2() {
       return;
     }
 
-    console.log('userQuestion : ', userQuestion);
-
     const unmatched: string[] = [];
 
     if (userQuestion.length > 0) {

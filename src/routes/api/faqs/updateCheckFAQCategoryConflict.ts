@@ -173,8 +173,6 @@ router.post("/update/category/conflict", auth, async (req: Request, res: Respons
       });
     }
 
-    console.log()
-
     const response : CheckFAQCategoryConflictResponse = {
       statusCode: 200,
       message: "Categories checked successfully",

@@ -1,11 +1,11 @@
 import cron from "node-cron";
-import { getUnmatchedQuestion } from "./getUnmatchedQuestion";
+import { getUnmatchedQuestion_v2 } from "./getUnmatchedQuestion_v2";
 
-export function startCronJobs() {
+export async function startCronJobs() {
   cron.schedule("0 0 * * *", async () => {
     console.log("Running getUnmatchedQuestion");
     try {
-      await getUnmatchedQuestion();
+      await getUnmatchedQuestion_v2();
     } catch (err) {
       console.error("Error in getUnmatchedQuestion:", err);
     }

@@ -8,6 +8,7 @@ interface Env {
   API_URL: string;
   CLIENT_URL1: string;
   CLIENT_URL2: string;
+  NLU_URL: string;
   TIMEZONE: string;
   DB_HOST: string;
   DB_USER: string;
@@ -27,6 +28,7 @@ function getEnv(): Env {
     API_URL: process.env.API_URL,
     CLIENT_URL1: process.env.CLIENT_URL1,
     CLIENT_URL2: process.env.CLIENT_URL2,
+    NLU_URL: process.env.NLU_URL,
     TIMEZONE: process.env.TIMEZONE,
     DB_HOST: process.env.DB_HOST,
     DB_USER: process.env.DB_USER,

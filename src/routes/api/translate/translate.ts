@@ -9,46 +9,50 @@ const router = express.Router();
 // @route   POST api/translate/
 // @desc    Translate the given text and return the translated result
 // @access  Private
-router.post("/", auth, async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   const { text }: TranslateFAQRequest['body'] = req.body;
-  console.log(text);
 
   try {
-    const translateResponse = await fetch('https://api-free.deepl.com/v2/translate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        auth_key: env.DEEPL_KEY,
-        text: text,
-        target_lang: 'EN',
-      }).toString(),
-    });
+    const translateResponse = await fetch(
+      'https://api-free.deepl.com/v2/translate',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `DeepL-Auth-Key ${env.DEEPL_KEY}`, // ✅ 최신 방식
+        },
+        body: new URLSearchParams({
+          text,
+          target_lang: 'EN',
+        }).toString(),
+      }
+    );
+
+    // console.log('🔥🔥🔥DEEPL status:', translateResponse.status);
+    const raw = await translateResponse.text(); // ✅ 한 번만 읽기
+    // console.log('🔥🔥🔥DEEPL raw response:', raw);
 
     if (!translateResponse.ok) {
-      const errorData = await translateResponse.json();
-      return res.status(translateResponse.status).json({ error: errorData.message });
+      return res.status(translateResponse.status).json({
+        statusCode: translateResponse.status,
+        message: raw,
+      });
     }
 
-    const data: { translations: { text: string }[] } = await translateResponse.json();
-    const translatedText = data.translations[0].text;
-    const response : TranslateFAQResponse= {
+    const data = JSON.parse(raw);
+
+    res.status(200).json({
       statusCode: 200,
-      message: "Text translated successfully",
+      message: 'Text translated successfully',
       data: {
-        translatedText,
+        translatedText: data.translations[0].text,
       },
-    };
-    console.log(response);
-    res.status(200).json(response);
+    });
   } catch (error: any) {
-    const response = {
+    res.status(500).json({
       statusCode: 500,
       message: error.message,
-    }
-    console.log(response);
-    res.status(500).json(response);
+    });
   }
 });
 

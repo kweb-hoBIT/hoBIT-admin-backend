@@ -169,9 +169,10 @@ export interface GetAllFAQCategoryResponse {
       maincategory_en: string;
       category_order: number;
       subcategories: {
-        subcategory_ko: string[];
-        subcategory_en: string[];
-      };
+        subcategory_ko: string;
+        subcategory_en: string;
+        subcategory_order: number;
+      }[];
     }[];
   };
 }
@@ -230,7 +231,14 @@ export type UpdateFAQCategoryResponse = {
 
 export type UpdateFAQCategoryOrderRequest = {
   body: {
-    categoryOrder: string[];
+    mainCategories: {
+      maincategory_ko: string;
+      order: number;
+      subcategories?: {
+        subcategory_ko: string;
+        order: number;
+      }[];
+    }[];
   }
 }
 

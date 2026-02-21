@@ -15,20 +15,21 @@ router.get("/category", auth, async (req: Request, res: Response) => {
 
   try {
     const [maincategories] = await connection.execute<RowDataPacket[]>(
-      "SELECT DISTINCT faqs.maincategory_ko, faqs.maincategory_en, faqs.category_order FROM hobit.faqs order by faqs.category_order",
+      "SELECT DISTINCT faqs.maincategory_ko, faqs.maincategory_en, faqs.category_order FROM hobit.faqs ORDER BY faqs.category_order",
     );
 
     const categories = await Promise.all(
       maincategories.map(async (maincategory: RowDataPacket) => {
         const [subcategoriesRow] = await connection.execute<RowDataPacket[]>(
-          "SELECT DISTINCT faqs.subcategory_ko, faqs.subcategory_en FROM hobit.faqs WHERE faqs.maincategory_ko = ?",
+          "SELECT DISTINCT faqs.subcategory_ko, faqs.subcategory_en, faqs.subcategory_order FROM hobit.faqs WHERE faqs.maincategory_ko = ? ORDER BY faqs.subcategory_order",
           [maincategory.maincategory_ko]
         );
     
-        const subcategories: { subcategory_ko: string[]; subcategory_en: string[] } = {
-          subcategory_ko: subcategoriesRow.map(row => row.subcategory_ko),
-          subcategory_en: subcategoriesRow.map(row => row.subcategory_en),
-        };
+        const subcategories = subcategoriesRow.map(row => ({
+          subcategory_ko: row.subcategory_ko,
+          subcategory_en: row.subcategory_en,
+          subcategory_order: row.subcategory_order,
+        }));
     
         return {
           maincategory_ko: maincategory.maincategory_ko,

@@ -31,7 +31,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
                 SUM(language = 'KO') AS ko, SUM(language = 'EN') AS en
          FROM question_logs
          WHERE created_at >= CURDATE() - INTERVAL ${DAYS - 1} DAY
-         GROUP BY DATE(created_at)`),
+         GROUP BY date`), // MySQL 8(only_full_group_by)은 SELECT와 같은 이름으로 묶어야 함
       q(`SELECT faqs.id AS faq_id, faqs.question_ko, COUNT(*) AS count
          FROM question_logs JOIN faqs ON question_logs.faq_id = faqs.id
          WHERE question_logs.created_at >= CURDATE() - INTERVAL 6 DAY

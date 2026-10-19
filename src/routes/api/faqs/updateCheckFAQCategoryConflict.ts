@@ -17,17 +17,17 @@ router.post("/update/category/conflict", auth, async (req: Request, res: Respons
   try {
     let isConflict = false;
     const [[now_category]] = await connection.execute<RowDataPacket[]>(
-      `SELECT faqs.maincategory_ko, faqs.maincategory_en, faqs.subcategory_ko, faqs.subcategory_en FROM hobit.faqs WHERE faqs.id = ?`,
+      `SELECT faqs.maincategory_ko, faqs.maincategory_en, faqs.subcategory_ko, faqs.subcategory_en FROM faqs WHERE faqs.id = ?`,
       [faq_id]
     );
 
     const [[number_same_maincategory]] = await connection.execute<RowDataPacket[]>(
-      `SELECT COUNT(*) AS number_same_maincategory FROM hobit.faqs WHERE faqs.maincategory_ko = ? and faqs.maincategory_en = ?`,
+      `SELECT COUNT(*) AS number_same_maincategory FROM faqs WHERE faqs.maincategory_ko = ? and faqs.maincategory_en = ?`,
       [now_category.maincategory_ko, now_category.maincategory_en]
     );
 
     const [[number_same_subcategory]]= await connection.execute<RowDataPacket[]>(
-      `SELECT COUNT(*) AS number_same_subcategory FROM hobit.faqs WHERE faqs.subcategory_ko = ? and faqs.subcategory_en = ?`,
+      `SELECT COUNT(*) AS number_same_subcategory FROM faqs WHERE faqs.subcategory_ko = ? and faqs.subcategory_en = ?`,
       [now_category.subcategory_ko, now_category.subcategory_en]
     );
 
@@ -41,19 +41,19 @@ router.post("/update/category/conflict", auth, async (req: Request, res: Respons
     const subConflict: CheckFAQCategoryConflictResponse['data']['conflictedData'][number]['conflict'] = [];
 
     const [new_maincategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_ko FROM hobit.faqs WHERE faqs.maincategory_en = ?`,
+      `SELECT maincategory_ko FROM faqs WHERE faqs.maincategory_en = ?`,
       [maincategory_en]
     );
     const [new_maincategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_en FROM hobit.faqs WHERE faqs.maincategory_ko = ?`,
+      `SELECT maincategory_en FROM faqs WHERE faqs.maincategory_ko = ?`,
       [maincategory_ko]
     );
     const [new_subcategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT subcategory_ko FROM hobit.faqs WHERE faqs.subcategory_en = ?`,
+      `SELECT subcategory_ko FROM faqs WHERE faqs.subcategory_en = ?`,
       [subcategory_en]
     );
     const [new_subcategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT subcategory_en FROM hobit.faqs WHERE faqs.subcategory_ko = ?`,
+      `SELECT subcategory_en FROM faqs WHERE faqs.subcategory_ko = ?`,
       [subcategory_ko]
     );
 

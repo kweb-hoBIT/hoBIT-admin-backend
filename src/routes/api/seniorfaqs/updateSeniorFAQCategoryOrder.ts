@@ -22,7 +22,7 @@ router.put("/category/order", auth, async (req: Request, res: Response) => {
     // Update main category order
     for (const mainCat of mainCategories) {
       await connection.query(
-        `UPDATE hobit.senior_faqs SET category_order = ? WHERE maincategory_ko = ?`,
+        `UPDATE senior_faqs SET category_order = ? WHERE maincategory_ko = ?`,
         [mainCat.order, mainCat.maincategory_ko]
       );
 
@@ -30,7 +30,7 @@ router.put("/category/order", auth, async (req: Request, res: Response) => {
       if (mainCat.subcategories && mainCat.subcategories.length > 0) {
         for (const subCat of mainCat.subcategories) {
           await connection.query(
-            `UPDATE hobit.senior_faqs SET subcategory_order = ? 
+            `UPDATE senior_faqs SET subcategory_order = ? 
              WHERE maincategory_ko = ? AND subcategory_ko = ?`,
             [subCat.order, mainCat.maincategory_ko, subCat.subcategory_ko]
           );
@@ -39,7 +39,7 @@ router.put("/category/order", auth, async (req: Request, res: Response) => {
           if (subCat.detailcategories && subCat.detailcategories.length > 0) {
             for (const detailCat of subCat.detailcategories) {
               await connection.query(
-                `UPDATE hobit.senior_faqs SET detailcategory_order = ? 
+                `UPDATE senior_faqs SET detailcategory_order = ? 
                  WHERE maincategory_ko = ? AND subcategory_ko = ? AND detailcategory_ko = ?`,
                 [detailCat.order, mainCat.maincategory_ko, subCat.subcategory_ko, detailCat.detailcategory_ko]
               );

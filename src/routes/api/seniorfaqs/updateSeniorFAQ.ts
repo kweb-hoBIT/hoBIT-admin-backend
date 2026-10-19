@@ -72,7 +72,7 @@ router.put("/:senior_faq_id", auth, async (req: Request, res: Response) => {
   try {
     /** 사용자 이름 조회 */
     const [userRows] = await connection.execute<RowDataPacket[]>(
-      `SELECT username FROM hobit.users WHERE id = ?`,
+      `SELECT username FROM users WHERE id = ?`,
       [user_id]
     );
 
@@ -99,7 +99,7 @@ router.put("/:senior_faq_id", auth, async (req: Request, res: Response) => {
         answer_en,
         manager,
         category_order
-      FROM hobit.senior_faqs
+      FROM senior_faqs
       WHERE id = ?
       `,
       [Number(senior_faq_id)]
@@ -117,7 +117,7 @@ router.put("/:senior_faq_id", auth, async (req: Request, res: Response) => {
 
     if (senior_faq.maincategory_ko !== maincategory_ko) {
       const [orderRows] = await connection.execute<RowDataPacket[]>(
-        `SELECT category_order FROM hobit.senior_faqs WHERE maincategory_ko = ? LIMIT 1`,
+        `SELECT category_order FROM senior_faqs WHERE maincategory_ko = ? LIMIT 1`,
         [maincategory_ko]
       );
 
@@ -125,7 +125,7 @@ router.put("/:senior_faq_id", auth, async (req: Request, res: Response) => {
         category_order = orderRows[0].category_order;
       } else {
         const [[maxRow]] = await connection.execute<RowDataPacket[]>(
-          `SELECT MAX(category_order) AS max_order FROM hobit.senior_faqs`
+          `SELECT MAX(category_order) AS max_order FROM senior_faqs`
         );
         category_order = (maxRow?.max_order ?? 0) + 1;
       }
@@ -187,7 +187,7 @@ router.put("/:senior_faq_id", auth, async (req: Request, res: Response) => {
     /** 실제 UPDATE (undefined 완전 차단) */
     await connection.execute(
       `
-      UPDATE hobit.senior_faqs SET
+      UPDATE senior_faqs SET
         maincategory_ko = ?,
         maincategory_en = ?,
         subcategory_ko = ?,

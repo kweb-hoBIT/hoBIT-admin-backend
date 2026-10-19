@@ -54,7 +54,7 @@ router.post("/related", auth, async (req: Request, res: Response) => {
     console.log(uninonRelatedQuestions);
 
     const [row] = await connection.execute<RowDataPacket[]>(
-      `SELECT COUNT(*) as count FROM hobit.related_faqs WHERE faq_id = ?`,
+      `SELECT COUNT(*) as count FROM related_faqs WHERE faq_id = ?`,
       [faq_id]
     );
 
@@ -62,12 +62,12 @@ router.post("/related", auth, async (req: Request, res: Response) => {
 
     if(countRelated > 0) {
       await connection.execute<RowDataPacket[]>(
-        `Update hobit.related_faqs SET related_faqs = ? WHERE faq_id = ?`,
+        `Update related_faqs SET related_faqs = ? WHERE faq_id = ?`,
         [JSON.stringify(uninonRelatedQuestions), faq_id]
       );
     } else{
       await connection.execute<RowDataPacket[]>(
-        `INSERT INTO hobit.related_faqs (faq_id, related_faqs) VALUES (?, ?)`,
+        `INSERT INTO related_faqs (faq_id, related_faqs) VALUES (?, ?)`,
         [faq_id, JSON.stringify(uninonRelatedQuestions)]
       );
     }

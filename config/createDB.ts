@@ -197,6 +197,27 @@ const createUserFeedbacksTable = async () => {
 
 
 // 테이블 생성 실행
+// 키워드 규칙 — 입력창 추천(자동완성)·질문 검색에 쓰는 대표 키워드, 연관 단어, 맨 위에 고정할 FAQ
+//   예) keyword: 입시 / synonyms: ["수시","정시","이공계","계열"] / pinned_faq_ids: [123]
+//   호빗 서버(hoBIT-backend)가 읽어 감 (src/apis/keywordRules.ts)
+const createKeywordRulesTable = async () => {
+  const connection = await createConnection();
+  const query = `
+    CREATE TABLE IF NOT EXISTS keyword_rules (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      keyword VARCHAR(100) NOT NULL UNIQUE,
+      synonyms JSON NOT NULL,
+      pinned_faq_ids JSON NOT NULL,
+      updated_by INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+    );
+  `;
+  await connection.query(query);
+  await connection.end();
+};
+
 const createTables = async () => {
   await createUserTable();
   await createFAQTable();
@@ -206,6 +227,7 @@ const createTables = async () => {
   await createSeniorFaqLogTable();
   await createRelatedFaqTable();
   await createUserFeedbacksTable();
+  await createKeywordRulesTable();
 };
 
 // 데이터베이스 및 테이블 생성

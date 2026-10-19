@@ -17,7 +17,7 @@ router.put("/user/:user_feedback_id", auth, async (req: Request, res: Response) 
 
   try {
     await connection.execute<RowDataPacket[]>(
-      'UPDATE hobit.user_feedbacks SET resolved = CASE WHEN resolved = 1 THEN 0 ELSE 1 END WHERE id = ?',
+      'UPDATE user_feedbacks SET resolved = CASE WHEN resolved = 1 THEN 0 ELSE 1 END WHERE id = ?',
       [Number(user_feedback_id)]
     );
   

@@ -15,9 +15,9 @@ router.get("/user", auth, async (req: Request, res: Response) => {
 
   try {
     const [rows] = await connection.execute<RowDataPacket[]>(
-      `SELECT user_feedbacks.id, faqs.question_ko, user_feedbacks.user_question, user_feedbacks.feedback_reason, user_feedbacks.feedback_detail, user_feedbacks.resolved, user_feedbacks.created_at
-      FROM hobit.user_feedbacks
-      LEFT JOIN hobit.faqs ON user_feedbacks.faq_id = faqs.id 
+      `SELECT user_feedbacks.id, faqs.question_ko, user_feedbacks.user_question, user_feedbacks.feedback_reason, user_feedbacks.feedback_detail, user_feedbacks.language, user_feedbacks.resolved, user_feedbacks.created_at
+      FROM user_feedbacks
+      LEFT JOIN faqs ON user_feedbacks.faq_id = faqs.id 
       order by user_feedbacks.created_at desc`,
     )
 
@@ -28,6 +28,7 @@ router.get("/user", auth, async (req: Request, res: Response) => {
         user_question: userFeedback.user_question,
         feedback_reason: userFeedback.feedback_reason,
         feedback_detail: userFeedback.feedback_detail,
+        language: userFeedback.language, // 피드백을 남긴 화면 언어 (KO / EN) — 영어 사용자 표시용
         resolved: userFeedback.resolved,
         created_at: userFeedback.created_at
       };
@@ -39,7 +40,6 @@ router.get("/user", auth, async (req: Request, res: Response) => {
         userFeedbacks
       }
     };
-    console.log(response);
     res.status(200).json(response);
   } catch (err: any) {
     console.error(err.message);

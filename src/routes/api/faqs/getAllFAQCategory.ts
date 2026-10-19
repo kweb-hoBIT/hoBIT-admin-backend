@@ -15,13 +15,13 @@ router.get("/category", auth, async (req: Request, res: Response) => {
 
   try {
     const [maincategories] = await connection.execute<RowDataPacket[]>(
-      "SELECT DISTINCT faqs.maincategory_ko, faqs.maincategory_en, faqs.category_order FROM hobit.faqs ORDER BY faqs.category_order",
+      "SELECT DISTINCT faqs.maincategory_ko, faqs.maincategory_en, faqs.category_order FROM faqs ORDER BY faqs.category_order",
     );
 
     const categories = await Promise.all(
       maincategories.map(async (maincategory: RowDataPacket) => {
         const [subcategoriesRow] = await connection.execute<RowDataPacket[]>(
-          "SELECT DISTINCT faqs.subcategory_ko, faqs.subcategory_en, faqs.subcategory_order FROM hobit.faqs WHERE faqs.maincategory_ko = ? ORDER BY faqs.subcategory_order",
+          "SELECT DISTINCT faqs.subcategory_ko, faqs.subcategory_en, faqs.subcategory_order FROM faqs WHERE faqs.maincategory_ko = ? ORDER BY faqs.subcategory_order",
           [maincategory.maincategory_ko]
         );
     

@@ -15,7 +15,7 @@ export async function getUnmatchedQuestion() {
   const connection: PoolConnection = await Pool.getConnection();
   try {
     const userQuestionRow = await connection.execute<RowDataPacket[]>(
-      `SELECT user_question FROM hobit.question_logs WHERE ismatched = 0`
+      `SELECT user_question FROM question_logs WHERE ismatched = 0`
     ).then(([rows]) => {
       return rows.length > 0 ? rows.map(row => row.user_question) : [];
     });
@@ -98,7 +98,7 @@ export async function getUnmatchedQuestion() {
     console.log("userQuestion:", userQuestion)
 
     const question = await connection.execute<RowDataPacket[]>(
-      `SELECT faqs.question_ko FROM hobit.faqs`
+      `SELECT faqs.question_ko FROM faqs`
     ).then (([rows]) => {
       return rows.map(row => row.question_ko);
     });
@@ -242,13 +242,13 @@ export async function getUnmatchedQuestion() {
 
     if (data.length > 0) {
       await connection.query(
-        `INSERT INTO hobit.user_feedbacks (feedback_reason, feedback_detail, language) VALUES ?`,
+        `INSERT INTO user_feedbacks (feedback_reason, feedback_detail, language) VALUES ?`,
         [data]
       );
     }
 
     await connection.execute(
-      `UPDATE hobit.question_logs SET ismatched = 1 WHERE ismatched = 0`,
+      `UPDATE question_logs SET ismatched = 1 WHERE ismatched = 0`,
     )
     console.log('Unmatched questions processed successfully! : ', unmatched);
   } catch (err: any) {

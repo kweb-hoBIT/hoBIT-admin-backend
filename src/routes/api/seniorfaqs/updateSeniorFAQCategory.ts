@@ -40,7 +40,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
 
   try {
     const [checkCategory] = await connection.execute<RowDataPacket[]>(
-      `SELECT * FROM hobit.senior_faqs WHERE ${category_field} = ?`, 
+      `SELECT * FROM senior_faqs WHERE ${category_field} = ?`, 
       [new_category]
     );
 
@@ -55,7 +55,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
     }
 
     const [userName] = await connection.execute<RowDataPacket[]>(
-      `SELECT username FROM hobit.users WHERE id = ?`,
+      `SELECT username FROM users WHERE id = ?`,
       [user_id]
     );
 
@@ -81,7 +81,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
 
     const rows = await connection.execute<RowDataPacket[]>(
       `SELECT id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager
-       FROM hobit.senior_faqs
+       FROM senior_faqs
        WHERE \`${category_field}\` = ?`,
       [prev_category]
     ).then(([rows]) => {
@@ -122,7 +122,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
 
     if (ids.length > 0) {
       const updateSql = `
-        UPDATE hobit.senior_faqs
+        UPDATE senior_faqs
         SET \`${category_field}\` = CASE id
           ${updateCases.join('\n')}
         END

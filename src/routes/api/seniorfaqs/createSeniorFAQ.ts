@@ -30,20 +30,20 @@ router.post("/", auth, async (req: Request, res: Response) => {
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
-      `SELECT username FROM hobit.users WHERE id = ?`,
+      `SELECT username FROM users WHERE id = ?`,
       [user_id]
     )
     const username = userName[0].username as string;
 
     const [categoryOrderRow] = await connection.execute<RowDataPacket[]>(
-      `SELECT category_order FROM hobit.senior_faqs WHERE maincategory_ko = ? LIMIT 1`,
+      `SELECT category_order FROM senior_faqs WHERE maincategory_ko = ? LIMIT 1`,
       [maincategory_ko]
     );
 
     const category_order = categoryOrderRow.length > 0
     ? categoryOrderRow[0].category_order
     : await connection.execute<RowDataPacket[]>(
-        `SELECT MAX(category_order) AS max_order FROM hobit.senior_faqs`
+        `SELECT MAX(category_order) AS max_order FROM senior_faqs`
       ).then(([rows]) => {
         return (rows[0].max_order ?? 0) + 1;
       });

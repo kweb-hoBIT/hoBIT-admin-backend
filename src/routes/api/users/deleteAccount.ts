@@ -2,9 +2,10 @@ import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection,  ResultSetHeader } from "mysql2/promise";
 import { DeleteAccountReqeust, DeleteAccountResponse } from "../../../types/user";
-import env from '../../../../config/env';
+import { isValidManageKey } from "../../../middleware/manageKey";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
+import { getChatPool } from "../chat/chatIndex";
 
 const router = express.Router();
 
@@ -17,7 +18,11 @@ router.delete("/:user_id", auth, async (req: Request, res: Response) => {
   const { manageKey } : DeleteAccountReqeust['body'] = req.body;
   console.log(user_id)
 
-  if (!env.MANAGER_KEY.includes(manageKey)) {
+  // 본인 계정만 탈퇴 (예전엔 로그인한 누구나 다른 계정 id로 지울 수 있었음)
+  if (String(user_id) !== String(req.user_id)) {
+    return res.status(403).json({ statusCode: 403, message: "You can only delete your own account." });
+  }
+  if (!isValidManageKey(manageKey)) {
     const response = {
       statusCode: 403,
       message: "Invalid Manage key. Access denied."
@@ -28,9 +33,13 @@ router.delete("/:user_id", auth, async (req: Request, res: Response) => {
 
   try {
     await connection.execute<ResultSetHeader>(
-      `DELETE FROM hobit.users WHERE id = ?`,
+      `DELETE FROM users WHERE id = ?`,
       [user_id]
     );
+    // 채팅 역할 기록도 지움 (같은 id가 다시 쓰여도 예전 역할이 붙지 않게)
+    await getChatPool()
+      .then((pool) => pool.query(`DELETE FROM chat_agents WHERE user_id = ?`, [user_id]))
+      .catch((e) => console.error("[chat] 역할 기록 삭제 실패:", (e as Error).message));
     const response : DeleteAccountResponse = {
       statusCode: 200,
       message: "User deleted successfully",

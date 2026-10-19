@@ -27,6 +27,9 @@ import bulkDeleteAdminLogsRoutes from "./routes/api/adminlogs/bulkDeleteAdminLog
 import countAdminLogsRoutes from "./routes/api/adminlogs/countAdminLogs";
 import bulkDeleteQuestionLogsRoutes from "./routes/api/questionlogs/bulkDeleteQuestionLogs";
 import countQuestionLogsRoutes from "./routes/api/questionlogs/countQuestionLogs";
+import keywordsRoutes from "./routes/api/keywords/keywordsIndex";
+import dashboardRoutes from "./routes/api/dashboard/dashboardIndex";
+import chatRoutes, { seniorGuard } from "./routes/api/chat/chatIndex";
 
 const app = express();
 
@@ -65,6 +68,11 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// 근로장학생(채팅 전용) 계정의 쓰기 요청 차단 — 모든 라우트 앞에 한 번
+app.use((req, res, next) => {
+  seniorGuard(req as any, res, next).catch(next);
+});
+
 // 라우트 설정
 app.use("/api", authRoutes);
 app.use("/api", usersRoutes);
@@ -75,6 +83,9 @@ app.use("/api", questionlogsRoutes);
 app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
 app.use("/api", swaggerRoutes);
+app.use("/api/keywords", keywordsRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/chat", chatRoutes);
 app.use("/api/emails/bulk-update", bulkUpdateEmailRoutes);
 app.use("/api/emails", getAllEmailsRoutes);
 app.use("/api/emails/bulk-delete", bulkDeleteEmailRoutes);

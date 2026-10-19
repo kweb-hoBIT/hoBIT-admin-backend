@@ -20,6 +20,8 @@ interface Env {
   OPENAI_KEY: string;
   DEEPL_KEY: string;
   MANAGER_KEY: string;
+  SENIOR_KEY?: string; // 근로장학생 가입용 키 (관리자 키와 달라야 함) — 없으면 근장 키 가입 불가
+  DEVELOPER_KEY?: string; // 개발자 가입용 키 — 모든 권한 + 역할 관리 (행정실 관리자 키와 따로) — 없으면 개발자 키 가입 불가
 }
 
 function getEnv(): Env {
@@ -40,10 +42,13 @@ function getEnv(): Env {
     OPENAI_KEY: process.env.OPENAI_KEY,
     DEEPL_KEY: process.env.DEEPL_KEY,
     MANAGER_KEY: process.env.MANAGER_KEY,
+    SENIOR_KEY: process.env.SENIOR_KEY,
+    DEVELOPER_KEY: process.env.DEVELOPER_KEY,
   };
 
+  const OPTIONAL = new Set(['SENIOR_KEY', 'DEVELOPER_KEY']);
   for (const [key, value] of Object.entries(env)) {
-    if (!value) {
+    if (!value && !OPTIONAL.has(key)) {
       throw new Error(`Missing environment variable: ${key}`);
     }
   }

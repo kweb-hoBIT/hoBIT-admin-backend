@@ -24,8 +24,8 @@ router.get('/', auth, async (req: Request, res: Response) => {
         ql.created_at,
         f.id AS faq_id,
         IF (ql.language = 'KO', f.question_ko, f.question_en) AS faq_question
-      FROM hobit.question_logs ql
-      LEFT JOIN hobit.faqs f ON ql.faq_id = f.id
+      FROM question_logs ql
+      LEFT JOIN faqs f ON ql.faq_id = f.id
       ORDER BY ql.created_at DESC`
     );
     const questionLogs = rows[0] as GetAllQuestionLogResponse['data']['questionLogs'];

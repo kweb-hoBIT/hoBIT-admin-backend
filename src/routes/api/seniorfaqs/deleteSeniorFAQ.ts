@@ -32,14 +32,14 @@ router.delete("/:senior_faq_id", auth, async (req: Request, res: Response) => {
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
-      `SELECT username FROM hobit.users WHERE id = ?`,
+      `SELECT username FROM users WHERE id = ?`,
       [user_id]
     )
     const username = userName[0].username as string;
 
     const [[seniorfaq]] = await connection.execute<RowDataPacket[]>(
       `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager
-       FROM hobit.senior_faqs 
+       FROM senior_faqs 
        WHERE id = ?`,
       [Number(senior_faq_id)]
     );
@@ -93,7 +93,7 @@ router.delete("/:senior_faq_id", auth, async (req: Request, res: Response) => {
     }
 
     await connection.execute(
-      'DELETE FROM hobit.senior_faqs WHERE id = ?',
+      'DELETE FROM senior_faqs WHERE id = ?',
       [senior_faq_id]
     );
 

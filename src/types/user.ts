@@ -34,6 +34,7 @@ export type SignupRequest = {
 export type SignupResponse = {
   statusCode: number;
   message: string;
+  role?: "developer" | "staff" | "senior";
 };
 
 export type NewAccessTokenRequest = {}
@@ -72,6 +73,7 @@ export type FindUserResponse = {
   message: string;
   data: {
     user_id: number;
+    resetToken: string;
   }
 }
 
@@ -81,6 +83,7 @@ export type UpdatePasswordRequest = {
   };
   body: {
     password: string;
+    resetToken: string;
   }
 }
 

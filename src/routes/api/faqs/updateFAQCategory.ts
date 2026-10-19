@@ -31,7 +31,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
 
   try {
     const [checkCategory] = await connection.execute<RowDataPacket[]>(
-      `SELECT * FROM hobit.faqs WHERE ${category_field} = ?`, 
+      `SELECT * FROM faqs WHERE ${category_field} = ?`, 
       [new_category]
     );
 
@@ -46,7 +46,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
     }
 
     const [userName] = await connection.execute<RowDataPacket[]>(
-      `SELECT username FROM hobit.users WHERE id = ?`,
+      `SELECT username FROM users WHERE id = ?`,
       [user_id]
     );
 
@@ -54,7 +54,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
 
     const rows = await connection.execute<RowDataPacket[]>(
       `SELECT id as faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager
-       FROM hobit.faqs
+       FROM faqs
        WHERE ${category_field} = ?`,
       [prev_category]
     ).then(([rows]) => {
@@ -75,7 +75,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
     });
 
     await connection.execute(
-      `UPDATE hobit.faqs SET ${category_field} = ? WHERE ${category_field} = ?`,
+      `UPDATE faqs SET ${category_field} = ? WHERE ${category_field} = ?`,
       [new_category, prev_category]
     )
 
@@ -94,7 +94,7 @@ router.put("/category", auth, async (req: Request, res: Response) => {
       ])
     }
     await connection.query(
-      `INSERT INTO hobit.faq_logs (username, faq_id, prev_faq, new_faq, action_type) VALUES ?`,
+      `INSERT INTO faq_logs (username, faq_id, prev_faq, new_faq, action_type) VALUES ?`,
       [logData]
     )
     

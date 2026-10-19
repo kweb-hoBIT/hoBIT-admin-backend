@@ -15,20 +15,20 @@ router.get("/category", auth, async (req: Request, res: Response) => {
 
   try {
     const [maincategories] = await connection.execute<RowDataPacket[]>(
-      "SELECT DISTINCT senior_faqs.maincategory_ko, senior_faqs.maincategory_en, senior_faqs.category_order FROM hobit.senior_faqs ORDER BY senior_faqs.category_order",
+      "SELECT DISTINCT senior_faqs.maincategory_ko, senior_faqs.maincategory_en, senior_faqs.category_order FROM senior_faqs ORDER BY senior_faqs.category_order",
     );
 
     const categories = await Promise.all(
       maincategories.map(async (maincategory: RowDataPacket) => {
         const [subcategoriesRow] = await connection.execute<RowDataPacket[]>(
-          "SELECT DISTINCT senior_faqs.subcategory_ko, senior_faqs.subcategory_en, senior_faqs.subcategory_order FROM hobit.senior_faqs WHERE senior_faqs.maincategory_ko = ? ORDER BY senior_faqs.subcategory_order",
+          "SELECT DISTINCT senior_faqs.subcategory_ko, senior_faqs.subcategory_en, senior_faqs.subcategory_order FROM senior_faqs WHERE senior_faqs.maincategory_ko = ? ORDER BY senior_faqs.subcategory_order",
           [maincategory.maincategory_ko]
         );
 
         const subcategories = await Promise.all(
           subcategoriesRow.map(async (subcategory: RowDataPacket) => {
             const [detailcategoriesRow] = await connection.execute<RowDataPacket[]>(
-              "SELECT DISTINCT senior_faqs.detailcategory_ko, senior_faqs.detailcategory_en, senior_faqs.detailcategory_order FROM hobit.senior_faqs WHERE senior_faqs.maincategory_ko = ? AND senior_faqs.subcategory_ko = ? ORDER BY senior_faqs.detailcategory_order",
+              "SELECT DISTINCT senior_faqs.detailcategory_ko, senior_faqs.detailcategory_en, senior_faqs.detailcategory_order FROM senior_faqs WHERE senior_faqs.maincategory_ko = ? AND senior_faqs.subcategory_ko = ? ORDER BY senior_faqs.detailcategory_order",
               [maincategory.maincategory_ko, subcategory.subcategory_ko]
             );
 

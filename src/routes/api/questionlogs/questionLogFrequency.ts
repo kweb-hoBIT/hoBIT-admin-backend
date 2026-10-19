@@ -38,9 +38,9 @@ router.get("/frequency/:faq_id", auth, async (req: Request, res: Response) => {
         DATE_FORMAT(DateRange.date, '%Y-%m-%d') AS startDate,
         DATE_FORMAT(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '%Y-%m-%d') AS endDate,
         COALESCE(COUNT(question_logs.faq_id), 0) AS count
-      FROM hobit.faqs
+      FROM faqs
       CROSS JOIN DateRange
-      LEFT OUTER JOIN hobit.question_logs 
+      LEFT OUTER JOIN question_logs 
         ON faqs.id = question_logs.faq_id 
         AND DATE(question_logs.created_at) >= DATE_FORMAT(DateRange.date, '%Y-%m-%d')
         AND DATE(question_logs.created_at) < DATE_FORMAT(DateRange.date + INTERVAL ${intervalType}, '%Y-%m-%d')

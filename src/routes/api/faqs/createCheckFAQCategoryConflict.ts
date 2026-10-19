@@ -21,19 +21,19 @@ router.post("/create/category/conflict", auth, async (req: Request, res: Respons
     const subConflict: CheckFAQCategoryConflictResponse['data']['conflictedData'][number]['conflict'] = [];
 
     const [new_maincategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_ko FROM hobit.faqs WHERE faqs.maincategory_en = ?`,
+      `SELECT maincategory_ko FROM faqs WHERE faqs.maincategory_en = ?`,
       [maincategory_en]
     );
     const [new_maincategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_en FROM hobit.faqs WHERE faqs.maincategory_ko = ?`,
+      `SELECT maincategory_en FROM faqs WHERE faqs.maincategory_ko = ?`,
       [maincategory_ko]
     );
     const [new_subcategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT subcategory_ko FROM hobit.faqs WHERE faqs.subcategory_en = ?`,
+      `SELECT subcategory_ko FROM faqs WHERE faqs.subcategory_en = ?`,
       [subcategory_en]
     );
     const [new_subcategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT subcategory_en FROM hobit.faqs WHERE faqs.subcategory_ko = ?`,
+      `SELECT subcategory_en FROM faqs WHERE faqs.subcategory_ko = ?`,
       [subcategory_ko]
     );
 

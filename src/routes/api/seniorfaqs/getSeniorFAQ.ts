@@ -32,7 +32,7 @@ router.get("/:senior_faq_id", auth, async (req: Request, res: Response) => {
 
   try {
     const [row] = await connection.execute<RowDataPacket[]>(
-      'SELECT id as senior_faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager, created_at, updated_at FROM hobit.senior_faqs WHERE id = ?',
+      'SELECT id as senior_faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, detailcategory_ko, detailcategory_en, answer_ko, answer_en, manager, created_at, updated_at FROM senior_faqs WHERE id = ?',
       [Number(senior_faq_id)]
     );
 

@@ -28,8 +28,8 @@ router.get('/', auth, async (req: Request, res: Response) => {
           faq_logs.action_type,
           faq_logs.created_at,
           'faq_log' AS log_type
-        FROM hobit.faq_logs
-        LEFT JOIN hobit.faqs ON faq_logs.faq_id = faqs.id
+        FROM faq_logs
+        LEFT JOIN faqs ON faq_logs.faq_id = faqs.id
         UNION ALL
         SELECT
           senior_faq_logs.id AS log_id,
@@ -42,8 +42,8 @@ router.get('/', auth, async (req: Request, res: Response) => {
           senior_faq_logs.action_type,
           senior_faq_logs.created_at,
           'senior_faq_log' AS log_type
-        FROM hobit.senior_faq_logs
-        LEFT JOIN hobit.senior_faqs ON senior_faq_logs.senior_faq_id = senior_faqs.id
+        FROM senior_faq_logs
+        LEFT JOIN senior_faqs ON senior_faq_logs.senior_faq_id = senior_faqs.id
       ) AS admin_logs
       ORDER BY admin_logs.created_at DESC;
       `

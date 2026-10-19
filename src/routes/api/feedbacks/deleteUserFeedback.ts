@@ -17,7 +17,7 @@ router.delete("/user/:user_feedback_id", auth, async (req: Request, res: Respons
 
   try {
     await connection.execute(
-      'DELETE FROM hobit.user_feedbacks WHERE id = ?',
+      'DELETE FROM user_feedbacks WHERE id = ?',
       [user_feedback_id]
     );
     

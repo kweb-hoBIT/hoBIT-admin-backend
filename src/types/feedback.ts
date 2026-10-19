@@ -9,6 +9,7 @@ export type GetAllUserFeedbackResponse = {
       question_ko: string;
       feedback_reason: string;
       feedback_detail: string;
+      language: string;
       resolved: number;
       created_at: string;
     }[];

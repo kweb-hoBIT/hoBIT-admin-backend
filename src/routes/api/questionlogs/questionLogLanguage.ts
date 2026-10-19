@@ -40,9 +40,9 @@ router.get("/language/:faq_id", auth, async (req: Request, res: Response) => {
         DATE_FORMAT(DateRange.date + INTERVAL ${intervalType} - INTERVAL 1 DAY, '%Y-%m-%d') AS endDate,
         COALESCE(SUM(CASE WHEN language = 'KO' THEN 1 ELSE 0 END), 0) AS frequency_ko,
         COALESCE(SUM(CASE WHEN language = 'EN' THEN 1 ELSE 0 END), 0) AS frequency_en
-      FROM hobit.faqs
+      FROM faqs
       CROSS JOIN DateRange
-      LEFT OUTER JOIN hobit.question_logs 
+      LEFT OUTER JOIN question_logs 
         ON faqs.id = question_logs.faq_id 
         AND DATE(question_logs.created_at) >= DATE_FORMAT(DateRange.date, '%Y-%m-%d')
         AND DATE(question_logs.created_at) < DATE_FORMAT(DateRange.date + INTERVAL ${intervalType}, '%Y-%m-%d')

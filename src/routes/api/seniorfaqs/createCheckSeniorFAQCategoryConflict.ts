@@ -22,32 +22,32 @@ router.post("/create/category/conflict", auth, async (req: Request, res: Respons
     const detailConflict: CheckSeniorFAQCategoryConflictResponse['data']['conflictedData'][number]['conflict'] = [];
 
     const [new_maincategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_ko FROM hobit.senior_faqs WHERE senior_faqs.maincategory_en = ?`,
+      `SELECT maincategory_ko FROM senior_faqs WHERE senior_faqs.maincategory_en = ?`,
       [maincategory_en]
     );
 
     const [new_maincategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_en FROM hobit.senior_faqs WHERE senior_faqs.maincategory_ko = ?`,
+      `SELECT maincategory_en FROM senior_faqs WHERE senior_faqs.maincategory_ko = ?`,
       [maincategory_ko]
     );
 
     const [new_subcategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT subcategory_ko FROM hobit.senior_faqs WHERE senior_faqs.subcategory_en = ?`,
+      `SELECT subcategory_ko FROM senior_faqs WHERE senior_faqs.subcategory_en = ?`,
       [subcategory_en]
     );
 
     const [new_subcategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT subcategory_en FROM hobit.senior_faqs WHERE senior_faqs.subcategory_ko = ?`,
+      `SELECT subcategory_en FROM senior_faqs WHERE senior_faqs.subcategory_ko = ?`,
       [subcategory_ko]
     );
 
     const [new_detailcategory_ko] = await connection.execute<RowDataPacket[]>(
-      `SELECT detailcategory_ko FROM hobit.senior_faqs WHERE senior_faqs.detailcategory_en = ?`,
+      `SELECT detailcategory_ko FROM senior_faqs WHERE senior_faqs.detailcategory_en = ?`,
       [detailcategory_en]
     );
 
     const [new_detailcategory_en] = await connection.execute<RowDataPacket[]>(
-      `SELECT detailcategory_en FROM hobit.senior_faqs WHERE senior_faqs.detailcategory_ko = ?`,
+      `SELECT detailcategory_en FROM senior_faqs WHERE senior_faqs.detailcategory_ko = ?`,
       [detailcategory_ko]
     );
 

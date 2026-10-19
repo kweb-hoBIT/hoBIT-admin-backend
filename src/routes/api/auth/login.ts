@@ -28,7 +28,7 @@ router.post("/", async (req: Request, res: Response) => {
   const { email, password }: LoginRequest["body"] = req.body;
 
   try {
-    const [rows] = await connection.execute<RowDataPacket[]>(`SELECT * FROM hobit.users WHERE email = ?`, [email]);
+    const [rows] = await connection.execute<RowDataPacket[]>(`SELECT * FROM users WHERE email = ?`, [email]);
     const user = rows[0] as User;
 
     if (!user) {

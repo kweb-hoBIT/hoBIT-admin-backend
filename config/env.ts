@@ -9,6 +9,7 @@ interface Env {
   CLIENT_URL1: string;
   CLIENT_URL2: string;
   NLU_URL: string;
+  RAG_URL: string; // RAG 서버 (대시보드의 데이터 수집 상태) — 같은 서버 안 주소
   TIMEZONE: string;
   DB_HOST: string;
   DB_USER: string;
@@ -31,6 +32,7 @@ function getEnv(): Env {
     CLIENT_URL1: process.env.CLIENT_URL1,
     CLIENT_URL2: process.env.CLIENT_URL2,
     NLU_URL: process.env.NLU_URL,
+    RAG_URL: process.env.RAG_URL ?? 'http://127.0.0.1:8000',
     TIMEZONE: process.env.TIMEZONE,
     DB_HOST: process.env.DB_HOST,
     DB_USER: process.env.DB_USER,

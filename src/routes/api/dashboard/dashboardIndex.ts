@@ -4,16 +4,35 @@ import { Pool } from "../../../../config/connectDB";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
 import { AUTO_FEEDBACK_REASON } from "../../../scripts/getUnmatchedQuestion_v2";
+import env from "../../../../config/env";
 
 /**
  * 관리자 홈 대시보드 — 이용 통계와 최근 피드백을 한 번에 (질문 기록·피드백 테이블만 읽음)
  *  - 피드백: 학생이 남긴 것만 (밤 12시 작업이 만든 "FAQ 후보" 기록은 피드백 화면에서 따로 봄)
  *  - 많이 쓰인 FAQ: FAQ를 직접 연 횟수 + AI 답변이 근거로 인용한 횟수
  *  - 답을 못 찾은 질문: AI가 자료에서 답을 찾지 못한 질문을 비슷한 문장끼리 묶어서
+ *  - 데이터 수집: 홈페이지·FAQ 정기 수집의 마지막 결과 (RAG /pipeline/status, 실패해도 대시보드는 그대로)
  */
 const router = express.Router();
 
 const DAYS = 14;
+
+async function pipelineStatus() {
+  try {
+    const r = await fetch(`${env.RAG_URL}/pipeline/status`, { signal: AbortSignal.timeout(1500) });
+    const j: any = await r.json();
+    if (!j?.available) return null;
+    return {
+      finished_at: String(j.finished_at),
+      scope: String(j.scope ?? ""),
+      ok: Boolean(j.ok),
+      problems: Array.isArray(j.problems) ? j.problems.map(String) : [],
+      last_ok_at: j.last_ok_at ? String(j.last_ok_at) : null,
+    };
+  } catch {
+    return null; // RAG가 꺼져 있거나 주소가 다르면 표시만 생략
+  }
+}
 
 // 띄어쓰기·문장부호·대소문자만 다른 질문은 같은 질문으로 묶음 ("행정실 운영시간?" = "행정실 운영 시간")
 const questionKey = (q: string) => q.toLowerCase().replace(/[\s?!.,~'"·…]+/g, "");
@@ -25,7 +44,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
     const q = <T extends RowDataPacket[]>(sql: string, params: unknown[] = []) =>
       Pool.query<T>(sql, params).then(([rows]) => rows);
 
-    const [totals, daily, topFaqs, topQuestions, feedbackCounts, recentFeedbacks] = await Promise.all([
+    const [totals, daily, topFaqs, topQuestions, feedbackCounts, recentFeedbacks, pipeline] = await Promise.all([
       q(`SELECT
            SUM(created_at >= CURDATE()) AS today,
            SUM(created_at >= CURDATE() - INTERVAL 6 DAY) AS week,
@@ -58,6 +77,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
          WHERE user_feedbacks.resolved = 0
            AND (user_feedbacks.feedback_reason IS NULL OR user_feedbacks.feedback_reason <> ?)
          ORDER BY user_feedbacks.created_at DESC LIMIT 5`, [AUTO_FEEDBACK_REASON]),
+      pipelineStatus(),
     ]);
 
     // 질문이 없던 날도 0으로 채움 (그래프 x축이 빠지지 않게)
@@ -98,6 +118,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
         daily: series,
         top_faqs: topFaqs.map((r) => ({ faq_id: r.faq_id, question_ko: r.question_ko, count: Number(r.count) })),
         top_questions: notFound,
+        pipeline,
         recent_feedbacks: recentFeedbacks.map((r) => ({
           user_feedback_id: r.id,
           question_ko: r.question_ko,

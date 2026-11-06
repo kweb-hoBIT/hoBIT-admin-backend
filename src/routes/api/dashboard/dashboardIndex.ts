@@ -3,13 +3,20 @@ import { RowDataPacket } from "mysql2/promise";
 import { Pool } from "../../../../config/connectDB";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
+import { AUTO_FEEDBACK_REASON } from "../../../scripts/getUnmatchedQuestion_v2";
 
 /**
  * 관리자 홈 대시보드 — 이용 통계와 최근 피드백을 한 번에 (질문 기록·피드백 테이블만 읽음)
+ *  - 피드백: 학생이 남긴 것만 (밤 12시 작업이 만든 "FAQ 후보" 기록은 피드백 화면에서 따로 봄)
+ *  - 많이 쓰인 FAQ: FAQ를 직접 연 횟수 + AI 답변이 근거로 인용한 횟수
+ *  - 답을 못 찾은 질문: AI가 자료에서 답을 찾지 못한 질문을 비슷한 문장끼리 묶어서
  */
 const router = express.Router();
 
 const DAYS = 14;
+
+// 띄어쓰기·문장부호·대소문자만 다른 질문은 같은 질문으로 묶음 ("행정실 운영시간?" = "행정실 운영 시간")
+const questionKey = (q: string) => q.toLowerCase().replace(/[\s?!.,~'"·…]+/g, "");
 
 // @route   GET api/dashboard
 // @access  Private
@@ -33,22 +40,24 @@ router.get("/", auth, async (_req: Request, res: Response) => {
          WHERE created_at >= CURDATE() - INTERVAL ${DAYS - 1} DAY
          GROUP BY date`), // MySQL 8(only_full_group_by)은 SELECT와 같은 이름으로 묶어야 함
       q(`SELECT faqs.id AS faq_id, faqs.question_ko, COUNT(*) AS count
-         FROM question_logs JOIN faqs ON question_logs.faq_id = faqs.id
+         FROM question_logs
+         JOIN faqs ON question_logs.faq_id = faqs.id OR FIND_IN_SET(faqs.id, question_logs.cited_faq_ids)
          WHERE question_logs.created_at >= CURDATE() - INTERVAL 6 DAY
          GROUP BY faqs.id, faqs.question_ko
          ORDER BY count DESC LIMIT 6`),
-      q(`SELECT user_question, COUNT(*) AS count
+      q(`SELECT user_question, created_at
          FROM question_logs
-         WHERE created_at >= CURDATE() - INTERVAL 6 DAY AND faq_id IS NULL AND CHAR_LENGTH(user_question) > 1
-         GROUP BY user_question
-         ORDER BY count DESC, MAX(created_at) DESC LIMIT 6`),
+         WHERE created_at >= CURDATE() - INTERVAL 6 DAY AND answer_status = 'not_found' AND CHAR_LENGTH(user_question) > 1
+         ORDER BY created_at DESC LIMIT 1000`),
       q(`SELECT SUM(resolved = 0) AS unresolved, SUM(created_at >= CURDATE() - INTERVAL 6 DAY) AS week
-         FROM user_feedbacks`),
+         FROM user_feedbacks
+         WHERE feedback_reason IS NULL OR feedback_reason <> ?`, [AUTO_FEEDBACK_REASON]),
       q(`SELECT user_feedbacks.id, faqs.question_ko, user_feedbacks.user_question, user_feedbacks.feedback_reason,
                 user_feedbacks.feedback_detail, user_feedbacks.language, user_feedbacks.created_at
          FROM user_feedbacks LEFT JOIN faqs ON user_feedbacks.faq_id = faqs.id
          WHERE user_feedbacks.resolved = 0
-         ORDER BY user_feedbacks.created_at DESC LIMIT 5`),
+           AND (user_feedbacks.feedback_reason IS NULL OR user_feedbacks.feedback_reason <> ?)
+         ORDER BY user_feedbacks.created_at DESC LIMIT 5`, [AUTO_FEEDBACK_REASON]),
     ]);
 
     // 질문이 없던 날도 0으로 채움 (그래프 x축이 빠지지 않게)
@@ -60,6 +69,16 @@ router.get("/", auth, async (_req: Request, res: Response) => {
       const row = byDate.get(key);
       return { date: key, ko: Number(row?.ko ?? 0), en: Number(row?.en ?? 0) };
     });
+
+    // 답을 못 찾은 질문 — 비슷한 문장끼리 묶고, 대표 문장은 가장 최근에 들어온 표현
+    const groups = new Map<string, { question: string; count: number }>();
+    for (const r of topQuestions) {
+      const key = questionKey(String(r.user_question));
+      const g = groups.get(key);
+      if (g) g.count += 1;
+      else groups.set(key, { question: r.user_question, count: 1 });
+    }
+    const notFound = Array.from(groups.values()).sort((a, b) => b.count - a.count).slice(0, 6);
 
     const t: Record<string, any> = totals[0] ?? {};
     const f: Record<string, any> = feedbackCounts[0] ?? {};
@@ -78,7 +97,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
         },
         daily: series,
         top_faqs: topFaqs.map((r) => ({ faq_id: r.faq_id, question_ko: r.question_ko, count: Number(r.count) })),
-        top_questions: topQuestions.map((r) => ({ question: r.user_question, count: Number(r.count) })),
+        top_questions: notFound,
         recent_feedbacks: recentFeedbacks.map((r) => ({
           user_feedback_id: r.id,
           question_ko: r.question_ko,

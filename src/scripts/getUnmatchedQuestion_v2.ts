@@ -23,12 +23,20 @@ const openai = new OpenAI({
   apiKey: env.OPENAI_KEY,
 });
 
+/** 이 작업이 만든 기록의 이유 문구 — 학생이 직접 남긴 피드백과 구분할 때 씀 (대시보드) */
+export const AUTO_FEEDBACK_REASON = 'AI가 유저 질문과 매칭되는 FAQ가 없는것을 발견';
+
 export async function getUnmatchedQuestion_v2() {
   const connection: PoolConnection = await Pool.getConnection();
   console.log("getUnmatchedQuestion start")
   try {
+    // 리뉴얼은 직접 입력한 질문을 모두 faq_id 없이 기록 → 답을 못 찾은 질문(answer_status='not_found')만 후보로.
+    // 나머지(답한 질문·FAQ 클릭·예전 기록)는 살펴본 것으로 표시만
+    await connection.execute(
+      `UPDATE question_logs SET ismatched = 1 WHERE ismatched = 0 AND (answer_status IS NULL OR answer_status <> 'not_found')`,
+    );
     const userQuestionRow = await connection.execute<RowDataPacket[]>(
-      `SELECT user_question FROM question_logs WHERE ismatched = 0`
+      `SELECT user_question FROM question_logs WHERE ismatched = 0 AND answer_status = 'not_found'`
     ).then(([rows]) => {
       return rows.length > 0 ? rows.map(row => row.user_question) : [];
     });
@@ -154,7 +162,7 @@ export async function getUnmatchedQuestion_v2() {
 
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [
-        'AI가 유저 질문과 매칭되는 FAQ가 없는것을 발견',
+        AUTO_FEEDBACK_REASON,
         `'${question}' 질문을 추가해주세요!`,
         'KO'
       ] 

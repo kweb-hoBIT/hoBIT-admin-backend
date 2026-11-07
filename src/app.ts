@@ -30,6 +30,7 @@ import countQuestionLogsRoutes from "./routes/api/questionlogs/countQuestionLogs
 import keywordsRoutes from "./routes/api/keywords/keywordsIndex";
 import profileOptionsRoutes from "./routes/api/profileOptions/profileOptionsIndex";
 import noticeChangesRoutes from "./routes/api/noticeChanges/noticeChangesIndex";
+import answerReviewsRoutes from "./routes/api/answerReviews/answerReviewsIndex";
 import dashboardRoutes from "./routes/api/dashboard/dashboardIndex";
 import chatRoutes, { seniorGuard } from "./routes/api/chat/chatIndex";
 
@@ -88,6 +89,7 @@ app.use("/api", swaggerRoutes);
 app.use("/api/keywords", keywordsRoutes);
 app.use("/api/profile-options", profileOptionsRoutes);
 app.use("/api/notice-changes", noticeChangesRoutes);
+app.use("/api/answer-reviews", answerReviewsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/emails/bulk-update", bulkUpdateEmailRoutes);

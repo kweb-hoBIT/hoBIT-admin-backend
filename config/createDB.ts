@@ -218,6 +218,55 @@ const createKeywordRulesTable = async () => {
   await connection.end();
 };
 
+// 학생 프로필 선택지 — 학과·전공 유형·학적 상태 (관리 > 프로필 항목)
+//   호빗 RAG가 1분마다 읽어 화면 선택지, 질문 속 학과 인식, 문서 대상 태그, 검색 필터에 씀 (hoBIT-rag/src/profile_options.py)
+//   aliases: 다른 이름·예전 이름 (학과 이름을 바꾸면 예전 이름이 자동으로 들어감)
+//   first_cohort: 학과 첫 입학 연도 (그 전 학번과의 조합은 없는 조합으로 안내) / active=0: 학생 선택지에서 숨김
+const PROFILE_OPTION_DEFAULTS: [string, string, string, string[], number | null][] = [
+  ["department", "컴퓨터학과", "Computer Science", ["컴퓨터공학과", "컴학과", "컴과"], null],
+  ["department", "데이터과학과", "Data Science", ["데과"], 2022],
+  ["department", "인공지능학과", "Artificial Intelligence", ["인공지능과", "AI학과"], 2025],
+  ["major_type", "심화전공", "Intensive Major", [], null],
+  ["major_type", "이중전공", "Double Major", [], null],
+  ["major_type", "복수전공", "Multiple Major", [], null],
+  ["major_type", "부전공", "Minor", [], null],
+  ["student_status", "재학", "Enrolled", [], null],
+  ["student_status", "편입", "Transfer", [], null],
+  ["student_status", "휴학", "Leave of Absence", [], null],
+  ["student_status", "수료", "Completed", [], null],
+];
+
+const createProfileOptionsTable = async () => {
+  const connection = await createConnection();
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS profile_options (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      field VARCHAR(32) NOT NULL,
+      value VARCHAR(100) NOT NULL,
+      label_en VARCHAR(100) NOT NULL,
+      aliases JSON NOT NULL,
+      first_cohort INT NULL,
+      sort_order INT NOT NULL DEFAULT 0,
+      active TINYINT NOT NULL DEFAULT 1,
+      updated_by INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_profile_option (field, value),
+      FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+    );
+  `);
+  // 처음 만들 때만 지금까지 코드에 있던 값으로 채움
+  const [rows]: any = await connection.query(`SELECT COUNT(*) AS n FROM profile_options`);
+  if (Number(rows[0].n) === 0) {
+    await connection.query(
+      `INSERT INTO profile_options (field, value, label_en, aliases, first_cohort, sort_order) VALUES ?`,
+      [PROFILE_OPTION_DEFAULTS.map(([field, value, labelEn, aliases, first], i) =>
+        [field, value, labelEn, JSON.stringify(aliases), first, i])]
+    );
+  }
+  await connection.end();
+};
+
 const createTables = async () => {
   await createUserTable();
   await createFAQTable();
@@ -228,6 +277,7 @@ const createTables = async () => {
   await createRelatedFaqTable();
   await createUserFeedbacksTable();
   await createKeywordRulesTable();
+  await createProfileOptionsTable();
 };
 
 // 데이터베이스 및 테이블 생성

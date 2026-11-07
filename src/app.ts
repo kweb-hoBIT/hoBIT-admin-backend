@@ -28,6 +28,7 @@ import countAdminLogsRoutes from "./routes/api/adminlogs/countAdminLogs";
 import bulkDeleteQuestionLogsRoutes from "./routes/api/questionlogs/bulkDeleteQuestionLogs";
 import countQuestionLogsRoutes from "./routes/api/questionlogs/countQuestionLogs";
 import keywordsRoutes from "./routes/api/keywords/keywordsIndex";
+import profileOptionsRoutes from "./routes/api/profileOptions/profileOptionsIndex";
 import dashboardRoutes from "./routes/api/dashboard/dashboardIndex";
 import chatRoutes, { seniorGuard } from "./routes/api/chat/chatIndex";
 
@@ -84,6 +85,7 @@ app.use("/api", feedbacksRoutes);
 app.use("/api", translateRoutes);
 app.use("/api", swaggerRoutes);
 app.use("/api/keywords", keywordsRoutes);
+app.use("/api/profile-options", profileOptionsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/emails/bulk-update", bulkUpdateEmailRoutes);

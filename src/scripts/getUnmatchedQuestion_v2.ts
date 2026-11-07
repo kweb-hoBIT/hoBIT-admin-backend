@@ -124,41 +124,11 @@ export async function getUnmatchedQuestion_v2() {
       return;
     }
 
-    const unmatched: string[] = [];
-
-    if (userQuestion.length > 0) {
-      for (const question of userQuestion) {
-        const LasaResponse = await fetch(`${env.NLU_URL}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sender: 'hobit-admin-backend',
-            message: question,
-          })
-        });
-
-        if (!LasaResponse) {
-          const errorData = await LasaResponse.json();
-          console.error('Error occurred while fetching Lasa response: ', errorData);
-          return;
-        }
-
-        const nluResult: NluResponse = await LasaResponse.json();
-
-        if (!nluResult) {
-          console.error('NLU 서버 응답이 유효하지 않음');
-          throw new Error('NLU 서버 요청 실패');
-        }
-
-        if (nluResult.length > 1) {
-          unmatched.push(question);
-        }
-      }
-    } else {
-      return;
-    }
+    // 예전에는 질문마다 Rasa(NLU_URL)에 다시 물어 FAQ가 정말 없는지 확인했음.
+    // 리뉴얼은 RAG가 FAQ·공지·홈페이지를 모두 찾아본 뒤 '못 찾음'으로 판정한 질문만 후보로 모으므로 다시 확인하지 않음
+    // (Rasa를 끄면 이 작업 전체가 실패하던 문제도 없어짐)
+    // (AI가 모두 걸러 남은 질문이 없어도 아래에서 '살펴봄' 표시는 해야 다음 날 같은 질문을 다시 보지 않음)
+    const unmatched: string[] = userQuestion.filter((q) => typeof q === 'string' && q.trim().length > 1);
 
     const data = unmatched.length > 0 ? unmatched.map((question) => {
       return [

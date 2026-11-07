@@ -208,6 +208,7 @@ const createKeywordRulesTable = async () => {
       keyword VARCHAR(100) NOT NULL UNIQUE,
       synonyms JSON NOT NULL,
       pinned_faq_ids JSON NOT NULL,
+      search_sources JSON NULL,
       updated_by INT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -215,6 +216,50 @@ const createKeywordRulesTable = async () => {
     );
   `;
   await connection.query(query);
+  await connection.end();
+};
+
+// 키워드 규칙의 '먼저 찾아볼 곳' — 이미 만들어진 표에도 칸 추가
+const addKeywordSourcesColumn = async () => {
+  const connection = await createConnection();
+  try {
+    const [rows]: any = await connection.query(
+      `SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'keyword_rules' AND column_name = 'search_sources'`
+    );
+    if (!rows.length) await connection.query(`ALTER TABLE keyword_rules ADD COLUMN search_sources JSON NULL`);
+  } finally {
+    await connection.end();
+  }
+};
+
+// 공지로 바뀐 내용 — 새 공지가 행정실 FAQ·홈페이지 안내의 내용을 바꾸는 경우 (호빗 RAG 수집 때 검사해 추가)
+//   hoBIT-rag/scripts/check_notice_changes.py가 넣고, 관리자가 대시보드에서 확인·FAQ 수정 후 '확인함'/'무시'
+//   챗봇은 이 표와 상관없이 답변 때 바꾼 공지를 함께 보고 공지를 따름 — 이 표는 FAQ를 사람이 고치도록 알리는 용도
+const createNoticeChangesTable = async () => {
+  const connection = await createConnection();
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS notice_changes (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      notice_doc_key VARCHAR(255) NOT NULL,
+      notice_title VARCHAR(300) NOT NULL,
+      notice_link VARCHAR(500) NULL,
+      notice_date DATE NULL,
+      target_doc_key VARCHAR(255) NOT NULL,
+      target_kind VARCHAR(16) NOT NULL,
+      target_title VARCHAR(300) NOT NULL,
+      faq_id INT NULL,
+      what VARCHAR(200) NOT NULL,
+      before_value VARCHAR(300) NULL,
+      after_value VARCHAR(300) NOT NULL,
+      applies_to VARCHAR(200) NULL,
+      status VARCHAR(16) NOT NULL DEFAULT 'new',
+      handled_by INT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uniq_change (notice_doc_key(150), target_doc_key(150), what(80)),
+      KEY idx_status (status)
+    )
+  `);
   await connection.end();
 };
 
@@ -278,6 +323,8 @@ const createTables = async () => {
   await createUserFeedbacksTable();
   await createKeywordRulesTable();
   await createProfileOptionsTable();
+  await createNoticeChangesTable();
+  await addKeywordSourcesColumn();
 };
 
 // 데이터베이스 및 테이블 생성

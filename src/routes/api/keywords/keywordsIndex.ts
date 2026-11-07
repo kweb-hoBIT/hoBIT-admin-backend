@@ -3,19 +3,23 @@ import { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 import { Pool } from "../../../../config/connectDB";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
+import env from "../../../../config/env";
 
 /**
  * 키워드 규칙 — 대표 키워드 + 연관 단어 + 맨 위에 고정할 FAQ
  *   입시 ← 수시, 정시, 입학, 이공계, 인문계, 계열   → "수시, 정시 등 입학(입시) 관련 사항이 궁금해!" 고정
  * 호빗 입력창 추천(자동완성)에서 연관 단어를 입력해도 대표 키워드로 찾고, 고정 FAQ를 맨 위에 보여줌.
  * 질문을 보냈을 때도 연관 단어가 있으면 대표 키워드로 함께 검색하고 고정 FAQ를 근거로 넣음 (hoBIT-backend).
+ * search_sources: 먼저 찾아볼 곳 (예: 휴학 → 학사 운영 규정·홈페이지 학사안내) — RAG가 그 출처에서 먼저 찾아 근거 앞에 둠.
+ *   선택지는 RAG GET /search/sources (GET api/keywords/sources로 전달)
  */
 const router = express.Router();
 
 const MAX_SYNONYMS = 50;
 const MAX_PINNED = 5;
+const MAX_SOURCES = 6;
 
-type Rule = { id: number; keyword: string; synonyms: string[]; pinned_faq_ids: number[] };
+type Rule = { id: number; keyword: string; synonyms: string[]; pinned_faq_ids: number[]; search_sources: string[] };
 
 const parseJson = <T>(v: unknown, fallback: T): T => {
   if (Array.isArray(v)) return v as unknown as T;
@@ -39,7 +43,10 @@ function clean(body: any): { rule?: Omit<Rule, "id">; error?: string } {
   const pinnedRaw: unknown[] = Array.isArray(body?.pinned_faq_ids) ? body.pinned_faq_ids : [];
   const pinned = Array.from(new Set(pinnedRaw.map(Number).filter((n) => Number.isInteger(n) && n > 0)));
   if (pinned.length > MAX_PINNED) return { error: `고정 FAQ는 ${MAX_PINNED}개까지 지정할 수 있습니다.` };
-  return { rule: { keyword, synonyms, pinned_faq_ids: pinned } };
+  const srcRaw: unknown[] = Array.isArray(body?.search_sources) ? body.search_sources : [];
+  const sources = Array.from(new Set(srcRaw.map((x) => String(x).trim()).filter((x) => x && x.length <= 100)));
+  if (sources.length > MAX_SOURCES) return { error: `먼저 찾아볼 곳은 ${MAX_SOURCES}개까지 고를 수 있습니다.` };
+  return { rule: { keyword, synonyms, pinned_faq_ids: pinned, search_sources: sources } };
 }
 
 async function missingFaqIds(ids: number[]): Promise<number[]> {
@@ -49,19 +56,33 @@ async function missingFaqIds(ids: number[]): Promise<number[]> {
   return ids.filter((id) => !found.has(id));
 }
 
+// @route   GET api/keywords/sources
+// @desc    '먼저 찾아볼 곳' 선택지 (RAG 서버 목록, 못 받으면 빈 목록)
+// @access  Private
+router.get("/sources", auth, async (_req: Request, res: Response) => {
+  try {
+    const r = await fetch(`${env.RAG_URL}/search/sources`, { signal: AbortSignal.timeout(2000) });
+    const body: any = await r.json();
+    res.status(200).json({ statusCode: 200, message: "Search sources", data: { sources: body.sources ?? [] } });
+  } catch {
+    res.status(200).json({ statusCode: 200, message: "Search sources unavailable", data: { sources: [] } });
+  }
+});
+
 // @route   GET api/keywords
 // @desc    키워드 규칙 목록 (고정 FAQ 질문 포함)
 // @access  Private
 router.get("/", auth, async (_req: Request, res: Response) => {
   try {
     const [rows] = await Pool.query<RowDataPacket[]>(
-      `SELECT id, keyword, synonyms, pinned_faq_ids, updated_at FROM keyword_rules ORDER BY keyword`
+      `SELECT id, keyword, synonyms, pinned_faq_ids, search_sources, updated_at FROM keyword_rules ORDER BY keyword`
     );
     const rules = rows.map((r) => ({
       id: r.id,
       keyword: r.keyword,
       synonyms: parseJson<string[]>(r.synonyms, []),
       pinned_faq_ids: parseJson<number[]>(r.pinned_faq_ids, []),
+      search_sources: parseJson<string[]>(r.search_sources, []),
       updated_at: r.updated_at,
     }));
     const ids = Array.from(new Set(rules.flatMap((r) => r.pinned_faq_ids)));
@@ -95,8 +116,9 @@ router.post("/", auth, async (req: Request, res: Response) => {
     const missing = await missingFaqIds(rule.pinned_faq_ids);
     if (missing.length) return res.status(400).json({ statusCode: 400, message: `없는 FAQ입니다: ${missing.join(", ")}` });
     const [result] = await Pool.query<ResultSetHeader>(
-      `INSERT INTO keyword_rules (keyword, synonyms, pinned_faq_ids, updated_by) VALUES (?, ?, ?, ?)`,
-      [rule.keyword, JSON.stringify(rule.synonyms), JSON.stringify(rule.pinned_faq_ids), req.user_id ?? null]
+      `INSERT INTO keyword_rules (keyword, synonyms, pinned_faq_ids, search_sources, updated_by) VALUES (?, ?, ?, ?, ?)`,
+      [rule.keyword, JSON.stringify(rule.synonyms), JSON.stringify(rule.pinned_faq_ids),
+        JSON.stringify(rule.search_sources), req.user_id ?? null]
     );
     res.status(200).json({ statusCode: 200, message: "Keyword rule created", data: { id: result.insertId } });
   } catch (err: any) {
@@ -118,8 +140,9 @@ router.put("/:id", auth, async (req: Request, res: Response) => {
     const missing = await missingFaqIds(rule.pinned_faq_ids);
     if (missing.length) return res.status(400).json({ statusCode: 400, message: `없는 FAQ입니다: ${missing.join(", ")}` });
     const [result] = await Pool.query<ResultSetHeader>(
-      `UPDATE keyword_rules SET keyword = ?, synonyms = ?, pinned_faq_ids = ?, updated_by = ? WHERE id = ?`,
-      [rule.keyword, JSON.stringify(rule.synonyms), JSON.stringify(rule.pinned_faq_ids), req.user_id ?? null, id]
+      `UPDATE keyword_rules SET keyword = ?, synonyms = ?, pinned_faq_ids = ?, search_sources = ?, updated_by = ? WHERE id = ?`,
+      [rule.keyword, JSON.stringify(rule.synonyms), JSON.stringify(rule.pinned_faq_ids),
+        JSON.stringify(rule.search_sources), req.user_id ?? null, id]
     );
     if (!result.affectedRows) return res.status(404).json({ statusCode: 404, message: "Keyword rule not found" });
     res.status(200).json({ statusCode: 200, message: "Keyword rule updated" });

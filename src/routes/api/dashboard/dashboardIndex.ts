@@ -12,6 +12,8 @@ import env from "../../../../config/env";
  *  - 많이 쓰인 FAQ: FAQ를 직접 연 횟수 + AI 답변이 근거로 인용한 횟수
  *  - 답을 못 찾은 질문: AI가 자료에서 답을 찾지 못한 질문을 비슷한 문장끼리 묶어서
  *  - 데이터 수집: 홈페이지·FAQ 정기 수집의 마지막 결과 (RAG /pipeline/status, 실패해도 대시보드는 그대로)
+ *  - 답변 품질(주별): 못 찾음·👎·숫자를 뺀 답변 비율, 규칙 분류 비율, 응답 시간 — 리뉴얼 AI 답변만 (answer가 있는 기록)
+ *  - 배포 후 테스트: 마지막 시나리오 테스트 결과 (RAG /tests/latest)
  */
 const router = express.Router();
 
@@ -34,6 +36,68 @@ async function pipelineStatus() {
   }
 }
 
+async function latestTests() {
+  try {
+    const r = await fetch(`${env.RAG_URL}/tests/latest`, { signal: AbortSignal.timeout(1500) });
+    const j: any = await r.json();
+    if (!j?.available) return null;
+    return {
+      finished_at: String(j.finished_at), total: Number(j.total ?? 0), passed: Number(j.passed ?? 0),
+      flaky: Array.isArray(j.flaky) ? j.flaky.map(String) : [],
+      failed: Array.isArray(j.failed) ? j.failed.map((f: any) => String(f.name)) : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+const QUALITY_WEEKS = 8;
+const pctile = (xs: number[], p: number) => {
+  if (!xs.length) return null;
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor(s.length * p))];
+};
+
+/** 주별 답변 품질 — 월요일 시작 주 (칸이 아직 없는 DB면 빈 목록) */
+async function qualityWeeks() {
+  try {
+    const [rows] = await Pool.query<RowDataPacket[]>(
+      `SELECT YEARWEEK(created_at, 3) AS wk, DATE_FORMAT(MIN(DATE(created_at)), '%Y-%m-%d') AS first_day,
+              COUNT(*) AS total, SUM(answer_status = 'not_found') AS not_found, SUM(feedback_score = -1) AS down,
+              SUM(feedback_score = 1) AS up, SUM(grounding_issues IS NOT NULL) AS grounding,
+              SUM(classified_by = 'rule') AS rule_classified, SUM(classified_by IS NOT NULL) AS classified
+         FROM question_logs
+        WHERE answer IS NOT NULL AND created_at >= CURDATE() - INTERVAL ${QUALITY_WEEKS * 7} DAY
+        GROUP BY wk ORDER BY wk`
+    );
+    const [lat] = await Pool.query<RowDataPacket[]>(
+      `SELECT YEARWEEK(created_at, 3) AS wk, latency_ms FROM question_logs
+        WHERE answer IS NOT NULL AND latency_ms IS NOT NULL AND created_at >= CURDATE() - INTERVAL ${QUALITY_WEEKS * 7} DAY`
+    );
+    const byWeek = new Map<number, number[]>();
+    lat.forEach((r) => byWeek.set(Number(r.wk), [...(byWeek.get(Number(r.wk)) ?? []), Number(r.latency_ms)]));
+    const rate = (a: unknown, b: unknown) => (Number(b) > 0 ? Math.round((Number(a) / Number(b)) * 1000) / 10 : null);
+    return rows.map((r) => {
+      const ls = byWeek.get(Number(r.wk)) ?? [];
+      return {
+        week_start: String(r.first_day),
+        total: Number(r.total),
+        not_found_rate: rate(r.not_found, r.total),
+        down: Number(r.down ?? 0),
+        up: Number(r.up ?? 0),
+        down_rate: rate(r.down, r.total),
+        grounding_rate: rate(r.grounding, r.total),
+        rule_rate: rate(r.rule_classified, r.classified),
+        latency_p50: pctile(ls, 0.5),
+        latency_p90: pctile(ls, 0.9),
+      };
+    });
+  } catch (err: any) {
+    if (err.code !== "ER_BAD_FIELD_ERROR") console.error("[dashboard] 답변 품질 집계 실패:", err.message);
+    return [];
+  }
+}
+
 // 띄어쓰기·문장부호·대소문자만 다른 질문은 같은 질문으로 묶음 ("행정실 운영시간?" = "행정실 운영 시간")
 const questionKey = (q: string) => q.toLowerCase().replace(/[\s?!.,~'"·…]+/g, "");
 
@@ -44,6 +108,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
     const q = <T extends RowDataPacket[]>(sql: string, params: unknown[] = []) =>
       Pool.query<T>(sql, params).then(([rows]) => rows);
 
+    const [quality, tests] = await Promise.all([qualityWeeks(), latestTests()]);
     const [totals, daily, topFaqs, topQuestions, feedbackCounts, recentFeedbacks, pipeline] = await Promise.all([
       q(`SELECT
            SUM(created_at >= CURDATE()) AS today,
@@ -119,6 +184,8 @@ router.get("/", auth, async (_req: Request, res: Response) => {
         top_faqs: topFaqs.map((r) => ({ faq_id: r.faq_id, question_ko: r.question_ko, count: Number(r.count) })),
         top_questions: notFound,
         pipeline,
+        quality,
+        tests,
         recent_feedbacks: recentFeedbacks.map((r) => ({
           user_feedback_id: r.id,
           question_ko: r.question_ko,

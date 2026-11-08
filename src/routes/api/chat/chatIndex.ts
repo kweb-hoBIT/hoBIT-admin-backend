@@ -111,6 +111,8 @@ const SENIOR_ALLOWED = [
 export async function seniorGuard(req: Request, res: Response, next: NextFunction) {
   if (req.method === "OPTIONS") return next();
   if (SENIOR_ALLOWED.some((re) => re.test(req.path))) return next();
+  // 선배 FAQ만 담긴 엑셀(scope=senior)은 근로장학생도 — 실제 범위 확인은 faqExcel 라우트의 scopeGuard가 다시 함
+  if (/^\/api\/faqs\/excel(\/(preview|apply|backups|restore))?$/.test(req.path) && req.query["scope"] === "senior") return next();
   const uid = userIdFromCookies(req);
   if (uid === null) return next(); // 로그인 안 함 → 각 라우트의 auth가 처리
   let role: Role;

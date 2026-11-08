@@ -16,7 +16,7 @@ import env from "../../../../config/env";
 const router = express.Router();
 
 const MAX_SYNONYMS = 50;
-const MAX_PINNED = 5;
+const MAX_PINNED = 3; // 학생 화면이 실제로 쓰는 개수 (hoBIT-backend question.ts MAX_PINNED_FAQS)
 const MAX_SOURCES = 6;
 
 type Rule = { id: number; keyword: string; synonyms: string[]; pinned_faq_ids: number[]; search_sources: string[] };

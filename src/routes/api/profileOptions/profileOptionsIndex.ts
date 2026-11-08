@@ -12,7 +12,7 @@ import auth from "../../../middleware/auth";
  */
 const router = express.Router();
 
-export const PROFILE_FIELDS = ["department", "major_type", "student_status"] as const;
+export const PROFILE_FIELDS = ["department", "major_type", "student_status", "grad_department"] as const;
 type Field = (typeof PROFILE_FIELDS)[number];
 const MAX_ALIASES = 20;
 

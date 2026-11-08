@@ -332,6 +332,14 @@ const PROFILE_OPTION_DEFAULTS: [string, string, string, string[], number | null]
   ["student_status", "수료", "Completed", [], null],
 ];
 
+// 대학원 학과 (홈페이지 대학원 메뉴) — 이 칸을 처음 쓰게 될 때 한 번만 채움
+const GRAD_DEPARTMENT_DEFAULTS: [string, string, string[]][] = [
+  ["컴퓨터학과", "Computer Science", []],
+  ["인공지능학과", "Artificial Intelligence", []],
+  ["뇌공학과", "Brain and Cognitive Engineering", []],
+  ["영상정보처리협동과정", "Visual Information Processing", ["영상정보처리"]],
+];
+
 const createProfileOptionsTable = async () => {
   const connection = await createConnection();
   await connection.query(`
@@ -358,6 +366,14 @@ const createProfileOptionsTable = async () => {
       `INSERT INTO profile_options (field, value, label_en, aliases, first_cohort, sort_order) VALUES ?`,
       [PROFILE_OPTION_DEFAULTS.map(([field, value, labelEn, aliases, first], i) =>
         [field, value, labelEn, JSON.stringify(aliases), first, i])]
+    );
+  }
+  const [grad]: any = await connection.query(`SELECT COUNT(*) AS n FROM profile_options WHERE field = 'grad_department'`);
+  if (Number(grad[0].n) === 0) {
+    await connection.query(
+      `INSERT INTO profile_options (field, value, label_en, aliases, first_cohort, sort_order) VALUES ?`,
+      [GRAD_DEPARTMENT_DEFAULTS.map(([value, labelEn, aliases], i) =>
+        ["grad_department", value, labelEn, JSON.stringify(aliases), null, i])]
     );
   }
   await connection.end();

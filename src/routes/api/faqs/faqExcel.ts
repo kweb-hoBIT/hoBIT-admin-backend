@@ -290,14 +290,15 @@ router.post(
             summary: sheetSummary(f),
             created: f.created.map((c) => ({
               row: c.row,
+              sheet: c.sheet,
               question: c.view.question_ko,
               maincategory: c.view.maincategory_ko,
               subcategory: c.view.subcategory_ko,
               audience: AUDIENCE_LABEL[c.view.audience],
               answers: c.view.cards.map((x) => x.answer),
             })),
-            updated: f.updated.map((u) => ({ id: u.id, row: u.row, question: u.after.question_ko, changes: u.changes })),
-            deleted: f.deleted.map((d) => ({ id: d.id, row: d.row, question: d.before.question_ko })),
+            updated: f.updated.map((u) => ({ id: u.id, row: u.row, sheet: u.sheet, question: u.after.question_ko, changes: u.changes })),
+            deleted: f.deleted.map((d) => ({ id: d.id, row: d.row, sheet: d.sheet, question: d.before.question_ko })),
           },
           senior: s && {
             summary: sheetSummary(s),

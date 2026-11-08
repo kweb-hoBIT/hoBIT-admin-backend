@@ -1,6 +1,7 @@
 /**
  * hoBIT 데이터 엑셀 (시트 여러 개짜리 파일 하나)
- *   1. 사용 방법   2. FAQ (행정실 FAQ)   3. 선배 FAQ   4. 담당자   5. 이메일
+ *   사용 방법 · 학부 FAQ · 대학원 FAQ · 공통 FAQ (행정실 FAQ를 대상별로) · 선배 FAQ · 담당자 · 이메일
+ *   예전 파일의 'FAQ' 시트(한 시트에 모두)도 그대로 읽음
  * 올릴 때 없는 시트는 '바뀐 것 없음'으로 봄 (예전에 받은 FAQ만 있는 파일도 그대로 올릴 수 있음)
  * 적용 순서: FAQ → 선배 FAQ → 담당자 이름 바꾸기 → 이메일 바꾸기 (방금 고친 줄에도 이름·이메일 바꾸기가 적용됨)
  */
@@ -11,6 +12,7 @@ import {
   buildImportPlan,
   cellText,
   DbFaqRow,
+  dbRowToView,
   findColumns,
   ImportPlan,
   Issue,
@@ -18,6 +20,8 @@ import {
   parseCards,
   parseFaqSheet,
   SHEET_NAME as FAQ_SHEET,
+  FAQ_SHEETS,
+  ROW_SHEET_STEP,
 } from './faqExcel';
 import { addSeniorSheet, buildSeniorPlan, parseSeniorSheet, SENIOR_SHEET_NAME, SeniorDbRow, SeniorPlan } from './seniorFaqExcel';
 
@@ -36,21 +40,23 @@ const HELP_LINES: [string, boolean?][] = [
   ['hoBIT 데이터 엑셀 사용 방법', true],
   [''],
   ['기본', true],
-  ['• 시트(아래 탭)마다 내용이 달라요: FAQ(행정실 FAQ) · 선배 FAQ · 담당자 · 이메일'],
+  ['• 시트(아래 탭)마다 내용이 달라요: 학부 FAQ · 대학원 FAQ · 공통 FAQ (행정실 FAQ) · 선배 FAQ · 담당자 · 이메일'],
   ['• 다 고친 뒤 관리자 사이트 FAQ 화면의 [엑셀로 올리기]로 올리면, 바뀌는 내용을 먼저 보여 드려요. [적용하기]를 눌러야 실제로 바뀌어요.'],
   ['• 적용하기 전에 지금 상태를 자동으로 저장해 둬요. 잘못 올렸다면 [이전 상태로 되돌리기]를 쓰면 돼요.'],
   ['• 고치지 않을 시트는 그대로 두거나 지워도 돼요. 없는 시트는 바뀐 게 없는 걸로 봐요.'],
   ['• 첫 줄(칸 제목)과 번호 칸은 고치지 마세요. 번호로 어떤 항목인지 찾아요.'],
   [''],
-  ['FAQ 시트 (행정실 FAQ)', true],
+  ['학부 FAQ · 대학원 FAQ · 공통 FAQ 시트 (행정실 FAQ)', true],
+  ['• 행정실 FAQ를 대상별로 나눠 둔 시트예요. 학부: 학부 모드에서만 / 대학원: 대학원 모드에서만 / 공통: 둘 다 보여요.'],
+  ['• 새 FAQ는 맞는 시트에 적으면 그 대상이 돼요. 대상을 바꾸려면 대상 칸에서 고르거나, FAQ 줄들(답변 줄 포함)을 다른 시트로 옮겨요.'],
   ['• 한 줄이 답변 하나예요. FAQ 첫 줄에 번호·대상·분류·질문·담당자를 적어요.'],
-  ['• 답변이 여러 개인 FAQ는 바로 아래 줄에 질문 칸을 비우고 답변·링크·이메일·전화만 적어요. (회색 칸은 비워 두세요)'],
+  ['• 답변이 여러 개인 FAQ는 바로 아래 줄에 질문 칸을 비우고 답변·링크·이메일·전화만 적어요.'],
+  ['• 회색 칸은 위 FAQ의 두 번째 이후 답변 줄이라 입력이 막혀 있어요 (적으면 안내가 떠요). 새 FAQ는 새 줄에 적어 주세요.'],
   ['• 새 FAQ: 새 줄에 번호는 비우고 대상·대분류·소분류·질문·답변을 적어요. 답변이 두 개라면 그 아래 줄에 질문 칸을 비우고 두 번째 답변을 적어요.'],
   ['• 답변 하나만 지우려면 그 줄을 지우면 돼요. (FAQ 첫 줄은 지우지 마세요)'],
-  ['• 대상 — 학부: 학부 모드에서만 / 대학원: 대학원 모드에서만 / 공통: 둘 다 보여요.'],
   [''],
   ['선배 FAQ 시트', true],
-  ['• FAQ 시트와 같아요. 세부 항목이 있는 줄이 새 항목의 첫 줄이고, 세부 항목이 빈 줄은 바로 위 항목의 다음 답변이에요.'],
+  ['• 행정실 FAQ 시트와 같아요. 세부 항목이 있는 줄이 새 항목의 첫 줄이고, 세부 항목이 빈 줄은 바로 위 항목의 다음 답변이에요.'],
   ['• 위도·경도는 지도를 보여 줄 때만 적어요. 대상 칸은 없어요 (선배 FAQ는 학부·대학원 모두에서 보여요).'],
   [''],
   ['지우기', true],
@@ -152,7 +158,10 @@ export function buildHobitWorkbook(data: HobitData): ExcelJS.Workbook {
   wb.creator = 'hoBIT';
   wb.created = new Date();
   addHelpSheet(wb);
-  addFaqSheet(wb, data.faqs);
+  // 행정실 FAQ는 대상별 시트로 (대상 값이 이상하면 학부 시트)
+  for (const sh of FAQ_SHEETS) {
+    addFaqSheet(wb, data.faqs.filter((f) => dbRowToView(f).audience === sh.audience), sh.name); // 대상이 비면 처음 규칙
+  }
   addSeniorSheet(wb, data.seniorFaqs);
 
   const ms = addStyledSheet(wb, MANAGER_SHEET, MANAGER_COLUMNS.map((c) => ({ ...c })));
@@ -214,6 +223,37 @@ export interface ParsedHobit {
   problems: Issue[];
 }
 
+/** 행정실 FAQ 시트들(학부·대학원·공통 + 예전 'FAQ')을 하나로 합침 — 줄 번호는 시트별로 겹치지 않게 바꿔 두고 나중에 되돌림 */
+function parseFaqSheets(get: (name: string) => ExcelJS.Worksheet | undefined): ReturnType<typeof parseFaqSheet> {
+  const sheets = [...FAQ_SHEETS, { name: FAQ_SHEET, audience: 'undergraduate' as const }];
+  let found = false;
+  const out = { faqs: [] as NonNullable<ReturnType<typeof parseFaqSheet>>['faqs'], problems: [] as Issue[], warnings: [] as Issue[] };
+  sheets.forEach((sh, i) => {
+    const p = parseFaqSheet(get(sh.name), sh.name, sh.audience, (i + 1) * ROW_SHEET_STEP);
+    if (!p) return;
+    found = true;
+    out.faqs.push(...p.faqs);
+    out.problems.push(...p.problems);
+    out.warnings.push(...p.warnings);
+  });
+  return found ? out : null;
+}
+
+const FAQ_SHEET_NAMES = [...FAQ_SHEETS.map((s) => s.name), FAQ_SHEET];
+/** 합칠 때 바꿔 둔 줄 번호 → (시트, 실제 줄) */
+export const decodeFaqRow = (row: number | null): { sheet?: string; row: number | null } =>
+  row !== null && row >= ROW_SHEET_STEP
+    ? { sheet: FAQ_SHEET_NAMES[Math.floor(row / ROW_SHEET_STEP) - 1], row: row % ROW_SHEET_STEP }
+    : { row };
+const decodeIssue = (i: Issue): Issue => {
+  const d = decodeFaqRow(i.row);
+  return d.sheet ? { ...i, sheet: d.sheet, row: d.row } : i;
+};
+const faqRowLabel = (row: number) => {
+  const d = decodeFaqRow(row);
+  return d.sheet ? `${d.sheet} ${d.row}번째 줄` : `${row}번째 줄`;
+};
+
 export async function parseHobitXlsx(buffer: Buffer): Promise<ParsedHobit> {
   const wb = new ExcelJS.Workbook();
   try {
@@ -229,14 +269,14 @@ export async function parseHobitXlsx(buffer: Buffer): Promise<ParsedHobit> {
   }
   const get = (name: string) => wb.worksheets.find((w) => w.name.trim() === name);
   const parsed: ParsedHobit = {
-    faq: parseFaqSheet(get(FAQ_SHEET)),
+    faq: parseFaqSheets(get),
     senior: parseSeniorSheet(get(SENIOR_SHEET_NAME)),
     managers: parsePairs(get(MANAGER_SHEET), MANAGER_SHEET, MANAGER_COLUMNS, 'name'),
     emails: parsePairs(get(EMAIL_SHEET), EMAIL_SHEET, EMAIL_COLUMNS, 'email'),
     problems: [],
   };
   if (!parsed.faq && !parsed.senior && !parsed.managers && !parsed.emails) {
-    parsed.problems.push({ row: null, message: "'FAQ', '선배 FAQ', '담당자', '이메일' 시트를 하나도 찾지 못했어요. [엑셀로 받기]로 받은 파일을 고쳐서 올려 주세요." });
+    parsed.problems.push({ row: null, message: "'학부 FAQ', '대학원 FAQ', '공통 FAQ', '선배 FAQ', '담당자', '이메일' 시트를 하나도 찾지 못했어요. [엑셀로 받기]로 받은 파일을 고쳐서 올려 주세요." });
   }
   return parsed;
 }
@@ -321,10 +361,19 @@ export function buildHobitPlan(parsed: ParsedHobit, data: HobitData, opts: { aut
   if (parsed.problems.length) return plan;
 
   if (parsed.faq) {
-    plan.faq = buildImportPlan(parsed.faq, data.faqs, opts);
+    plan.faq = buildImportPlan(parsed.faq, data.faqs, { ...opts, rowLabel: faqRowLabel });
+    // 줄 번호를 시트별 실제 줄로 되돌림 (항목에는 sheet를 붙임)
+    plan.faq.problems = plan.faq.problems.map(decodeIssue);
+    plan.faq.warnings = plan.faq.warnings.map(decodeIssue);
+    for (const list of [plan.faq.created, plan.faq.updated, plan.faq.deleted] as { row: number; sheet?: string }[][]) {
+      for (const it of list) {
+        const d = decodeFaqRow(it.row);
+        if (d.sheet) Object.assign(it, { sheet: d.sheet, row: d.row });
+      }
+    }
     plan.problems.push(...plan.faq.problems);
     plan.warnings.push(...plan.faq.warnings);
-  } else plan.missingSheets.push(FAQ_SHEET);
+  } else plan.missingSheets.push('행정실 FAQ');
 
   if (parsed.senior) {
     plan.senior = buildSeniorPlan(parsed.senior, data.seniorFaqs, opts);

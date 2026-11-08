@@ -2,7 +2,7 @@
 //   npx jest tests/utils/faqExcel.test.ts
 import ExcelJS from 'exceljs';
 import { expect } from '@jest/globals';
-import { buildImportPlan, cellText, DbFaqRow, makeOrderAssigner, SHEET_NAME } from '../../src/utils/faqExcel';
+import { addFaqSheet, buildImportPlan, cellText, DbFaqRow, FAQ_SHEETS, makeOrderAssigner, parseFaqSheet, SHEET_NAME } from '../../src/utils/faqExcel';
 import { makeSeniorOrderAssigner, SeniorDbRow } from '../../src/utils/seniorFaqExcel';
 import {
   buildHobitPlan,
@@ -14,8 +14,17 @@ import {
   replaceEmailInField,
 } from '../../src/utils/hobitWorkbook';
 
-const buildFaqXlsx = (rows: DbFaqRow[]) => buildHobitXlsx({ faqs: rows });
-const parseFaqXlsx = async (buf: Buffer) => (await parseHobitXlsx(buf)).faq!;
+// 줄 단위 규칙 확인용 — 예전 모양(한 'FAQ' 시트에 모두)으로 만들고 그 시트만 읽음
+const buildFaqXlsx = async (rows: DbFaqRow[]) => {
+  const wb = new ExcelJS.Workbook();
+  addFaqSheet(wb, rows);
+  return Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+};
+const parseFaqXlsx = async (buf: Buffer) => {
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf as any);
+  return parseFaqSheet(wb.getWorksheet(SHEET_NAME))!;
+};
 
 const card = (answer: string, url = '', email = '', phone = '') => ({ answer, url, email, phone });
 
@@ -313,15 +322,60 @@ describe('FAQ 엑셀 왕복', () => {
   });
 
   it('FAQ 시트만 있는 예전 파일도 읽어요', async () => {
-    const wb = new ExcelJS.Workbook();
-    await wb.xlsx.load((await buildFaqXlsx(fixture)) as any);
-    ['선배 FAQ', MANAGER_SHEET, EMAIL_SHEET, '사용 방법'].forEach((n) => wb.removeWorksheet(wb.getWorksheet(n)!.id));
-    const only = Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    const only = await buildFaqXlsx(fixture); // 'FAQ' 시트 하나뿐인 예전 파일
     const plan = buildHobitPlan(await parseHobitXlsx(only), { faqs: fixture, seniorFaqs: seniorFixture });
     expect(plan.problems).toEqual([]);
     expect(plan.missingSheets).toEqual(['선배 FAQ', MANAGER_SHEET, EMAIL_SHEET]);
     expect(plan.senior).toBeNull();
     expect(plan.faq!.unchanged).toBe(3);
+  });
+
+  it('행정실 FAQ는 학부·대학원·공통 시트로 나뉘고, 다른 시트로 옮기면 대상이 바뀌어요', async () => {
+    const data = { faqs: fixture, seniorFaqs: seniorFixture };
+    const buf = await buildHobitXlsx(data);
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buf as any);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['사용 방법', ...FAQ_SHEETS.map((s) => s.name), '선배 FAQ', MANAGER_SHEET, EMAIL_SHEET]);
+    const ids = (name: string) => {
+      const ws = wb.getWorksheet(name)!;
+      const out: number[] = [];
+      for (let r = 2; r <= ws.rowCount; r++) {
+        const v = ws.getRow(r).getCell(1).value;
+        if (v) out.push(Number(v));
+      }
+      return out;
+    };
+    expect([ids('학부 FAQ'), ids('대학원 FAQ'), ids('공통 FAQ')]).toEqual([[10], [11], [12]]);
+    // 회색 칸(두 번째 이후 답변 줄의 FAQ 칸)은 입력을 막는 유효성 검사
+    const gray = wb.getWorksheet('학부 FAQ')!.getRow(3).getCell(7);
+    expect(gray.dataValidation?.type).toBe('custom');
+    expect(gray.dataValidation?.formulae?.[0]).toBe('LEN(G3)=0');
+
+    const same = buildHobitPlan(await parseHobitXlsx(buf), data);
+    expect(same.problems).toEqual([]);
+    expect(same.faq!.unchanged).toBe(3);
+
+    // 학부 시트의 10번(답변 두 줄)을 공통 시트로 옮기고 대상 칸은 비움 → 시트 기준 '공통'
+    //   + 대학원 시트에 문제 줄(분류 없는 새 FAQ)을 넣으면 그 시트·줄로 안내
+    const under = wb.getWorksheet('학부 FAQ')!;
+    const rows = [2, 3].map((r) => (under.getRow(r).values as any[]).slice(1));
+    under.spliceRows(2, 2);
+    const common = wb.getWorksheet('공통 FAQ')!;
+    rows.forEach((vals, i) => {
+      const row = common.getRow(common.actualRowCount + 1); // 드롭다운이 깔린 빈 줄 말고 실제 마지막 줄 다음
+      row.values = vals;
+      if (i === 0) row.getCell(2).value = null;
+    });
+    const grad = wb.getWorksheet('대학원 FAQ')!;
+    grad.getRow(3).values = ['', '', '', '', '', '', '분류를 안 적은 새 질문', '', '답이에요']; // 대분류·소분류 없음
+    const moved = Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    const plan = buildHobitPlan(await parseHobitXlsx(moved), data);
+    expect([...new Set(plan.problems.map((p) => `${p.sheet} ${p.row}`))]).toEqual(['대학원 FAQ 3']);
+    grad.spliceRows(3, 1);
+    const ok = buildHobitPlan(await parseHobitXlsx(Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer)), data);
+    expect(ok.problems).toEqual([]);
+    expect(ok.faq!.updated.map((u) => [u.id, u.sheet, u.changes.map((c) => c.label)])).toEqual([[10, '공통 FAQ', ['대상']]]);
+    expect(ok.faq!.updated[0].after.audience).toBe('all');
   });
 
   it('이메일 칸 안의 이메일만 바꿔요', () => {

@@ -102,7 +102,15 @@ export const COLUMNS: { key: ColumnKey; header: string; width: number; faqLevel:
 ];
 
 export const DELETE_MARK = '삭제';
-export const SHEET_NAME = 'FAQ';
+export const SHEET_NAME = 'FAQ'; // 예전 파일 (한 시트에 모두) — 올리면 그대로 읽음
+// 대상별 시트 — 받을 때는 셋으로 나눔. 시트가 곧 기본 대상 (대상 칸을 바꾸면 그 값이 우선)
+export const FAQ_SHEETS: { name: string; audience: Audience }[] = [
+  { name: '학부 FAQ', audience: 'undergraduate' },
+  { name: '대학원 FAQ', audience: 'graduate' },
+  { name: '공통 FAQ', audience: 'all' },
+];
+// 여러 시트의 줄 번호가 겹치지 않게 내부에서만 쓰는 값 (시트 순서 × ROW_SHEET_STEP + 줄 번호)
+export const ROW_SHEET_STEP = 100000;
 export const HELP_SHEET_NAME = '사용 방법';
 
 // DB 칸 길이 (config/createDB.ts)
@@ -314,7 +322,24 @@ export function addListValidation(ws: ExcelJS.Worksheet, col: number, values: st
 
 export const inSheet = (sheet: string) => (i: Issue): Issue => ({ ...i, sheet: i.sheet ?? sheet });
 
-export const fillContinuation = (row: ExcelJS.Row, cols: number[]) => cols.forEach((c) => (row.getCell(c).fill = CONT_FILL));
+/**
+ * 같은 FAQ의 두 번째 이후 답변 줄 — FAQ 칸(번호·분류·질문 등)을 회색으로 칠하고 입력을 막음 (데이터 유효성 검사).
+ * 적으면 "비워 두세요" 안내가 뜸. 시트 보호는 쓰지 않음 (정렬·필터·줄 추가가 막혀서)
+ */
+export const fillContinuation = (row: ExcelJS.Row, cols: number[]) =>
+  cols.forEach((c) => {
+    const cell = row.getCell(c);
+    cell.fill = CONT_FILL;
+    cell.dataValidation = {
+      type: 'custom',
+      allowBlank: true,
+      formulae: [`LEN(${cell.address})=0`],
+      showErrorMessage: true,
+      errorStyle: 'stop',
+      errorTitle: '회색 칸은 비워 두세요',
+      error: '위 FAQ의 두 번째 이후 답변 줄이에요. 답변·링크·이메일·전화만 적어 주세요. 새 FAQ는 새 줄에 질문부터 적어 주세요.',
+    };
+  });
 
 const headerKey = (s: string) => s.normalize('NFKC').replace(/[\s*]/g, '');
 
@@ -345,8 +370,8 @@ export function sortRows<T extends { id: number }>(rows: T[], orderKeys: string[
 }
 
 /** 'FAQ' 시트 (행정실 FAQ) — 답변 카드 하나가 한 줄 */
-export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[]): ExcelJS.Worksheet {
-  const ws = addStyledSheet(wb, SHEET_NAME, COLUMNS.map((c) => ({ ...c, numeric: c.key === 'id' })));
+export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[], name: string = SHEET_NAME): ExcelJS.Worksheet {
+  const ws = addStyledSheet(wb, name, COLUMNS.map((c) => ({ ...c, numeric: c.key === 'id' })));
   const faqLevelCols = COLUMNS.map((c, i) => (c.faqLevel ? i + 1 : 0)).filter(Boolean);
 
   for (const row of sortRows(rows)) {
@@ -390,8 +415,14 @@ export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[]): ExcelJS.Wor
 // ───────────────────────── 엑셀 읽기 ─────────────────────────
 
 /** 'FAQ' 시트 읽기 — 시트가 없으면 null (그 시트는 바뀐 게 없는 것으로) */
-export function parseFaqSheet(ws: ExcelJS.Worksheet | undefined): { faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] } | null {
+export function parseFaqSheet(
+  ws: ExcelJS.Worksheet | undefined,
+  sheetName: string = SHEET_NAME,
+  defaultAudience: Audience = DEFAULT_AUDIENCE,
+  rowOffset = 0 // 여러 시트를 합칠 때 줄 번호가 겹치지 않게 (hobitWorkbook이 끝에 되돌림)
+): { faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] } | null {
   if (!ws) return null;
+  const SHEET = sheetName;
   const problems: Issue[] = [];
   const warnings: Issue[] = [];
   const faqs: ParsedFaq[] = [];
@@ -403,7 +434,7 @@ export function parseFaqSheet(ws: ExcelJS.Worksheet | undefined): { faqs: Parsed
       row: 1,
       message: `칸 제목 ${missing.map((c) => `'${c.header}'`).join(', ')}을(를) 찾지 못했어요. 받은 엑셀의 첫 줄(칸 제목)은 그대로 둬 주세요.`,
     });
-    return { faqs, problems: problems.map(inSheet(SHEET_NAME)), warnings };
+    return { faqs, problems: problems.map(inSheet(SHEET)), warnings };
   }
 
   let cur: ParsedFaq | null = null;
@@ -474,7 +505,7 @@ export function parseFaqSheet(ws: ExcelJS.Worksheet | undefined): { faqs: Parsed
       problems.push({ row: r, message: `번호 칸('${idText}')을 읽지 못했어요. 번호 칸은 고치지 말고, 새 FAQ는 번호를 비워 주세요.` });
     }
     const audienceText = normLine(text('audience'));
-    let audience: Audience = DEFAULT_AUDIENCE;
+    let audience: Audience = defaultAudience;
     let audienceBlank = false;
     if (!audienceText) audienceBlank = true;
     else {
@@ -512,7 +543,14 @@ export function parseFaqSheet(ws: ExcelJS.Worksheet | undefined): { faqs: Parsed
     faqs.push(cur);
   }
 
-  return { faqs, problems: problems.map(inSheet(SHEET_NAME)), warnings: warnings.map(inSheet(SHEET_NAME)) };
+  // 줄 번호를 합친 파일 기준으로 (시트별 문제는 이미 시트 이름이 붙어 있어 그대로)
+  if (rowOffset) {
+    for (const f of faqs) {
+      f.row += rowOffset;
+      f.cardRows = f.cardRows.map((x) => x + rowOffset);
+    }
+  }
+  return { faqs, problems: problems.map(inSheet(SHEET)), warnings: warnings.map(inSheet(SHEET)) };
 }
 
 // ───────────────────────── 비교 (DB ↔ 엑셀) ─────────────────────────
@@ -527,11 +565,13 @@ export interface Change {
 
 export interface PlanCreated {
   row: number;
+  sheet?: string; // 행정실 FAQ 시트 이름 (학부 FAQ 등)
   view: FaqView;
 }
 export interface PlanUpdated {
   id: number;
   row: number;
+  sheet?: string;
   before: FaqView;
   after: FaqView;
   changes: Change[];
@@ -539,6 +579,7 @@ export interface PlanUpdated {
 export interface PlanDeleted {
   id: number;
   row: number;
+  sheet?: string;
   before: FaqView;
 }
 
@@ -613,9 +654,10 @@ const catKey = (main: string, sub: string) => `${main}\u0000${sub}`;
 export function buildImportPlan(
   parsed: { faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] },
   dbRows: DbFaqRow[],
-  opts: { autoTranslate?: boolean } = {}
+  opts: { autoTranslate?: boolean; rowLabel?: (row: number) => string } = {}
 ): ImportPlan {
   const autoTranslate = !!opts.autoTranslate;
+  const rowName = opts.rowLabel ?? ((row: number) => `${row}번째 줄`);
   const problems: Issue[] = [...parsed.problems];
   const warnings: Issue[] = [...parsed.warnings];
 
@@ -663,7 +705,7 @@ export function buildImportPlan(
         continue;
       }
       if (seen.has(f.id)) {
-        problems.push({ row: f.row, message: `같은 번호(${f.id})가 ${seen.get(f.id)}번째 줄에도 있어요. 같은 FAQ는 한 번만 적어 주세요.` });
+        problems.push({ row: f.row, message: `같은 번호(${f.id})가 ${rowName(seen.get(f.id)!)}에도 있어요. 같은 FAQ는 한 번만 적어 주세요.` });
         continue;
       }
       seen.set(f.id, f.row);
@@ -700,7 +742,7 @@ export function buildImportPlan(
     if (Buffer.byteLength(JSON.stringify(answers.answer_ko)) > MAX_TEXT_BYTES || Buffer.byteLength(JSON.stringify(answers.answer_en)) > MAX_TEXT_BYTES) {
       problems.push({ row: f.row, message: '답변이 너무 길어요. 답변을 줄이거나 나눠 주세요.' });
     }
-    if (f.audienceBlank) warnings.push({ row: f.row, message: "대상이 비어 있어서 '학부'로 둘게요." });
+    if (f.audienceBlank) warnings.push({ row: f.row, message: `대상이 비어 있어서 '${AUDIENCE_LABEL[v.audience]}'(으)로 둘게요.` });
     if (problems.length !== before) continue;
 
     if (f.id === null) {
@@ -739,7 +781,7 @@ export function buildImportPlan(
     const q = f ? f.view.question_ko : prev.question_ko;
     entries.push({ label: `번호 ${id}`, row: f?.row ?? null, touched: !!u && u.before.question_ko !== u.after.question_ko, question: q });
   }
-  for (const c of created) entries.push({ label: `${c.row}번째 줄`, row: c.row, touched: true, question: c.view.question_ko });
+  for (const c of created) entries.push({ label: rowName(c.row), row: c.row, touched: true, question: c.view.question_ko });
   const byQuestion = new Map<string, Entry[]>();
   for (const e of entries) {
     const k = e.question.toLowerCase();

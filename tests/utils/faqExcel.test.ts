@@ -1,16 +1,21 @@
-// FAQ 엑셀 왕복 확인 — 엑셀 만들기 → 다시 읽기 → DB와 비교 (DB 없이)
+// hoBIT 데이터 엑셀 왕복 확인 — 엑셀 만들기 → 다시 읽기 → DB와 비교 (DB 없이)
 //   npx jest tests/utils/faqExcel.test.ts
 import ExcelJS from 'exceljs';
 import { expect } from '@jest/globals';
+import { buildImportPlan, cellText, DbFaqRow, makeOrderAssigner, SHEET_NAME } from '../../src/utils/faqExcel';
+import { makeSeniorOrderAssigner, SeniorDbRow } from '../../src/utils/seniorFaqExcel';
 import {
-  buildFaqXlsx,
-  buildImportPlan,
-  cellText,
-  DbFaqRow,
-  makeOrderAssigner,
-  parseFaqXlsx,
-  SHEET_NAME,
-} from '../../src/utils/faqExcel';
+  buildHobitPlan,
+  buildHobitXlsx,
+  collectEmails,
+  EMAIL_SHEET,
+  MANAGER_SHEET,
+  parseHobitXlsx,
+  replaceEmailInField,
+} from '../../src/utils/hobitWorkbook';
+
+const buildFaqXlsx = (rows: DbFaqRow[]) => buildHobitXlsx({ faqs: rows });
+const parseFaqXlsx = async (buf: Buffer) => (await parseHobitXlsx(buf)).faq!;
 
 const card = (answer: string, url = '', email = '', phone = '') => ({ answer, url, email, phone });
 
@@ -68,12 +73,46 @@ const fixture: DbFaqRow[] = [
   },
 ];
 
-async function rewrite(buf: Buffer, edit: (ws: ExcelJS.Worksheet) => void): Promise<Buffer> {
+async function rewrite(buf: Buffer, edit: (ws: ExcelJS.Worksheet, wb: ExcelJS.Workbook) => void): Promise<Buffer> {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf as any);
-  edit(wb.getWorksheet(SHEET_NAME)!);
+  edit(wb.getWorksheet(SHEET_NAME)!, wb);
   return Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer);
 }
+
+const seniorCard = (title: string, answer: string, url = '', lat = '', lng = '') => ({ title, answer, url, map: { latitude: lat, longitude: lng } });
+const seniorFixture: SeniorDbRow[] = [
+  {
+    id: 2,
+    maincategory_ko: '수강신청',
+    maincategory_en: 'Course Registration',
+    subcategory_ko: '일반',
+    subcategory_en: 'General',
+    detailcategory_ko: '기간',
+    detailcategory_en: 'Duration',
+    answer_ko: JSON.stringify([seniorCard('기간', '보통 2월, 8월이야.\n학사일정을 봐 😀', 'https://registrar.korea.ac.kr')]),
+    answer_en: JSON.stringify([seniorCard('Duration', 'Usually Feb and Aug.', 'https://registrar.korea.ac.kr')]),
+    manager: '김호빗 🐰',
+    category_order: 1,
+    subcategory_order: 1,
+    detailcategory_order: 1,
+  },
+  {
+    id: 3,
+    maincategory_ko: '수강신청',
+    maincategory_en: 'Course Registration',
+    subcategory_ko: '일반',
+    subcategory_en: 'General',
+    detailcategory_ko: '방법',
+    detailcategory_en: 'Methods',
+    answer_ko: JSON.stringify([seniorCard('방법', '수희등부터 해.'), seniorCard('방법', '정정은 같은 사이트야.', 'https://sugang.korea.ac.kr', '37.58', '127.02')]),
+    answer_en: JSON.stringify([seniorCard('Methods', 'Wishlist first.'), seniorCard('Method', 'Same site.', 'https://sugang.korea.ac.kr', '37.58', '127.02')]),
+    manager: 'kwebhobit',
+    category_order: 1,
+    subcategory_order: 1,
+    detailcategory_order: 2,
+  },
+];
 
 const findRow = (ws: ExcelJS.Worksheet, id: number) => {
   for (let r = 2; r <= ws.rowCount; r++) if (Number(ws.getRow(r).getCell(1).value) === id) return r;
@@ -198,5 +237,96 @@ describe('FAQ 엑셀 왕복', () => {
     expect(cellText({ text: '', hyperlink: 'mailto:a@b.c' } as any)).toBe('a@b.c');
     expect(cellText({ text: { richText: [{ text: 'a' }, { text: 'b' }] }, hyperlink: 'http://x' } as any)).toBe('ab');
     expect(cellText({ error: '#N/A' } as any)).toBe('');
+  });
+
+  it('여러 시트 — 선배 FAQ · 담당자 이름 바꾸기 · 이메일 바꾸기', async () => {
+    const data = { faqs: fixture, seniorFaqs: seniorFixture };
+    const buf = await buildHobitXlsx(data);
+
+    // 그대로 다시 읽으면 시트 전부 바뀐 것 없음
+    const same = buildHobitPlan(await parseHobitXlsx(buf), data);
+    expect(same.problems).toEqual([]);
+    expect(same.missingSheets).toEqual([]);
+    expect(same.senior!.unchanged).toBe(2);
+    expect(same.senior!.updated).toEqual([]);
+    expect(same.managers).toEqual([]);
+    expect(same.emails).toEqual([]);
+
+    const edited = await rewrite(buf, (_ws, wb) => {
+      const ss = wb.getWorksheet('선배 FAQ')!;
+      const r3 = (() => { for (let r = 2; r <= ss.rowCount; r++) if (Number(ss.getRow(r).getCell(1).value) === 3) return r; return 0; })();
+      ss.getRow(r3 + 1).getCell(10).value = '정정은 수강신청 사이트에서 해.'; // 3번 두 번째 답변
+      ss.getRow(r3 + 1).getCell(11).value = null; // 영어는 비움 → 자동 번역
+      const last = ss.actualRowCount;
+      ss.getRow(last + 1).values = ['', '수강신청', '', '일반', '', '팁', '', '팁', '', '친구랑 시간표 맞춰 봐.', '', '', '', '', '김호빗 🐰'];
+      ss.getRow(last + 2).values = ['', '', '', '', '', '', '', '', '', '강의평도 꼭 봐.', 'Check reviews.'];
+      // 담당자: '김호빗 🐰' → '김호빗'
+      const ms = wb.getWorksheet(MANAGER_SHEET)!;
+      for (let r = 2; r <= ms.rowCount; r++) if (ms.getRow(r).getCell(1).value === '김호빗 🐰') ms.getRow(r).getCell(4).value = '김호빗';
+      // 이메일: info@korea.ac.kr → office@korea.ac.kr
+      const es = wb.getWorksheet(EMAIL_SHEET)!;
+      for (let r = 2; r <= es.rowCount; r++) if (es.getRow(r).getCell(1).value === 'info@korea.ac.kr') es.getRow(r).getCell(3).value = 'office@korea.ac.kr';
+    });
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), data, { autoTranslate: true });
+    console.log(
+      '여러 시트:',
+      JSON.stringify(
+        {
+          senior: { created: plan.senior!.created.map((c) => c.view), updated: plan.senior!.updated.map((u) => ({ id: u.id, changes: u.changes })) },
+          managers: plan.managers,
+          emails: plan.emails,
+          problems: plan.problems,
+          warnings: plan.warnings,
+        },
+        null,
+        1
+      )
+    );
+    expect(plan.problems).toEqual([]);
+    expect(plan.faq!.unchanged).toBe(3);
+    expect(plan.senior!.updated.map((u) => u.id)).toEqual([3]);
+    expect(plan.senior!.updated[0].changes.map((c) => c.label)).toEqual(['답변 2', '답변(영어) 2']);
+    expect(plan.senior!.created).toHaveLength(1);
+    expect(plan.senior!.created[0].view.maincategory_en).toBe('Course Registration');
+    expect(plan.senior!.created[0].view.cards).toHaveLength(2);
+    expect(plan.managers).toEqual([{ row: expect.any(Number), from: '김호빗 🐰', to: '김호빗', raw: ['김호빗 🐰'], faq_count: 1, senior_count: 1 }]);
+    expect(plan.emails).toEqual([{ row: expect.any(Number), from: 'info@korea.ac.kr', to: 'office@korea.ac.kr', count: 1 }]);
+    expect(makeSeniorOrderAssigner(seniorFixture)('수강신청', '일반', '팁')).toEqual({ category_order: 1, subcategory_order: 1, detailcategory_order: 3 });
+
+    // 막아야 하는 것: 같은 이메일을 두 값으로, 이메일 모양 아님, 이어지는 이름 바꾸기
+    const bad = await rewrite(buf, (_ws, wb) => {
+      const es = wb.getWorksheet(EMAIL_SHEET)!;
+      const n = es.actualRowCount;
+      es.getRow(n + 1).values = ['info@korea.ac.kr', '', 'a@korea.ac.kr'];
+      es.getRow(n + 2).values = ['info@korea.ac.kr', '', 'b@korea.ac.kr'];
+      const ms = wb.getWorksheet(MANAGER_SHEET)!;
+      for (let r = 2; r <= ms.rowCount; r++) {
+        if (ms.getRow(r).getCell(1).value === '김호빗 🐰') ms.getRow(r).getCell(4).value = '이담당';
+        if (ms.getRow(r).getCell(1).value === '이담당') ms.getRow(r).getCell(4).value = '박담당';
+      }
+    });
+    const badPlan = buildHobitPlan(await parseHobitXlsx(bad), data);
+    console.log('여러 시트 문제:', JSON.stringify(badPlan.problems, null, 1));
+    const msgs = badPlan.problems.map((p) => `${p.sheet}: ${p.message}`).join('\n');
+    expect(msgs).toContain('이메일: \'info@korea.ac.kr\'이(가)');
+    expect(msgs).toContain('담당자: 바꿀 값 \'이담당\'도 다른 줄에서 바뀌어요');
+  });
+
+  it('FAQ 시트만 있는 예전 파일도 읽어요', async () => {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load((await buildFaqXlsx(fixture)) as any);
+    ['선배 FAQ', MANAGER_SHEET, EMAIL_SHEET, '사용 방법'].forEach((n) => wb.removeWorksheet(wb.getWorksheet(n)!.id));
+    const only = Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer);
+    const plan = buildHobitPlan(await parseHobitXlsx(only), { faqs: fixture, seniorFaqs: seniorFixture });
+    expect(plan.problems).toEqual([]);
+    expect(plan.missingSheets).toEqual(['선배 FAQ', MANAGER_SHEET, EMAIL_SHEET]);
+    expect(plan.senior).toBeNull();
+    expect(plan.faq!.unchanged).toBe(3);
+  });
+
+  it('이메일 칸 안의 이메일만 바꿔요', () => {
+    expect(replaceEmailInField('a@x.kr, info@korea.ac.kr', 'info@korea.ac.kr', 'n@x.kr')).toBe('a@x.kr, n@x.kr');
+    expect(replaceEmailInField('myinfo@korea.ac.kr', 'info@korea.ac.kr', 'n@x.kr')).toBe('myinfo@korea.ac.kr');
+    expect(collectEmails({ faqs: fixture, seniorFaqs: [] })).toEqual([{ email: 'info@korea.ac.kr', count: 1 }]);
   });
 });

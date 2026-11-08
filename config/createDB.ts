@@ -77,8 +77,8 @@ const createFAQTable = async () => {
   await connection.end();
 };
 
-// FAQ 엑셀 올리기·되돌리기 전에 faqs 표 전체를 저장해 두는 곳 (최근 20개만 남김)
-//   data: SELECT * FROM faqs 결과를 JSON으로
+// 엑셀 올리기·되돌리기 전에 faqs·senior_faqs 표 전체를 저장해 두는 곳 (최근 20개만 남김)
+//   data: { "faqs": SELECT * FROM faqs, "senior_faqs": SELECT * FROM senior_faqs } JSON
 const createFaqBackupsTable = async () => {
   const connection = await createConnection();
   await connection.query(`
@@ -88,6 +88,7 @@ const createFaqBackupsTable = async () => {
       user_id INT NULL,
       note VARCHAR(300) NOT NULL DEFAULT '',
       row_count INT NOT NULL,
+      senior_row_count INT NOT NULL DEFAULT 0,
       data LONGTEXT NOT NULL,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
     )

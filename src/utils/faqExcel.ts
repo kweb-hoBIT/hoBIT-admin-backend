@@ -62,7 +62,8 @@ export interface FaqView {
 }
 
 export interface Issue {
-  row: number | null; // 엑셀 줄 번호 (없으면 파일 전체 문제)
+  sheet?: string; // 시트 이름 (FAQ / 선배 FAQ / 담당자 / 이메일)
+  row: number | null; // 엑셀 줄 번호 (없으면 파일·시트 전체 문제)
   message: string;
 }
 
@@ -268,76 +269,85 @@ export function viewToAnswers(view: FaqView): { answer_ko: AnswerCard[]; answer_
 
 const HEADER_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8EEF7' } };
 const CONT_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
-const EXTRA_VALIDATION_ROWS = 300; // 새 FAQ를 아래에 붙여 적을 때도 드롭다운이 나오게
+export const EXTRA_VALIDATION_ROWS = 300; // 새 줄을 아래에 붙여 적을 때도 드롭다운이 나오게
 
-const HELP_LINES: [string, boolean?][] = [
-  ['hoBIT FAQ 엑셀 사용 방법', true],
-  [''],
-  ['기본', true],
-  ['• 한 줄이 답변 하나예요. FAQ 첫 줄에 번호·대상·분류·질문·담당자를 적어요.'],
-  ['• 답변이 여러 개인 FAQ는 바로 아래 줄에 질문 칸을 비우고 답변·링크·이메일·전화만 적어요. (회색 칸은 비워 두세요)'],
-  ['• 다 고친 뒤 관리자 사이트 FAQ 화면의 [엑셀로 올리기]로 올리면, 바뀌는 내용을 먼저 보여 드려요. [적용하기]를 눌러야 실제로 바뀌어요.'],
-  [''],
-  ['고치기', true],
-  ['• 고치고 싶은 칸의 글자를 바꾸면 돼요.'],
-  ['• 번호 칸은 고치지 마세요. 번호로 어떤 FAQ인지 찾아요.'],
-  ['• 영어 칸을 비워 두면 올릴 때 자동으로 번역해요. 한국어를 고쳤다면 영어 칸을 비워 두는 게 좋아요.'],
-  [''],
-  ['새 FAQ 추가', true],
-  ['• 맨 아래(또는 아무 곳)에 새 줄을 넣고 번호 칸은 비운 채 대상·대분류·소분류·질문·답변을 적어요.'],
-  ['• 답변이 두 개라면 그 아래 줄에 질문 칸을 비우고 두 번째 답변을 적어요.'],
-  ['• 분류 이름은 기존 이름과 똑같이 적어 주세요. 띄어쓰기만 달라도 새 분류가 생겨요.'],
-  [''],
-  ['답변 추가·삭제', true],
-  ['• 답변을 하나 더 넣으려면 그 FAQ의 마지막 줄 아래에 새 줄을 넣고, 질문 칸은 비운 채 답변을 적어요.'],
-  ['• 답변 하나만 지우려면 그 줄을 지우면 돼요. (FAQ 첫 줄은 지우지 마세요)'],
-  [''],
-  ['FAQ 삭제', true],
-  ["• FAQ를 지우려면 그 FAQ 첫 줄의 '삭제' 칸에서 '삭제'를 골라요."],
-  ['• 엑셀에서 줄을 지워도 FAQ는 지워지지 않고 그대로 남아요. (실수로 지우는 일을 막으려고요)'],
-  [''],
-  ['대상', true],
-  ['• 학부: 학부 모드에서만 보여요.'],
-  ['• 대학원: 대학원 모드에서만 보여요.'],
-  ['• 공통: 학부·대학원 모두에서 보여요.'],
-  [''],
-  ['그 밖에', true],
-  ["• 분류 순서는 엑셀 줄 순서와 상관없어요. 순서는 관리자 사이트의 'FAQ 카테고리 순서' 화면에서 바꿔요."],
-  ['• 적용하기 전에 지금 FAQ 전체를 자동으로 저장해 둬요. 잘못 올렸다면 [이전 상태로 되돌리기]를 쓰면 돼요.'],
-];
-
-function sortRows(rows: DbFaqRow[]): DbFaqRow[] {
-  const num = (v: unknown) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? Number.MAX_SAFE_INTEGER : Number(v));
-  return [...rows].sort(
-    (a, b) =>
-      num(a.category_order) - num(b.category_order) ||
-      num(a.subcategory_order) - num(b.subcategory_order) ||
-      num(a.id) - num(b.id)
-  );
-}
-
-export function buildFaqWorkbook(rows: DbFaqRow[]): ExcelJS.Workbook {
-  const wb = new ExcelJS.Workbook();
-  wb.creator = 'hoBIT';
-  wb.created = new Date();
-
-  const ws = wb.addWorksheet(SHEET_NAME, { views: [{ state: 'frozen', ySplit: 1 }] });
-  ws.columns = COLUMNS.map((c) => ({ header: c.header, key: c.key, width: c.width }));
-  COLUMNS.forEach((c, i) => {
+/** 시트 만들기 — 칸 제목 꾸밈, 첫 줄 고정, 자동 필터, 줄바꿈, 글자 서식(전화번호 0 보존) */
+export function addStyledSheet(
+  wb: ExcelJS.Workbook,
+  name: string,
+  columns: { key: string; header: string; width: number; numeric?: boolean }[]
+): ExcelJS.Worksheet {
+  const ws = wb.addWorksheet(name, { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws.columns = columns.map((c) => ({ header: c.header, key: c.key, width: c.width }));
+  columns.forEach((c, i) => {
     const col = ws.getColumn(i + 1);
-    if (c.key !== 'id') col.numFmt = '@'; // 전화번호 앞 0이 빠지지 않게 글자로
+    if (!c.numeric) col.numFmt = '@';
     col.alignment = { vertical: 'top', wrapText: true };
   });
-
   const header = ws.getRow(1);
   header.font = { bold: true };
   header.alignment = { vertical: 'middle', horizontal: 'center' };
   header.height = 22;
-  COLUMNS.forEach((_, i) => {
+  columns.forEach((_, i) => {
     const cell = header.getCell(i + 1);
     cell.fill = HEADER_FILL;
     cell.border = { bottom: { style: 'thin', color: { argb: 'FFB0B8C4' } } };
   });
+  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: columns.length } };
+  return ws;
+}
+
+/** 드롭다운 (2번째 줄부터 데이터 끝 + 여유 줄까지) */
+export function addListValidation(ws: ExcelJS.Worksheet, col: number, values: string[], title: string, error: string) {
+  const lastRow = ws.rowCount + EXTRA_VALIDATION_ROWS;
+  for (let r = 2; r <= lastRow; r++) {
+    ws.getRow(r).getCell(col).dataValidation = {
+      type: 'list',
+      allowBlank: true,
+      formulae: [`"${values.join(',')}"`],
+      showErrorMessage: true,
+      errorTitle: title,
+      error,
+    };
+  }
+}
+
+export const inSheet = (sheet: string) => (i: Issue): Issue => ({ ...i, sheet: i.sheet ?? sheet });
+
+export const fillContinuation = (row: ExcelJS.Row, cols: number[]) => cols.forEach((c) => (row.getCell(c).fill = CONT_FILL));
+
+const headerKey = (s: string) => s.normalize('NFKC').replace(/[\s*]/g, '');
+
+/** 첫 줄 제목으로 칸 위치 찾기 (칸 순서가 바뀌어도 읽음) */
+export function findColumns<K extends string>(
+  ws: ExcelJS.Worksheet,
+  columns: { key: K; header: string }[]
+): Record<K, number> {
+  const colOf = {} as Record<K, number>;
+  ws.getRow(1).eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    const k = headerKey(cellText(cell.value));
+    const def = columns.find((c) => headerKey(c.header) === k);
+    if (def && !colOf[def.key]) colOf[def.key] = colNumber;
+  });
+  return colOf;
+}
+
+/** 분류 순서 → 번호 순 (orderKeys: category_order, subcategory_order, ...) */
+export function sortRows<T extends { id: number }>(rows: T[], orderKeys: string[] = ['category_order', 'subcategory_order']): T[] {
+  const num = (v: unknown) => (v === null || v === undefined || v === '' || isNaN(Number(v)) ? Number.MAX_SAFE_INTEGER : Number(v));
+  return [...rows].sort((a: any, b: any) => {
+    for (const k of orderKeys) {
+      const d = num(a[k]) - num(b[k]);
+      if (d) return d;
+    }
+    return num(a.id) - num(b.id);
+  });
+}
+
+/** 'FAQ' 시트 (행정실 FAQ) — 답변 카드 하나가 한 줄 */
+export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[]): ExcelJS.Worksheet {
+  const ws = addStyledSheet(wb, SHEET_NAME, COLUMNS.map((c) => ({ ...c, numeric: c.key === 'id' })));
+  const faqLevelCols = COLUMNS.map((c, i) => (c.faqLevel ? i + 1 : 0)).filter(Boolean);
 
   for (const row of sortRows(rows)) {
     const view = dbRowToView(row);
@@ -361,96 +371,39 @@ export function buildFaqWorkbook(rows: DbFaqRow[]): ExcelJS.Workbook {
         delete: '',
       };
       const added = ws.addRow(values);
-      if (i > 0) {
-        COLUMNS.forEach((c, ci) => {
-          if (c.faqLevel) added.getCell(ci + 1).fill = CONT_FILL;
-        });
-      }
+      if (i > 0) fillContinuation(added, faqLevelCols);
     });
   }
 
-  // 대상·삭제 드롭다운 (새 줄을 붙여 적을 자리까지)
-  const audienceCol = COLUMNS.findIndex((c) => c.key === 'audience') + 1;
-  const deleteCol = COLUMNS.findIndex((c) => c.key === 'delete') + 1;
-  const lastRow = ws.rowCount + EXTRA_VALIDATION_ROWS;
-  for (let r = 2; r <= lastRow; r++) {
-    const row = ws.getRow(r);
-    row.getCell(audienceCol).dataValidation = {
-      type: 'list',
-      allowBlank: true,
-      formulae: [`"${AUDIENCE_LABEL.undergraduate},${AUDIENCE_LABEL.graduate},${AUDIENCE_LABEL.all}"`],
-      showErrorMessage: true,
-      errorTitle: '대상',
-      error: '학부, 대학원, 공통 중에서 골라 주세요.',
-    };
-    row.getCell(deleteCol).dataValidation = {
-      type: 'list',
-      allowBlank: true,
-      formulae: [`"${DELETE_MARK}"`],
-      showErrorMessage: true,
-      errorTitle: '삭제',
-      error: "FAQ를 지우려면 '삭제'를 골라 주세요.",
-    };
-  }
-
-  ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLUMNS.length } };
-
-  const help = wb.addWorksheet(HELP_SHEET_NAME);
-  help.getColumn(1).width = 110;
-  HELP_LINES.forEach(([text, bold], i) => {
-    const cell = help.getCell(i + 1, 1);
-    cell.value = text;
-    cell.alignment = { wrapText: true, vertical: 'top' };
-    if (bold) cell.font = { bold: true, size: i === 0 ? 14 : 11 };
-  });
-
-  return wb;
-}
-
-export async function buildFaqXlsx(rows: DbFaqRow[]): Promise<Buffer> {
-  const wb = buildFaqWorkbook(rows);
-  const out = await wb.xlsx.writeBuffer();
-  return Buffer.from(out as ArrayBuffer);
+  // 대상·삭제 드롭다운
+  addListValidation(
+    ws,
+    COLUMNS.findIndex((c) => c.key === 'audience') + 1,
+    [AUDIENCE_LABEL.undergraduate, AUDIENCE_LABEL.graduate, AUDIENCE_LABEL.all],
+    '대상',
+    '학부, 대학원, 공통 중에서 골라 주세요.'
+  );
+  addListValidation(ws, COLUMNS.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "FAQ를 지우려면 '삭제'를 골라 주세요.");
+  return ws;
 }
 
 // ───────────────────────── 엑셀 읽기 ─────────────────────────
 
-const headerKey = (s: string) => s.normalize('NFKC').replace(/[\s*]/g, '');
-
-export async function parseFaqXlsx(buffer: Buffer): Promise<{ faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] }> {
+/** 'FAQ' 시트 읽기 — 시트가 없으면 null (그 시트는 바뀐 게 없는 것으로) */
+export function parseFaqSheet(ws: ExcelJS.Worksheet | undefined): { faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] } | null {
+  if (!ws) return null;
   const problems: Issue[] = [];
   const warnings: Issue[] = [];
   const faqs: ParsedFaq[] = [];
 
-  const wb = new ExcelJS.Workbook();
-  try {
-    await wb.xlsx.load(buffer as any);
-  } catch {
-    problems.push({ row: null, message: '엑셀 파일을 열지 못했어요. 받은 엑셀(.xlsx) 파일을 저장해서 다시 올려 주세요.' });
-    return { faqs, problems, warnings };
-  }
-
-  const ws = wb.getWorksheet(SHEET_NAME) ?? wb.worksheets.find((w) => w.name !== HELP_SHEET_NAME);
-  if (!ws) {
-    problems.push({ row: null, message: "'FAQ' 시트를 찾지 못했어요." });
-    return { faqs, problems, warnings };
-  }
-
-  // 첫 줄 제목으로 칸 위치 찾기 (칸 순서가 바뀌어도 읽음)
-  const colOf = {} as Record<ColumnKey, number>;
-  const headerRow = ws.getRow(1);
-  headerRow.eachCell({ includeEmpty: false }, (cell, colNumber) => {
-    const k = headerKey(cellText(cell.value));
-    const def = COLUMNS.find((c) => headerKey(c.header) === k);
-    if (def && !colOf[def.key]) colOf[def.key] = colNumber;
-  });
+  const colOf = findColumns(ws, COLUMNS);
   const missing = COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]);
   if (missing.length) {
     problems.push({
       row: 1,
       message: `칸 제목 ${missing.map((c) => `'${c.header}'`).join(', ')}을(를) 찾지 못했어요. 받은 엑셀의 첫 줄(칸 제목)은 그대로 둬 주세요.`,
     });
-    return { faqs, problems, warnings };
+    return { faqs, problems: problems.map(inSheet(SHEET_NAME)), warnings };
   }
 
   let cur: ParsedFaq | null = null;
@@ -559,7 +512,7 @@ export async function parseFaqXlsx(buffer: Buffer): Promise<{ faqs: ParsedFaq[];
     faqs.push(cur);
   }
 
-  return { faqs, problems, warnings };
+  return { faqs, problems: problems.map(inSheet(SHEET_NAME)), warnings: warnings.map(inSheet(SHEET_NAME)) };
 }
 
 // ───────────────────────── 비교 (DB ↔ 엑셀) ─────────────────────────
@@ -850,8 +803,8 @@ export function buildImportPlan(
     deleted,
     unchanged,
     missingFromFile,
-    problems: problems.sort(byRow),
-    warnings: warnings.sort(byRow),
+    problems: problems.map(inSheet(SHEET_NAME)).sort(byRow),
+    warnings: warnings.map(inSheet(SHEET_NAME)).sort(byRow),
     translateCount,
   };
 }

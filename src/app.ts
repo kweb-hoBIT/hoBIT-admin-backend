@@ -32,6 +32,7 @@ import profileOptionsRoutes from "./routes/api/profileOptions/profileOptionsInde
 import noticeChangesRoutes from "./routes/api/noticeChanges/noticeChangesIndex";
 import answerReviewsRoutes from "./routes/api/answerReviews/answerReviewsIndex";
 import dashboardRoutes from "./routes/api/dashboard/dashboardIndex";
+import dashboardScopeRoutes from "./routes/api/dashboard/scopeSummary";
 import chatRoutes, { seniorGuard } from "./routes/api/chat/chatIndex";
 
 const app = express();
@@ -90,6 +91,7 @@ app.use("/api/keywords", keywordsRoutes);
 app.use("/api/profile-options", profileOptionsRoutes);
 app.use("/api/notice-changes", noticeChangesRoutes);
 app.use("/api/answer-reviews", answerReviewsRoutes);
+app.use("/api/dashboard/scope", dashboardScopeRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api/emails/bulk-update", bulkUpdateEmailRoutes);

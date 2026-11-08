@@ -3,10 +3,16 @@
  *   라우트: src/routes/api/faqs/faqExcel.ts
  *   CLI:   src/scripts/faqExcelFromJson.ts (베타 DB에서 뽑은 JSON → 첫 엑셀 양식)
  *
- * 엑셀 모양 — 시트 "FAQ", 답변 카드 하나가 한 줄
- *   번호 | 대상 | 대분류 | 대분류(영어) | 소분류 | 소분류(영어) | 질문 | 질문(영어) | 답변 | 답변(영어) | 링크 | 이메일 | 전화 | 담당자 | 삭제
- *   FAQ 첫 줄에 번호·질문 등 FAQ 전체 칸을 적고, 답변이 여러 개면 아래 줄에 질문 칸을 비운 채 답변·링크·이메일·전화만 적음
- *   → 읽을 때: 질문 칸이 빈 줄은 바로 위 FAQ의 다음 답변
+ * 엑셀 모양 — 시트 학부 FAQ / 대학원 FAQ / 공통 FAQ, FAQ 하나가 한 줄
+ *   번호 | 대상 | 대분류 | 대분류(영어) | 소분류 | 소분류(영어) | 질문 | 질문(영어)
+ *     | 답변1 | 답변1(영어) | 링크1 | 이메일1 | 전화1 | 답변2 | … | 전화7 | 담당자 | 삭제
+ *   답변 묶음(답변N·답변N(영어)·링크N·이메일N·전화N)이 답변 카드 하나. 묶음 5칸이 모두 비면 카드 없음
+ *   묶음은 7개(데이터에 더 많은 카드가 있으면 그만큼), 4번째부터는 접어 둠
+ *   줄마다 따로라서 엑셀에서 정렬·필터를 해도 안전함
+ *
+ * 예전 모양 (답변 카드 하나가 한 줄, 칸 제목 '답변') 파일도 그대로 읽음 — 칸 제목에 '답변1'이 있는지로 구분
+ *   번호 | 대상 | … | 질문(영어) | 답변 | 답변(영어) | 링크 | 이메일 | 전화 | 담당자 | 삭제
+ *   질문 칸이 빈 줄은 바로 위 FAQ의 다음 답변
  */
 import ExcelJS from 'exceljs';
 import { Audience, AUDIENCE_LABEL, audienceFromLabel, DEFAULT_AUDIENCE, initialAudience, isAudience } from './faqAudience';
@@ -75,6 +81,7 @@ export interface ParsedFaq {
   audienceBlank: boolean;
   view: FaqView;
   cardRows: number[]; // 각 카드의 엑셀 줄 번호
+  cardGroups?: number[]; // 새 모양: 각 카드의 답변 묶음 번호 (답변2 → 2)
 }
 
 // ───────────────────────── 칸 정의 ─────────────────────────
@@ -83,7 +90,8 @@ type ColumnKey =
   | 'id' | 'audience' | 'maincategory_ko' | 'maincategory_en' | 'subcategory_ko' | 'subcategory_en'
   | 'question_ko' | 'question_en' | 'answer' | 'answer_en' | 'url' | 'email' | 'phone' | 'manager' | 'delete';
 
-export const COLUMNS: { key: ColumnKey; header: string; width: number; faqLevel: boolean }[] = [
+/** 예전 모양 (답변 카드 하나가 한 줄) — 올린 파일을 읽을 때만 씀 */
+export const LEGACY_COLUMNS: { key: ColumnKey; header: string; width: number; faqLevel: boolean }[] = [
   { key: 'id', header: '번호', width: 7, faqLevel: true },
   { key: 'audience', header: '대상', width: 9, faqLevel: true },
   { key: 'maincategory_ko', header: '대분류', width: 14, faqLevel: true },
@@ -100,6 +108,41 @@ export const COLUMNS: { key: ColumnKey; header: string; width: number; faqLevel:
   { key: 'manager', header: '담당자', width: 12, faqLevel: true },
   { key: 'delete', header: '삭제', width: 8, faqLevel: true },
 ];
+
+// 새 모양 — FAQ 칸 (답변 묶음 앞뒤)
+type FaqFixedKey = Exclude<ColumnKey, 'answer' | 'answer_en' | 'url' | 'email' | 'phone'>;
+const FAQ_HEAD_COLUMNS: { key: FaqFixedKey; header: string; width: number }[] = [
+  { key: 'id', header: '번호', width: 7 },
+  { key: 'audience', header: '대상', width: 8 },
+  { key: 'maincategory_ko', header: '대분류', width: 12 },
+  { key: 'maincategory_en', header: '대분류(영어)', width: 14 },
+  { key: 'subcategory_ko', header: '소분류', width: 13 },
+  { key: 'subcategory_en', header: '소분류(영어)', width: 14 },
+  { key: 'question_ko', header: '질문', width: 32 },
+  { key: 'question_en', header: '질문(영어)', width: 32 },
+];
+const FAQ_TAIL_COLUMNS: { key: FaqFixedKey; header: string; width: number }[] = [
+  { key: 'manager', header: '담당자', width: 12 },
+  { key: 'delete', header: '삭제', width: 8 },
+];
+export const FAQ_FIXED_COLUMNS = [...FAQ_HEAD_COLUMNS, ...FAQ_TAIL_COLUMNS];
+
+/** 답변 묶음 한 칸 (칸 제목 '답변(영어)' → 묶음 2는 '답변2(영어)') */
+export interface GroupField<K extends string> {
+  key: K;
+  header: string;
+  width: number;
+  norm: (v: unknown) => string;
+}
+export const FAQ_CARD_FIELDS: GroupField<keyof ExcelCard>[] = [
+  { key: 'answer', header: '답변', width: 50, norm: (v) => normMulti(v) },
+  { key: 'answer_en', header: '답변(영어)', width: 50, norm: (v) => normMulti(v) },
+  { key: 'url', header: '링크', width: 28, norm: (v) => normList(v) },
+  { key: 'email', header: '이메일', width: 24, norm: (v) => normList(v) },
+  { key: 'phone', header: '전화', width: 15, norm: (v) => normList(v) },
+];
+export const MIN_FAQ_GROUPS = 7; // 지금 데이터의 가장 많은 답변 수 (모든 FAQ가 들어감)
+export const VISIBLE_GROUPS = 3; // 이보다 뒤의 답변 묶음은 접어 둠
 
 export const DELETE_MARK = '삭제';
 export const SHEET_NAME = 'FAQ'; // 예전 파일 (한 시트에 모두) — 올리면 그대로 읽음
@@ -276,7 +319,8 @@ export function viewToAnswers(view: FaqView): { answer_ko: AnswerCard[]; answer_
 // ───────────────────────── 엑셀 만들기 ─────────────────────────
 
 const HEADER_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8EEF7' } };
-const CONT_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+const GROUP_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD6E6F7' } }; // 홀수 번째 답변 묶음
+const PLAIN_FILL: ExcelJS.Fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFFFF' } }; // 짝수 번째 답변 묶음
 export const EXTRA_VALIDATION_ROWS = 300; // 새 줄을 아래에 붙여 적을 때도 드롭다운이 나오게
 
 /** 시트 만들기 — 칸 제목 꾸밈, 첫 줄 고정, 자동 필터, 줄바꿈, 글자 서식(전화번호 0 보존) */
@@ -322,25 +366,6 @@ export function addListValidation(ws: ExcelJS.Worksheet, col: number, values: st
 
 export const inSheet = (sheet: string) => (i: Issue): Issue => ({ ...i, sheet: i.sheet ?? sheet });
 
-/**
- * 같은 FAQ의 두 번째 이후 답변 줄 — FAQ 칸(번호·분류·질문 등)을 회색으로 칠하고 입력을 막음 (데이터 유효성 검사).
- * 적으면 "비워 두세요" 안내가 뜸. 시트 보호는 쓰지 않음 (정렬·필터·줄 추가가 막혀서)
- */
-export const fillContinuation = (row: ExcelJS.Row, cols: number[]) =>
-  cols.forEach((c) => {
-    const cell = row.getCell(c);
-    cell.fill = CONT_FILL;
-    cell.dataValidation = {
-      type: 'custom',
-      allowBlank: true,
-      formulae: [`LEN(${cell.address})=0`],
-      showErrorMessage: true,
-      errorStyle: 'stop',
-      errorTitle: '회색 칸은 비워 두세요',
-      error: '위 FAQ의 두 번째 이후 답변 줄이에요. 답변·링크·이메일·전화만 적어 주세요. 새 FAQ는 새 줄에 질문부터 적어 주세요.',
-    };
-  });
-
 const headerKey = (s: string) => s.normalize('NFKC').replace(/[\s*]/g, '');
 
 /** 첫 줄 제목으로 칸 위치 찾기 (칸 순서가 바뀌어도 읽음) */
@@ -369,72 +394,276 @@ export function sortRows<T extends { id: number }>(rows: T[], orderKeys: string[
   });
 }
 
-/** 'FAQ' 시트 (행정실 FAQ) — 답변 카드 하나가 한 줄 */
-export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[], name: string = SHEET_NAME): ExcelJS.Worksheet {
-  const ws = addStyledSheet(wb, name, COLUMNS.map((c) => ({ ...c, numeric: c.key === 'id' })));
-  const faqLevelCols = COLUMNS.map((c, i) => (c.faqLevel ? i + 1 : 0)).filter(Boolean);
+// ───────────────────────── 답변 묶음 (행정실 FAQ·선배 FAQ 같이 씀) ─────────────────────────
+
+/** 묶음 번호를 넣은 칸 제목 — '답변' → '답변2', '답변(영어)' → '답변2(영어)' */
+export function groupHeader(header: string, n: number): string {
+  const i = header.indexOf('(');
+  return i < 0 ? `${header}${n}` : `${header.slice(0, i)}${n}${header.slice(i)}`;
+}
+
+/** 답변 묶음 칸 정의 (key는 'answer#2' 꼴) */
+export function groupColumns<K extends string>(fields: GroupField<K>[], groups: number) {
+  const out: { key: string; header: string; width: number }[] = [];
+  for (let n = 1; n <= groups; n++) for (const f of fields) out.push({ key: `${f.key}#${n}`, header: groupHeader(f.header, n), width: f.width });
+  return out;
+}
+
+/** 답변 묶음 값 → addRow에 넣을 모양 */
+export function groupValues<K extends string>(fields: GroupField<K>[], cards: Record<K, string>[]): Record<string, string> {
+  const out: Record<string, string> = {};
+  cards.forEach((c, i) => fields.forEach((f) => (out[`${f.key}#${i + 1}`] = c[f.key])));
+  return out;
+}
+
+/**
+ * 한 줄 한 FAQ 시트 꾸미기
+ *   - 답변 묶음마다 칸 제목 색을 번갈아 (묶음 경계가 보이게)
+ *   - VISIBLE_GROUPS보다 뒤의 묶음은 그룹으로 묶어 접어 둠 (왼쪽 위 [2] / [+]로 펼침)
+ *   - 첫 줄과 왼쪽 칸(번호 ~ freezeCol)을 고정
+ */
+export function styleGroupedSheet(ws: ExcelJS.Worksheet, opts: { firstGroupCol: number; perGroup: number; groups: number; freezeCol: number }) {
+  const { firstGroupCol, perGroup, groups, freezeCol } = opts;
+  const header = ws.getRow(1);
+  for (let n = 1; n <= groups; n++) {
+    for (let j = 0; j < perGroup; j++) {
+      const col = firstGroupCol + (n - 1) * perGroup + j;
+      header.getCell(col).fill = n % 2 === 1 ? GROUP_FILL : PLAIN_FILL;
+      if (n > VISIBLE_GROUPS) {
+        const c = ws.getColumn(col);
+        c.outlineLevel = 1;
+        c.hidden = true;
+      }
+    }
+  }
+  if (groups > VISIBLE_GROUPS) ws.properties.outlineLevelCol = 1;
+  ws.views = [{ state: 'frozen', xSplit: freezeCol, ySplit: 1 }];
+}
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * 첫 줄에서 답변 묶음 칸 찾기 (칸 순서·묶음 수 상관없음)
+ *   groups: 묶음 번호 순, 칸이 다 있는 묶음만 / missing: 일부 칸만 있는 묶음의 빠진 칸 제목
+ */
+export function findGroups<K extends string>(
+  ws: ExcelJS.Worksheet,
+  fields: GroupField<K>[]
+): { groups: { n: number; col: Record<K, number> }[]; missing: string[] } {
+  const pats = fields.map((f) => {
+    const h = headerKey(f.header);
+    const i = h.indexOf('(');
+    const pre = i < 0 ? h : h.slice(0, i);
+    const suf = i < 0 ? '' : h.slice(i);
+    return { key: f.key, re: new RegExp(`^${escapeRe(pre)}(\\d+)${escapeRe(suf)}$`) };
+  });
+  const byN = new Map<number, Partial<Record<K, number>>>();
+  ws.getRow(1).eachCell({ includeEmpty: false }, (cell, colNumber) => {
+    const k = headerKey(cellText(cell.value));
+    for (const p of pats) {
+      const m = k.match(p.re);
+      if (!m) continue;
+      const n = Number(m[1]);
+      if (!byN.has(n)) byN.set(n, {});
+      const g = byN.get(n)!;
+      if (!g[p.key]) g[p.key] = colNumber;
+      break;
+    }
+  });
+  const groups: { n: number; col: Record<K, number> }[] = [];
+  const missing: string[] = [];
+  for (const n of [...byN.keys()].sort((a, b) => a - b)) {
+    const g = byN.get(n)!;
+    const lack = fields.filter((f) => !g[f.key]);
+    if (lack.length) missing.push(...lack.map((f) => groupHeader(f.header, n)));
+    else groups.push({ n, col: g as Record<K, number> });
+  }
+  return { groups, missing };
+}
+
+/** 한 줄의 답변 묶음 읽기 — 칸이 모두 빈 묶음은 건너뜀 (카드 순서는 묶음 번호 순) */
+export function readGroups<K extends string>(
+  row: ExcelJS.Row,
+  groups: { n: number; col: Record<K, number> }[],
+  fields: GroupField<K>[]
+): { cards: Record<K, string>[]; nums: number[] } {
+  const cards: Record<K, string>[] = [];
+  const nums: number[] = [];
+  for (const g of groups) {
+    const c = {} as Record<K, string>;
+    for (const f of fields) c[f.key] = f.norm(cellText(row.getCell(g.col[f.key]).value));
+    if (fields.some((f) => c[f.key] !== '')) {
+      cards.push(c);
+      nums.push(g.n);
+    }
+  }
+  return { cards, nums };
+}
+
+/** 칸 제목에 '답변1' 같은 묶음 칸이 있으면 새 모양 (FAQ 하나가 한 줄) */
+export const isGroupedSheet = (ws: ExcelJS.Worksheet) => {
+  let found = false;
+  ws.getRow(1).eachCell({ includeEmpty: false }, (cell) => {
+    if (/^답변\d+$/.test(headerKey(cellText(cell.value)))) found = true;
+  });
+  return found;
+};
+
+// ───────────────────────── 행정실 FAQ 시트 만들기 ─────────────────────────
+
+/** 가장 많은 답변 수 (묶음 수를 정할 때) */
+export const maxFaqCards = (rows: DbFaqRow[]) => rows.reduce((m, r) => Math.max(m, dbRowToView(r).cards.length), 0);
+
+/**
+ * 행정실 FAQ 시트 — FAQ 하나가 한 줄
+ *   groups: 답변 묶음 수 (안 주면 MIN_FAQ_GROUPS와 이 시트의 가장 많은 답변 수 중 큰 값 — 카드를 빠뜨리지 않음)
+ */
+export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[], name: string = FAQ_SHEETS[0].name, groups?: number): ExcelJS.Worksheet {
+  const n = Math.max(groups ?? 0, MIN_FAQ_GROUPS, maxFaqCards(rows));
+  const columns = [...FAQ_HEAD_COLUMNS, ...groupColumns(FAQ_CARD_FIELDS, n), ...FAQ_TAIL_COLUMNS];
+  const ws = addStyledSheet(wb, name, columns.map((c) => ({ ...c, numeric: c.key === 'id' })));
 
   for (const row of sortRows(rows)) {
     const view = dbRowToView(row);
-    const cards = view.cards.length ? view.cards : [{ answer: '', answer_en: '', url: '', email: '', phone: '' }];
-    cards.forEach((card, i) => {
-      const values: Record<ColumnKey, string | number> = {
-        id: i === 0 ? Number(row.id) : '',
-        audience: i === 0 ? AUDIENCE_LABEL[view.audience] : '',
-        maincategory_ko: i === 0 ? view.maincategory_ko : '',
-        maincategory_en: i === 0 ? view.maincategory_en : '',
-        subcategory_ko: i === 0 ? view.subcategory_ko : '',
-        subcategory_en: i === 0 ? view.subcategory_en : '',
-        question_ko: i === 0 ? view.question_ko : '',
-        question_en: i === 0 ? view.question_en : '',
-        answer: card.answer,
-        answer_en: card.answer_en,
-        url: card.url,
-        email: card.email,
-        phone: card.phone,
-        manager: i === 0 ? view.manager : '',
-        delete: '',
-      };
-      const added = ws.addRow(values);
-      if (i > 0) fillContinuation(added, faqLevelCols);
+    ws.addRow({
+      id: Number(row.id),
+      audience: AUDIENCE_LABEL[view.audience],
+      maincategory_ko: view.maincategory_ko,
+      maincategory_en: view.maincategory_en,
+      subcategory_ko: view.subcategory_ko,
+      subcategory_en: view.subcategory_en,
+      question_ko: view.question_ko,
+      question_en: view.question_en,
+      ...groupValues(FAQ_CARD_FIELDS, view.cards as unknown as Record<keyof ExcelCard, string>[]),
+      manager: view.manager,
+      delete: '',
     });
   }
+
+  styleGroupedSheet(ws, {
+    firstGroupCol: FAQ_HEAD_COLUMNS.length + 1,
+    perGroup: FAQ_CARD_FIELDS.length,
+    groups: n,
+    freezeCol: FAQ_HEAD_COLUMNS.findIndex((c) => c.key === 'question_ko') + 1, // 번호 ~ 질문
+  });
 
   // 대상·삭제 드롭다운
   addListValidation(
     ws,
-    COLUMNS.findIndex((c) => c.key === 'audience') + 1,
+    columns.findIndex((c) => c.key === 'audience') + 1,
     [AUDIENCE_LABEL.undergraduate, AUDIENCE_LABEL.graduate, AUDIENCE_LABEL.all],
     '대상',
     '학부, 대학원, 공통 중에서 골라 주세요.'
   );
-  addListValidation(ws, COLUMNS.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "FAQ를 지우려면 '삭제'를 골라 주세요.");
+  addListValidation(ws, columns.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "FAQ를 지우려면 '삭제'를 골라 주세요.");
   return ws;
 }
 
 // ───────────────────────── 엑셀 읽기 ─────────────────────────
 
-/** 'FAQ' 시트 읽기 — 시트가 없으면 null (그 시트는 바뀐 게 없는 것으로) */
-export function parseFaqSheet(
-  ws: ExcelJS.Worksheet | undefined,
-  sheetName: string = SHEET_NAME,
-  defaultAudience: Audience = DEFAULT_AUDIENCE,
-  rowOffset = 0 // 여러 시트를 합칠 때 줄 번호가 겹치지 않게 (hobitWorkbook이 끝에 되돌림)
-): { faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] } | null {
-  if (!ws) return null;
-  const SHEET = sheetName;
+type SheetParse = { faqs: ParsedFaq[]; problems: Issue[]; warnings: Issue[] };
+
+const missingHeaderMessage = (headers: string[]) =>
+  `칸 제목 ${headers.map((h) => `'${h}'`).join(', ')}을(를) 찾지 못했어요. 받은 엑셀의 첫 줄(칸 제목)은 그대로 둬 주세요.`;
+
+/** 번호 칸 읽기 */
+function readId(idText: string): { id: number | null; badId: boolean } {
+  if (!idText) return { id: null, badId: false };
+  return /^\d+$/.test(idText) ? { id: Number(idText), badId: false } : { id: null, badId: true };
+}
+
+/** FAQ 첫 줄의 대상·삭제 칸 읽기 */
+function readFaqHead(r: number, audienceText: string, delText: string, defaultAudience: Audience, problems: Issue[]) {
+  let audience: Audience = defaultAudience;
+  const audienceBlank = !audienceText;
+  if (audienceText) {
+    const a = audienceFromLabel(audienceText);
+    if (a) audience = a;
+    else problems.push({ row: r, message: `대상에는 학부, 대학원, 공통만 쓸 수 있어요. (지금: '${audienceText}')` });
+  }
+  let del = false;
+  if (delText === DELETE_MARK) del = true;
+  else if (delText) problems.push({ row: r, message: `삭제 칸에는 '삭제'만 쓸 수 있어요. (지금: '${delText}')` });
+  return { audience, audienceBlank, del };
+}
+
+/** 새 모양 (FAQ 하나가 한 줄) 읽기 */
+function parseGroupedFaqSheet(ws: ExcelJS.Worksheet, defaultAudience: Audience): SheetParse {
   const problems: Issue[] = [];
   const warnings: Issue[] = [];
   const faqs: ParsedFaq[] = [];
 
-  const colOf = findColumns(ws, COLUMNS);
-  const missing = COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]);
+  const colOf = findColumns(ws, FAQ_FIXED_COLUMNS);
+  const { groups, missing: missingGroup } = findGroups(ws, FAQ_CARD_FIELDS);
+  const missing = [...FAQ_FIXED_COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]).map((c) => c.header), ...missingGroup];
   if (missing.length) {
-    problems.push({
-      row: 1,
-      message: `칸 제목 ${missing.map((c) => `'${c.header}'`).join(', ')}을(를) 찾지 못했어요. 받은 엑셀의 첫 줄(칸 제목)은 그대로 둬 주세요.`,
+    problems.push({ row: 1, message: missingHeaderMessage(missing) });
+    return { faqs, problems, warnings };
+  }
+
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const text = (k: FaqFixedKey) => (colOf[k] ? cellText(row.getCell(colOf[k]).value) : '');
+    const { cards, nums } = readGroups(row, groups, FAQ_CARD_FIELDS);
+    if (!cards.length && FAQ_FIXED_COLUMNS.every((c) => normLine(text(c.key)) === '')) continue;
+
+    const idText = normLine(text('id'));
+    const question = normLine(text('question_ko'));
+    const { id, badId } = readId(idText);
+
+    for (const g of groups) {
+      if (typeof row.getCell(g.col.phone).value === 'number') {
+        warnings.push({ row: r, message: `전화${g.n} 칸이 숫자로 저장돼서 맨 앞 0이 빠졌을 수 있어요. 확인해 주세요.` });
+      }
+    }
+
+    if (!question) {
+      problems.push({
+        row: r,
+        message: idText
+          ? `번호 ${idText}인 줄의 질문이 비어 있어요. 질문을 적어 주세요.`
+          : '질문이 비어 있어요. FAQ 하나는 한 줄에 적어요. 두 번째 답변은 같은 줄의 답변2 칸에 적어 주세요.',
+      });
+      continue;
+    }
+    if (badId) problems.push({ row: r, message: `번호 칸('${idText}')을 읽지 못했어요. 번호 칸은 고치지 말고, 새 FAQ는 번호를 비워 주세요.` });
+    const head = readFaqHead(r, normLine(text('audience')), normLine(text('delete')), defaultAudience, problems);
+
+    faqs.push({
+      row: r,
+      id,
+      badId,
+      del: head.del,
+      audienceBlank: head.audienceBlank,
+      view: {
+        audience: head.audience,
+        maincategory_ko: normLine(text('maincategory_ko')),
+        maincategory_en: normLine(text('maincategory_en')),
+        subcategory_ko: normLine(text('subcategory_ko')),
+        subcategory_en: normLine(text('subcategory_en')),
+        question_ko: question,
+        question_en: normLine(text('question_en')),
+        manager: normLine(text('manager')),
+        cards: cards as unknown as ExcelCard[],
+      },
+      cardRows: cards.map(() => r),
+      cardGroups: nums,
     });
-    return { faqs, problems: problems.map(inSheet(SHEET)), warnings };
+  }
+  return { faqs, problems, warnings };
+}
+
+/** 예전 모양 (답변 카드 하나가 한 줄) 읽기 — 질문 칸이 빈 줄은 바로 위 FAQ의 다음 답변 */
+function parseLegacyFaqSheet(ws: ExcelJS.Worksheet, defaultAudience: Audience): SheetParse {
+  const problems: Issue[] = [];
+  const warnings: Issue[] = [];
+  const faqs: ParsedFaq[] = [];
+
+  const colOf = findColumns(ws, LEGACY_COLUMNS);
+  const missing = LEGACY_COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]);
+  if (missing.length) {
+    problems.push({ row: 1, message: missingHeaderMessage(missing.map((c) => c.header)) });
+    return { faqs, problems, warnings };
   }
 
   let cur: ParsedFaq | null = null;
@@ -443,7 +672,7 @@ export function parseFaqSheet(
     const raw = (k: ColumnKey) => (colOf[k] ? row.getCell(colOf[k]).value : null);
     const text = (k: ColumnKey) => cellText(raw(k));
 
-    const allEmpty = COLUMNS.every((c) => !colOf[c.key] || normLine(text(c.key)) === '');
+    const allEmpty = LEGACY_COLUMNS.every((c) => !colOf[c.key] || normLine(text(c.key)) === '');
     if (allEmpty) continue;
 
     const idText = normLine(text('id'));
@@ -459,13 +688,7 @@ export function parseFaqSheet(
     if (typeof raw('phone') === 'number') {
       warnings.push({ row: r, message: "전화 칸이 숫자로 저장돼서 맨 앞 0이 빠졌을 수 있어요. 확인해 주세요." });
     }
-
-    let id: number | null = null;
-    let badId = false;
-    if (idText) {
-      if (/^\d+$/.test(idText)) id = Number(idText);
-      else badId = true;
-    }
+    const { id, badId } = readId(idText);
 
     if (!question) {
       // 질문이 빈 줄 = 위 FAQ의 다음 답변
@@ -504,27 +727,16 @@ export function parseFaqSheet(
     if (badId) {
       problems.push({ row: r, message: `번호 칸('${idText}')을 읽지 못했어요. 번호 칸은 고치지 말고, 새 FAQ는 번호를 비워 주세요.` });
     }
-    const audienceText = normLine(text('audience'));
-    let audience: Audience = defaultAudience;
-    let audienceBlank = false;
-    if (!audienceText) audienceBlank = true;
-    else {
-      const a = audienceFromLabel(audienceText);
-      if (a) audience = a;
-      else problems.push({ row: r, message: `대상에는 학부, 대학원, 공통만 쓸 수 있어요. (지금: '${audienceText}')` });
-    }
-    let del = false;
-    if (delText === DELETE_MARK) del = true;
-    else if (delText) problems.push({ row: r, message: `삭제 칸에는 '삭제'만 쓸 수 있어요. (지금: '${delText}')` });
+    const head = readFaqHead(r, normLine(text('audience')), delText, defaultAudience, problems);
 
     cur = {
       row: r,
       id,
       badId,
-      del,
-      audienceBlank,
+      del: head.del,
+      audienceBlank: head.audienceBlank,
       view: {
-        audience,
+        audience: head.audience,
         maincategory_ko: normLine(text('maincategory_ko')),
         maincategory_en: normLine(text('maincategory_en')),
         subcategory_ko: normLine(text('subcategory_ko')),
@@ -542,15 +754,27 @@ export function parseFaqSheet(
     }
     faqs.push(cur);
   }
+  return { faqs, problems, warnings };
+}
 
-  // 줄 번호를 합친 파일 기준으로 (시트별 문제는 이미 시트 이름이 붙어 있어 그대로)
+/** 행정실 FAQ 시트 하나 읽기 (새 모양·예전 모양 자동 구분) — 시트가 없으면 null (그 시트는 바뀐 게 없는 것으로) */
+export function parseFaqSheet(
+  ws: ExcelJS.Worksheet | undefined,
+  sheetName: string = SHEET_NAME,
+  defaultAudience: Audience = DEFAULT_AUDIENCE,
+  rowOffset = 0 // 여러 시트를 합칠 때 줄 번호가 겹치지 않게 (hobitWorkbook이 끝에 되돌림)
+): SheetParse | null {
+  if (!ws) return null;
+  const { faqs, problems, warnings } = isGroupedSheet(ws) ? parseGroupedFaqSheet(ws, defaultAudience) : parseLegacyFaqSheet(ws, defaultAudience);
+
+  // 줄 번호를 합친 파일 기준으로 (시트별 문제는 시트 이름이 붙어 있어 그대로)
   if (rowOffset) {
     for (const f of faqs) {
       f.row += rowOffset;
       f.cardRows = f.cardRows.map((x) => x + rowOffset);
     }
   }
-  return { faqs, problems: problems.map(inSheet(SHEET)), warnings: warnings.map(inSheet(SHEET)) };
+  return { faqs, problems: problems.map(inSheet(sheetName)), warnings: warnings.map(inSheet(sheetName)) };
 }
 
 // ───────────────────────── 비교 (DB ↔ 엑셀) ─────────────────────────
@@ -731,7 +955,14 @@ export function buildImportPlan(
     if (!v.cards.some((c) => c.answer)) problems.push({ row: f.row, message: '답변이 비어 있어요. 답변을 하나 이상 적어 주세요.' });
     else {
       v.cards.forEach((c, i) => {
-        if (!c.answer) problems.push({ row: f.cardRows[i], message: '답변 칸이 비어 있어요. 이 줄의 답변을 적거나 줄을 지워 주세요.' });
+        if (c.answer) return;
+        const g = f.cardGroups?.[i];
+        problems.push({
+          row: f.cardRows[i],
+          message: g
+            ? `답변${g} 칸이 비어 있어요. 답변${g}을(를) 적거나, 필요 없는 답변이면 답변${g} 묶음 칸(링크${g}·이메일${g}·전화${g} 포함)을 모두 비워 주세요.`
+            : '답변 칸이 비어 있어요. 이 줄의 답변을 적거나 줄을 지워 주세요.',
+        });
       });
     }
     for (const [field, max] of Object.entries(MAX_LEN) as [keyof FaqView, number][]) {
@@ -760,7 +991,9 @@ export function buildImportPlan(
         v.cards.forEach((c, i) => {
           const p = prev.cards[i];
           if (p && p.answer !== c.answer && c.answer_en && p.answer_en === c.answer_en) {
-            warnings.push({ row: f.cardRows[i], message: '답변은 바뀌었는데 답변(영어)은 그대로예요. 영어 칸을 비우면 적용할 때 새로 번역해요.' });
+            const g = f.cardGroups?.[i];
+            const [ko, en] = g ? [`답변${g}`, groupHeader('답변(영어)', g)] : ['답변', '답변(영어)'];
+            warnings.push({ row: f.cardRows[i], message: `${ko}은(는) 바뀌었는데 ${en}은(는) 그대로예요. 영어 칸을 비우면 적용할 때 새로 번역해요.` });
           }
         });
       } else unchanged++;

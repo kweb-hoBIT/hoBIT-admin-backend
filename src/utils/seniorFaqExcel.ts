@@ -1,7 +1,9 @@
 /**
- * '선배 FAQ' 시트 (senior_faqs) — 행정실 FAQ 시트와 같은 방식, 답변 카드 하나가 한 줄
- *   번호 | 대분류 | 대분류(영어) | 소분류 | 소분류(영어) | 세부 항목 | 세부 항목(영어) | 제목 | 제목(영어) | 답변 | 답변(영어) | 링크 | 위도 | 경도 | 담당자 | 삭제
- *   세부 항목 칸이 빈 줄은 바로 위 선배 FAQ의 다음 답변
+ * '선배 FAQ' 시트 (senior_faqs) — 행정실 FAQ 시트와 같은 방식, 선배 FAQ 하나가 한 줄
+ *   번호 | 대분류 | 대분류(영어) | 소분류 | 소분류(영어) | 세부 항목 | 세부 항목(영어)
+ *     | 제목1 | 제목1(영어) | 답변1 | 답변1(영어) | 링크1 | 위도1 | 경도1 | 제목2 | … | 담당자 | 삭제
+ *   답변 묶음 수 = 3과 데이터의 가장 많은 답변 수 중 큰 값, 4번째부터는 접어 둠
+ * 예전 모양 (답변 카드 하나가 한 줄, 칸 제목 '답변') 파일도 읽음 — 세부 항목 칸이 빈 줄은 바로 위 선배 FAQ의 다음 답변
  * 선배 FAQ 답변 카드는 행정실 FAQ와 모양이 달라요 (DB answer_ko/answer_en):
  *   [{ "title": "...", "answer": "...", "url": "...", "map": { "latitude": "", "longitude": "" } }]
  *   제목은 한국어·영어가 따로, 링크·지도는 영어 카드에도 똑같이
@@ -14,15 +16,22 @@ import {
   cellText,
   Change,
   DELETE_MARK,
-  fillContinuation,
   findColumns,
+  findGroups,
+  GroupField,
+  groupColumns,
+  groupValues,
+  isGroupedSheet,
   inSheet,
   Issue,
   looseKey,
   normLine,
   normList,
   normMulti,
+  readGroups,
   sortRows,
+  styleGroupedSheet,
+  VISIBLE_GROUPS,
 } from './faqExcel';
 
 export const SENIOR_SHEET_NAME = '선배 FAQ';
@@ -81,13 +90,15 @@ export interface ParsedSenior {
   del: boolean;
   view: SeniorView;
   cardRows: number[];
+  cardGroups?: number[]; // 새 모양: 각 카드의 답변 묶음 번호
 }
 
 type Key =
   | 'id' | 'maincategory_ko' | 'maincategory_en' | 'subcategory_ko' | 'subcategory_en' | 'detailcategory_ko' | 'detailcategory_en'
   | 'title' | 'title_en' | 'answer' | 'answer_en' | 'url' | 'latitude' | 'longitude' | 'manager' | 'delete';
 
-export const SENIOR_COLUMNS: { key: Key; header: string; width: number; level: boolean }[] = [
+/** 예전 모양 (답변 카드 하나가 한 줄) — 올린 파일을 읽을 때만 씀 */
+export const LEGACY_SENIOR_COLUMNS: { key: Key; header: string; width: number; level: boolean }[] = [
   { key: 'id', header: '번호', width: 7, level: true },
   { key: 'maincategory_ko', header: '대분류', width: 14, level: true },
   { key: 'maincategory_en', header: '대분류(영어)', width: 18, level: true },
@@ -104,6 +115,32 @@ export const SENIOR_COLUMNS: { key: Key; header: string; width: number; level: b
   { key: 'longitude', header: '경도', width: 11, level: false },
   { key: 'manager', header: '담당자', width: 12, level: true },
   { key: 'delete', header: '삭제', width: 8, level: true },
+];
+
+// 새 모양 — 선배 FAQ 칸 (답변 묶음 앞뒤)
+type FixedKey = Exclude<Key, keyof SeniorCard>;
+const HEAD_COLUMNS: { key: FixedKey; header: string; width: number }[] = [
+  { key: 'id', header: '번호', width: 7 },
+  { key: 'maincategory_ko', header: '대분류', width: 12 },
+  { key: 'maincategory_en', header: '대분류(영어)', width: 14 },
+  { key: 'subcategory_ko', header: '소분류', width: 12 },
+  { key: 'subcategory_en', header: '소분류(영어)', width: 14 },
+  { key: 'detailcategory_ko', header: '세부 항목', width: 16 },
+  { key: 'detailcategory_en', header: '세부 항목(영어)', width: 18 },
+];
+const TAIL_COLUMNS: { key: FixedKey; header: string; width: number }[] = [
+  { key: 'manager', header: '담당자', width: 12 },
+  { key: 'delete', header: '삭제', width: 8 },
+];
+export const SENIOR_FIXED_COLUMNS = [...HEAD_COLUMNS, ...TAIL_COLUMNS];
+export const SENIOR_CARD_FIELDS: GroupField<keyof SeniorCard>[] = [
+  { key: 'title', header: '제목', width: 16, norm: (v) => normLine(v) },
+  { key: 'title_en', header: '제목(영어)', width: 18, norm: (v) => normLine(v) },
+  { key: 'answer', header: '답변', width: 50, norm: (v) => normMulti(v) },
+  { key: 'answer_en', header: '답변(영어)', width: 50, norm: (v) => normMulti(v) },
+  { key: 'url', header: '링크', width: 28, norm: (v) => normList(v) },
+  { key: 'latitude', header: '위도', width: 10, norm: (v) => normLine(v) },
+  { key: 'longitude', header: '경도', width: 10, norm: (v) => normLine(v) },
 ];
 
 const LABEL: Record<string, string> = {
@@ -197,49 +234,123 @@ export function seniorViewToAnswers(v: SeniorView): { answer_ko: SeniorAnswerCar
 
 // ───────────────────────── 엑셀 만들기 ─────────────────────────
 
+/** 선배 FAQ 시트 — 선배 FAQ 하나가 한 줄. 답변 묶음은 3개 이상, 데이터의 가장 많은 답변 수만큼 (카드를 빠뜨리지 않음) */
 export function addSeniorSheet(wb: ExcelJS.Workbook, rows: SeniorDbRow[]): ExcelJS.Worksheet {
-  const ws = addStyledSheet(wb, SHEET, SENIOR_COLUMNS.map((c) => ({ ...c, numeric: c.key === 'id' })));
-  const levelCols = SENIOR_COLUMNS.map((c, i) => (c.level ? i + 1 : 0)).filter(Boolean);
-  for (const row of sortRows(rows, ORDER_KEYS)) {
-    const v = seniorRowToView(row);
-    const cards = v.cards.length ? v.cards : [{ title: '', title_en: '', answer: '', answer_en: '', url: '', latitude: '', longitude: '' }];
-    cards.forEach((c, i) => {
-      const first = i === 0;
-      const added = ws.addRow({
-        id: first ? Number(row.id) : '',
-        maincategory_ko: first ? v.maincategory_ko : '',
-        maincategory_en: first ? v.maincategory_en : '',
-        subcategory_ko: first ? v.subcategory_ko : '',
-        subcategory_en: first ? v.subcategory_en : '',
-        detailcategory_ko: first ? v.detailcategory_ko : '',
-        detailcategory_en: first ? v.detailcategory_en : '',
-        ...c,
-        manager: first ? v.manager : '',
-        delete: '',
-      });
-      if (!first) fillContinuation(added, levelCols);
+  const views = sortRows(rows, ORDER_KEYS).map((row) => ({ id: Number(row.id), v: seniorRowToView(row) }));
+  const groups = Math.max(VISIBLE_GROUPS, ...views.map((x) => x.v.cards.length));
+  const columns = [...HEAD_COLUMNS, ...groupColumns(SENIOR_CARD_FIELDS, groups), ...TAIL_COLUMNS];
+  const ws = addStyledSheet(wb, SHEET, columns.map((c) => ({ ...c, numeric: c.key === 'id' })));
+  for (const { id, v } of views) {
+    ws.addRow({
+      id,
+      maincategory_ko: v.maincategory_ko,
+      maincategory_en: v.maincategory_en,
+      subcategory_ko: v.subcategory_ko,
+      subcategory_en: v.subcategory_en,
+      detailcategory_ko: v.detailcategory_ko,
+      detailcategory_en: v.detailcategory_en,
+      ...groupValues(SENIOR_CARD_FIELDS, v.cards as unknown as Record<keyof SeniorCard, string>[]),
+      manager: v.manager,
+      delete: '',
     });
   }
-  addListValidation(ws, SENIOR_COLUMNS.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "선배 FAQ를 지우려면 '삭제'를 골라 주세요.");
+  styleGroupedSheet(ws, {
+    firstGroupCol: HEAD_COLUMNS.length + 1,
+    perGroup: SENIOR_CARD_FIELDS.length,
+    groups,
+    freezeCol: HEAD_COLUMNS.findIndex((c) => c.key === 'detailcategory_ko') + 1, // 번호 ~ 세부 항목
+  });
+  addListValidation(ws, columns.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "선배 FAQ를 지우려면 '삭제'를 골라 주세요.");
   return ws;
 }
 
 // ───────────────────────── 엑셀 읽기 ─────────────────────────
 
+const missingHeaderMessage = (headers: string[]) =>
+  `칸 제목 ${headers.map((h) => `'${h}'`).join(', ')}을(를) 찾지 못했어요. 받은 엑셀의 첫 줄(칸 제목)은 그대로 둬 주세요.`;
+
+/** 선배 FAQ 시트 읽기 (새 모양·예전 모양 자동 구분) — 시트가 없으면 null */
 export function parseSeniorSheet(ws: ExcelJS.Worksheet | undefined): { items: ParsedSenior[]; problems: Issue[]; warnings: Issue[] } | null {
   if (!ws) return null;
+  return isGroupedSheet(ws) ? parseGroupedSeniorSheet(ws) : parseLegacySeniorSheet(ws);
+}
+
+/** 새 모양 (선배 FAQ 하나가 한 줄) 읽기 */
+function parseGroupedSeniorSheet(ws: ExcelJS.Worksheet): { items: ParsedSenior[]; problems: Issue[]; warnings: Issue[] } {
+  const problems: Issue[] = [];
+  const items: ParsedSenior[] = [];
+  const done = () => ({ items, problems: problems.map(inSheet(SHEET)), warnings: [] as Issue[] });
+
+  const colOf = findColumns(ws, SENIOR_FIXED_COLUMNS);
+  const { groups, missing: missingGroup } = findGroups(ws, SENIOR_CARD_FIELDS);
+  const missing = [...SENIOR_FIXED_COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]).map((c) => c.header), ...missingGroup];
+  if (missing.length) {
+    problems.push({ row: 1, message: missingHeaderMessage(missing) });
+    return done();
+  }
+
+  for (let r = 2; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const text = (k: FixedKey) => (colOf[k] ? cellText(row.getCell(colOf[k]).value) : '');
+    const { cards, nums } = readGroups(row, groups, SENIOR_CARD_FIELDS);
+    if (!cards.length && SENIOR_FIXED_COLUMNS.every((c) => normLine(text(c.key)) === '')) continue;
+
+    const idText = normLine(text('id'));
+    const detail = normLine(text('detailcategory_ko'));
+    const delText = normLine(text('delete'));
+    let id: number | null = null;
+    let badId = false;
+    if (idText) {
+      if (/^\d+$/.test(idText)) id = Number(idText);
+      else badId = true;
+    }
+    if (!detail) {
+      problems.push({
+        row: r,
+        message: idText
+          ? `번호 ${idText}인 줄의 세부 항목이 비어 있어요. 세부 항목을 적어 주세요.`
+          : '세부 항목이 비어 있어요. 선배 FAQ 하나는 한 줄에 적어요. 두 번째 답변은 같은 줄의 제목2·답변2 칸에 적어 주세요.',
+      });
+      continue;
+    }
+    if (badId) problems.push({ row: r, message: `번호 칸('${idText}')을 읽지 못했어요. 번호 칸은 고치지 말고, 새 선배 FAQ는 번호를 비워 주세요.` });
+    let del = false;
+    if (delText === DELETE_MARK) del = true;
+    else if (delText) problems.push({ row: r, message: `삭제 칸에는 '삭제'만 쓸 수 있어요. (지금: '${delText}')` });
+
+    items.push({
+      row: r,
+      id,
+      badId,
+      del,
+      view: {
+        maincategory_ko: normLine(text('maincategory_ko')),
+        maincategory_en: normLine(text('maincategory_en')),
+        subcategory_ko: normLine(text('subcategory_ko')),
+        subcategory_en: normLine(text('subcategory_en')),
+        detailcategory_ko: detail,
+        detailcategory_en: normLine(text('detailcategory_en')),
+        manager: normLine(text('manager')),
+        cards: cards as unknown as SeniorCard[],
+      },
+      cardRows: cards.map(() => r),
+      cardGroups: nums,
+    });
+  }
+  return done();
+}
+
+/** 예전 모양 (답변 카드 하나가 한 줄) 읽기 — 세부 항목 칸이 빈 줄은 바로 위 선배 FAQ의 다음 답변 */
+function parseLegacySeniorSheet(ws: ExcelJS.Worksheet): { items: ParsedSenior[]; problems: Issue[]; warnings: Issue[] } {
   const problems: Issue[] = [];
   const warnings: Issue[] = [];
   const items: ParsedSenior[] = [];
   const done = () => ({ items, problems: problems.map(inSheet(SHEET)), warnings: warnings.map(inSheet(SHEET)) });
 
-  const colOf = findColumns(ws, SENIOR_COLUMNS);
-  const missing = SENIOR_COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]);
+  const colOf = findColumns(ws, LEGACY_SENIOR_COLUMNS);
+  const missing = LEGACY_SENIOR_COLUMNS.filter((c) => c.key !== 'delete' && !colOf[c.key]);
   if (missing.length) {
-    problems.push({
-      row: 1,
-      message: `칸 제목 ${missing.map((c) => `'${c.header}'`).join(', ')}을(를) 찾지 못했어요. 받은 엑셀의 첫 줄(칸 제목)은 그대로 둬 주세요.`,
-    });
+    problems.push({ row: 1, message: missingHeaderMessage(missing.map((c) => c.header)) });
     return done();
   }
 
@@ -247,7 +358,7 @@ export function parseSeniorSheet(ws: ExcelJS.Worksheet | undefined): { items: Pa
   for (let r = 2; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
     const text = (k: Key) => (colOf[k] ? cellText(row.getCell(colOf[k]).value) : '');
-    if (SENIOR_COLUMNS.every((c) => normLine(text(c.key)) === '')) continue;
+    if (LEGACY_SENIOR_COLUMNS.every((c) => normLine(text(c.key)) === '')) continue;
 
     const idText = normLine(text('id'));
     const detail = normLine(text('detailcategory_ko'));
@@ -443,7 +554,14 @@ export function buildSeniorPlan(
     if (!v.subcategory_ko) problems.push({ row: it.row, message: '소분류가 비어 있어요.' });
     if (!v.cards.some((c) => c.answer)) problems.push({ row: it.row, message: '답변이 비어 있어요. 답변을 하나 이상 적어 주세요.' });
     else v.cards.forEach((c, i) => {
-      if (!c.answer) problems.push({ row: it.cardRows[i], message: '답변 칸이 비어 있어요. 이 줄의 답변을 적거나 줄을 지워 주세요.' });
+      if (c.answer) return;
+      const g = it.cardGroups?.[i];
+      problems.push({
+        row: it.cardRows[i],
+        message: g
+          ? `답변${g} 칸이 비어 있어요. 답변${g}을(를) 적거나, 필요 없는 답변이면 답변${g} 묶음 칸(제목${g}·링크${g}·위도${g}·경도${g} 포함)을 모두 비워 주세요.`
+          : '답변 칸이 비어 있어요. 이 줄의 답변을 적거나 줄을 지워 주세요.',
+      });
     });
     for (const [field, max] of Object.entries(MAX_LEN) as [keyof SeniorView, number][]) {
       const s = v[field] as string;

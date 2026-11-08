@@ -1,5 +1,5 @@
 /**
- * JSON → hoBIT 데이터 엑셀 (사용 방법 · FAQ · 선배 FAQ · 담당자 · 이메일 시트, 첫 양식 만들기용, DB·.env 필요 없음)
+ * JSON → hoBIT 데이터 엑셀 (사용 방법 · 학부/대학원/공통 FAQ · 선배 FAQ · 담당자 · 이메일 시트, FAQ 하나가 한 줄, 첫 양식 만들기용, DB·.env 필요 없음)
  *
  *   npm run build
  *   npm run faq:excel -- <data.json> [out.xlsx]

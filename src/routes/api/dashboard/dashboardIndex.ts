@@ -98,6 +98,51 @@ async function qualityWeeks() {
   }
 }
 
+const QUALITY_DAYS = 14;
+
+/** 최근 14일 일별 답변 품질 + 최근 7일·그 전 7일 합계 (홈 '답변 품질' 그래프) */
+async function qualityDaily() {
+  try {
+    const [rows] = await Pool.query<RowDataPacket[]>(
+      `SELECT DATE_FORMAT(DATE(created_at), '%Y-%m-%d') AS date, latency_ms,
+              answer_status = 'not_found' AS nf, feedback_score = -1 AS down, grounding_issues IS NOT NULL AS gr,
+              classified_by = 'rule' AS rule_c, classified_by IS NOT NULL AS cls
+         FROM question_logs
+        WHERE answer IS NOT NULL AND created_at >= CURDATE() - INTERVAL ${QUALITY_DAYS - 1} DAY`
+    );
+    const rate = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 1000) / 10 : null);
+    const agg = (rs: RowDataPacket[]) => {
+      const n = (k: string) => rs.reduce((t, x) => t + Number(x[k] ?? 0), 0);
+      const ls = rs.map((x) => x.latency_ms).filter((v) => v != null).map(Number);
+      return {
+        total: rs.length,
+        not_found_rate: rate(n('nf'), rs.length),
+        down_rate: rate(n('down'), rs.length),
+        grounding_rate: rate(n('gr'), rs.length),
+        rule_rate: rate(n('rule_c'), n('cls')),
+        latency_p50: pctile(ls, 0.5),
+        latency_p90: pctile(ls, 0.9),
+      };
+    };
+    const day = (offset: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() - offset);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const days = Array.from({ length: QUALITY_DAYS }, (_, i) => day(QUALITY_DAYS - 1 - i));
+    const byDay = new Map<string, RowDataPacket[]>();
+    rows.forEach((x) => byDay.set(String(x.date), [...(byDay.get(String(x.date)) ?? []), x]));
+    return {
+      daily: days.map((d) => ({ date: d, ...agg(byDay.get(d) ?? []) })),
+      current: agg(days.slice(-7).flatMap((d) => byDay.get(d) ?? [])),
+      previous: agg(days.slice(0, 7).flatMap((d) => byDay.get(d) ?? [])),
+    };
+  } catch (err: any) {
+    if (err.code !== "ER_BAD_FIELD_ERROR") console.error("[dashboard] 일별 답변 품질 집계 실패:", err.message);
+    return null;
+  }
+}
+
 // 띄어쓰기·문장부호·대소문자만 다른 질문은 같은 질문으로 묶음 ("행정실 운영시간?" = "행정실 운영 시간")
 const questionKey = (q: string) => q.toLowerCase().replace(/[\s?!.,~'"·…]+/g, "");
 
@@ -108,7 +153,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
     const q = <T extends RowDataPacket[]>(sql: string, params: unknown[] = []) =>
       Pool.query<T>(sql, params).then(([rows]) => rows);
 
-    const [quality, tests] = await Promise.all([qualityWeeks(), latestTests()]);
+    const [quality, qualityDays, tests] = await Promise.all([qualityWeeks(), qualityDaily(), latestTests()]);
     const [totals, daily, topFaqs, topQuestions, feedbackCounts, recentFeedbacks, pipeline] = await Promise.all([
       q(`SELECT
            SUM(created_at >= CURDATE()) AS today,
@@ -185,6 +230,7 @@ router.get("/", auth, async (_req: Request, res: Response) => {
         top_questions: notFound,
         pipeline,
         quality,
+        quality_daily: qualityDays,
         tests,
         recent_feedbacks: recentFeedbacks.map((r) => ({
           user_feedback_id: r.id,

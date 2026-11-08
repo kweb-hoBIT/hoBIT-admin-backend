@@ -1,12 +1,15 @@
 /**
- * JSON → hoBIT 데이터 엑셀 (사용 방법 · 학부/대학원/공통 FAQ · 선배 FAQ · 담당자 · 이메일 시트, FAQ 하나가 한 줄, 첫 양식 만들기용, DB·.env 필요 없음)
+ * JSON → hoBIT 데이터 엑셀 (사용 방법 · 학부/대학원/공통 FAQ · 선배 FAQ · 담당자 · 이메일 · 키워드 규칙 · 프로필 항목 시트,
+ *   FAQ 하나가 한 줄, 첫 양식 만들기용, DB·.env 필요 없음)
  *
  *   npm run build
  *   npm run faq:excel -- <data.json> [out.xlsx]
  *   (= node dist/src/scripts/faqExcelFromJson.js <data.json> [out.xlsx])
  *
- * data.json: { "faqs": [...], "senior_faqs": [...] } — 각각 `SELECT * FROM faqs` / `SELECT * FROM senior_faqs` 결과
- *   (answer_ko/answer_en은 JSON 글자 그대로). 배열 하나만 있으면 faqs로 봄 (선배 FAQ 시트는 빈 칸)
+ * data.json: { "faqs": [...], "senior_faqs": [...], "keyword_rules": [...], "profile_options": [...], "search_sources": [...] }
+ *   — 각각 `SELECT * FROM 표` 결과 (answer_ko/answer_en·synonyms 같은 JSON 칸은 글자 그대로).
+ *   search_sources는 RAG GET /search/sources의 sources ([{ id, label }]) — 없으면 먼저 찾아볼 곳을 id로 적음
+ *   배열 하나만 있으면 faqs로 봄 (다른 시트는 빈 칸)
  *   audience 칸이 없으면 처음 규칙(대학원 → 대학원, 행정실·ETC 공통 업무 → 공통, 나머지 학부)으로 채움
  */
 import fs from 'fs';
@@ -18,6 +21,9 @@ function pickSenior(json: any): any[] {
   if (json && !Array.isArray(json)) return json.senior_faqs ?? json.seniorFaqs ?? json.data?.senior_faqs ?? [];
   return [];
 }
+
+/** 다른 표 (키워드 규칙·프로필 항목·출처 목록) — 없으면 빈 목록 */
+const pickList = (json: any, key: string): any[] => (json && !Array.isArray(json) && Array.isArray(json[key] ?? json.data?.[key]) ? json[key] ?? json.data[key] : []);
 
 function pickRows(json: any): DbFaqRow[] {
   if (Array.isArray(json)) {
@@ -54,8 +60,11 @@ async function main() {
   }));
   const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
   const out = outArg ?? path.join(path.dirname(input), `hoBIT_데이터_${today}.xlsx`);
-  fs.writeFileSync(out, await buildHobitXlsx({ faqs: rows, seniorFaqs: seniors }));
-  console.log(`FAQ ${rows.length}개, 선배 FAQ ${seniors.length}개 → ${out}`);
+  const keywordRules = pickList(json, 'keyword_rules').map((r: any) => ({ ...r, id: Number(r.id) }));
+  const profileOptions = pickList(json, 'profile_options').map((r: any) => ({ ...r, id: Number(r.id), sort_order: Number(r.sort_order ?? 0) }));
+  const sources = pickList(json, 'search_sources');
+  fs.writeFileSync(out, await buildHobitXlsx({ faqs: rows, seniorFaqs: seniors, keywordRules, profileOptions }, { sources: sources.length ? sources : null }));
+  console.log(`FAQ ${rows.length}개, 선배 FAQ ${seniors.length}개, 키워드 규칙 ${keywordRules.length}개, 프로필 항목 ${profileOptions.length}개 → ${out}`);
 }
 
 main().catch((e) => {

@@ -1,9 +1,13 @@
 /**
  * hoBIT 데이터 엑셀 (시트 여러 개짜리 파일 하나)
- *   사용 방법 · 학부 FAQ · 대학원 FAQ · 공통 FAQ (행정실 FAQ를 대상별로) · 선배 FAQ · 담당자 · 이메일
+ *   사용 방법 · 학부 FAQ · 대학원 FAQ · 공통 FAQ (행정실 FAQ를 대상별로) · 선배 FAQ · 담당자 · 이메일 · 키워드 규칙 · 프로필 항목
  *   예전 파일의 'FAQ' 시트(한 시트에 모두)도 그대로 읽음
  * 올릴 때 없는 시트는 '바뀐 것 없음'으로 봄 (예전에 받은 FAQ만 있는 파일도 그대로 올릴 수 있음)
- * 적용 순서: FAQ → 선배 FAQ → 담당자 이름 바꾸기 → 이메일 바꾸기 (방금 고친 줄에도 이름·이메일 바꾸기가 적용됨)
+ * 적용 순서: FAQ → 선배 FAQ → 담당자 이름 바꾸기 → 이메일 바꾸기 → 키워드 규칙 → 프로필 항목
+ *   (방금 고친 줄에도 이름·이메일 바꾸기가 적용됨)
+ * 범위(scope)
+ *   all    — 위 시트 모두 (행정실·개발자 계정)
+ *   senior — 사용 방법(근로장학생용) + 선배 FAQ만. 올릴 때도 선배 FAQ 시트만 읽음 (근로장학생 계정)
  */
 import ExcelJS from 'exceljs';
 import {
@@ -25,23 +29,47 @@ import {
   ROW_SHEET_STEP,
 } from './faqExcel';
 import { addSeniorSheet, buildSeniorPlan, parseSeniorSheet, SENIOR_SHEET_NAME, SeniorDbRow, SeniorPlan } from './seniorFaqExcel';
+import {
+  addKeywordSheet,
+  buildKeywordPlan,
+  KEYWORD_SHEET,
+  KeywordPlan,
+  KeywordRuleDbRow,
+  MAX_KEYWORD_PINNED,
+  parseKeywordSheet,
+  SearchSource,
+} from './keywordRuleExcel';
+import { addProfileSheet, buildProfilePlan, parseProfileSheet, PROFILE_SHEET, ProfileOptionDbRow, ProfilePlan } from './profileOptionExcel';
 
 export const HELP_SHEET = '사용 방법';
 export const MANAGER_SHEET = '담당자';
 export const EMAIL_SHEET = '이메일';
+export { KEYWORD_SHEET, PROFILE_SHEET };
+
+export type ExcelScope = 'all' | 'senior';
 
 export interface HobitData {
   faqs: DbFaqRow[];
   seniorFaqs: SeniorDbRow[];
+  keywordRules?: KeywordRuleDbRow[];
+  profileOptions?: ProfileOptionDbRow[];
+}
+
+export interface WorkbookOptions {
+  scope?: ExcelScope;
+  /** 키워드 규칙 '먼저 찾아볼 곳' 선택지 (RAG GET /search/sources). 못 받았으면 null — id를 그대로 보여 줌 */
+  sources?: SearchSource[] | null;
 }
 
 // ───────────────────────── 사용 방법 ─────────────────────────
 
-const HELP_LINES: [string, boolean?][] = [
+type HelpLine = [string, boolean?];
+
+const HELP_LINES: HelpLine[] = [
   ['hoBIT 데이터 엑셀 사용 방법', true],
   [''],
   ['기본', true],
-  ['• 시트(아래 탭)마다 내용이 달라요: 학부 FAQ · 대학원 FAQ · 공통 FAQ (행정실 FAQ) · 선배 FAQ · 담당자 · 이메일'],
+  ['• 시트(아래 탭)마다 내용이 달라요: 학부 FAQ · 대학원 FAQ · 공통 FAQ (행정실 FAQ) · 선배 FAQ · 담당자 · 이메일 · 키워드 규칙 · 프로필 항목'],
   ['• 다 고친 뒤 관리자 사이트 FAQ 화면의 [엑셀로 올리기]로 올리면, 바뀌는 내용을 먼저 보여 드려요. [적용하기]를 눌러야 실제로 바뀌어요.'],
   ['• 적용하기 전에 지금 상태를 자동으로 저장해 둬요. 잘못 올렸다면 [이전 상태로 되돌리기]를 쓰면 돼요.'],
   ['• 고치지 않을 시트는 그대로 두거나 지워도 돼요. 없는 시트는 바뀐 게 없는 걸로 봐요.'],
@@ -80,14 +108,64 @@ const HELP_LINES: [string, boolean?][] = [
   ['• 답변에 쓰인 이메일과 쓰인 답변 수예요. 바꿀 이메일 칸에 적으면 그 이메일이 쓰인 모든 답변에서 바뀌어요.'],
   ['• 바꿀 이메일 칸을 비워 두면 그대로예요.'],
   [''],
+  ['키워드 규칙 시트', true],
+  ['• 한 줄이 키워드 규칙 하나예요. 대표 키워드와 연관 단어를 적으면, 학생이 연관 단어로 물어봐도 대표 키워드로 함께 찾아요.'],
+  ['• 연관 단어와 먼저 찾아볼 곳은 쉼표(,)로 나눠 여러 개 적어요.'],
+  [`• 고정 FAQ 번호에는 맨 위에 보여 줄 FAQ 번호를 쉼표로 나눠 적어요 (최대 ${MAX_KEYWORD_PINNED}개, 앞에 적은 것부터). FAQ 번호는 FAQ 시트의 번호 칸이에요.`],
+  ['• 회색 글자인 고정 FAQ 질문 칸은 어떤 FAQ인지 보여 주는 칸이라, 고쳐도 반영되지 않아요.'],
+  ['• 대표 키워드는 규칙마다 달라야 해요 (띄어쓰기·대소문자만 다른 것도 같은 키워드로 봐요).'],
+  ['• 새 규칙은 빈 줄에 번호를 비우고 적어요. 지우려면 삭제 칸에서 \'삭제\'를 골라요.'],
+  [''],
+  ['프로필 항목 시트', true],
+  ['• 학생이 고르는 학과 · 전공 유형 · 학적 상태 · 대학원 학과예요. 한 줄이 항목 하나예요.'],
+  ['• 종류는 드롭다운에서 골라요. 이미 있는 항목의 종류는 바꿀 수 없어요.'],
+  ['• 이름은 한국어로, 영어 이름은 꼭 적어요. 다른 이름(줄임말·예전 이름)은 쉼표로 나눠 적어요.'],
+  ['• 이름을 바꾸면 예전 이름은 다른 이름에 자동으로 남겨요 (예전 이름으로 저장된 학생 정보도 계속 맞게).'],
+  ['• 같은 종류 안에서 이름이나 다른 이름이 겹치면 안 돼요.'],
+  ['• 첫 입학 학번은 학과에만 적어요 (22 또는 2022). 그 전 학번 학생에게는 없는 학과로 안내해요.'],
+  ["• 학생 선택지에서 잠시 빼려면 숨김 칸에서 '숨김'을 골라요. 학생 정보·문서가 있는 학과는 지우기보다 숨김을 권해요."],
+  ['• 순서는 같은 종류 안에서 보여 주는 순서예요 (작은 숫자가 위). 비우면 그대로, 새 항목은 맨 뒤에 붙어요.'],
+  ['• 종류마다 최소 1개는 남아 있어야 해요. 바꾼 내용은 1분쯤 뒤에 학생 화면에 보여요.'],
+  [''],
   ['그 밖에', true],
   ["• 분류 순서는 엑셀 줄 순서와 상관없어요. 순서는 관리자 사이트의 '카테고리 순서' 화면에서 바꿔요."],
 ];
 
-function addHelpSheet(wb: ExcelJS.Workbook) {
+/** 근로장학생 계정용 (선배 FAQ만) */
+const SENIOR_HELP_LINES: HelpLine[] = [
+  ['hoBIT 선배 FAQ 엑셀 사용 방법', true],
+  [''],
+  ['기본', true],
+  ['• 이 파일에는 선배 FAQ 시트만 있어요. 다른 시트를 더해서 올려도 선배 FAQ 시트만 반영해요.'],
+  ['• 다 고친 뒤 관리자 사이트 선배 FAQ 화면의 [엑셀로 올리기]로 올리면, 바뀌는 내용을 먼저 보여 드려요. [적용하기]를 눌러야 실제로 바뀌어요.'],
+  ['• 적용하기 전에 지금 선배 FAQ를 자동으로 저장해 둬요. 잘못 올렸다면 [이전 상태로 되돌리기]를 쓰면 돼요.'],
+  ['• 첫 줄(칸 제목)과 번호 칸은 고치지 마세요. 번호로 어떤 항목인지 찾아요.'],
+  [''],
+  ['선배 FAQ 시트', true],
+  ['• 한 줄이 선배 FAQ 하나예요. 답변 하나는 제목 · 제목(영어) · 답변 · 답변(영어) · 링크 · 위도 · 경도 칸 일곱 개가 한 묶음이에요.'],
+  ['• 답변을 하나 더 넣으려면 그 줄의 다음 빈 묶음(예: 제목2 · 답변2 …)을 채우면 돼요. 묶음 칸을 모두 비우면 그 답변이 지워져요.'],
+  ['• 답변 칸이 세 묶음보다 많으면 4번째부터는 접혀 있어요. 왼쪽 위의 숫자 [2]나 칸 제목 위쪽의 [+]를 누르면 펼쳐져요.'],
+  ['• 위도·경도는 지도를 보여 줄 때만 적어요.'],
+  ['• 새 선배 FAQ는 빈 줄에 번호는 비우고 대분류·소분류·세부 항목·답변1을 적어요.'],
+  [''],
+  ['지우기', true],
+  ["• 선배 FAQ를 지우려면 그 줄의 '삭제' 칸에서 '삭제'를 골라요. 이 방법으로만 지워져요."],
+  ['• 엑셀에서 줄을 지워도 선배 FAQ는 그대로 남아요.'],
+  [''],
+  ['영어 칸', true],
+  ['• 영어 칸을 비워 두면 올릴 때 자동으로 번역해요. 한국어를 고쳤다면 영어 칸을 비워 두는 게 좋아요.'],
+  ['• 분류 이름은 기존 이름과 똑같이 적어 주세요. 띄어쓰기만 달라도 새 분류가 생겨요.'],
+];
+
+function addHelpSheet(wb: ExcelJS.Workbook, scope: ExcelScope, sources?: SearchSource[] | null) {
   const help = wb.addWorksheet(HELP_SHEET);
   help.getColumn(1).width = 120;
-  HELP_LINES.forEach(([text, bold], i) => {
+  const lines: HelpLine[] = scope === 'senior' ? SENIOR_HELP_LINES : [...HELP_LINES];
+  if (scope !== 'senior' && sources?.length) {
+    const at = lines.findIndex(([t]) => t === '프로필 항목 시트') - 1; // 키워드 규칙 설명 끝
+    lines.splice(at, 0, [`• 먼저 찾아볼 곳에 쓸 수 있는 이름: ${sources.map((x) => x.label).join(', ')}`]);
+  }
+  lines.forEach(([text, bold], i) => {
     const cell = help.getCell(i + 1, 1);
     cell.value = text;
     cell.alignment = { wrapText: true, vertical: 'top' };
@@ -158,11 +236,16 @@ const EMAIL_COLUMNS = [
 
 const READONLY_FONT: Partial<ExcelJS.Font> = { color: { argb: 'FF7A7F87' } };
 
-export function buildHobitWorkbook(data: HobitData): ExcelJS.Workbook {
+export function buildHobitWorkbook(data: HobitData, opts: WorkbookOptions = {}): ExcelJS.Workbook {
+  const scope = opts.scope ?? 'all';
   const wb = new ExcelJS.Workbook();
   wb.creator = 'hoBIT';
   wb.created = new Date();
-  addHelpSheet(wb);
+  addHelpSheet(wb, scope, opts.sources);
+  if (scope === 'senior') {
+    addSeniorSheet(wb, data.seniorFaqs);
+    return wb;
+  }
   // 행정실 FAQ는 대상별 시트로 (대상 값이 이상하면 학부 시트)
   // 세 시트의 답변 묶음 수는 똑같이 (가장 많은 답변 수 기준 — 시트끼리 줄을 옮겨도 칸이 맞게)
   const groups = maxFaqCards(data.faqs);
@@ -183,11 +266,17 @@ export function buildHobitWorkbook(data: HobitData): ExcelJS.Workbook {
     const row = es.addRow({ email: e.email, count: e.count, to: '' });
     row.getCell(2).font = READONLY_FONT;
   }
+
+  addKeywordSheet(wb, data.keywordRules ?? [], data.faqs, opts.sources);
+  addProfileSheet(wb, data.profileOptions ?? []);
   return wb;
 }
 
-export async function buildHobitXlsx(data: Partial<HobitData>): Promise<Buffer> {
-  const wb = buildHobitWorkbook({ faqs: data.faqs ?? [], seniorFaqs: data.seniorFaqs ?? [] });
+export async function buildHobitXlsx(data: Partial<HobitData>, opts: WorkbookOptions = {}): Promise<Buffer> {
+  const wb = buildHobitWorkbook(
+    { faqs: data.faqs ?? [], seniorFaqs: data.seniorFaqs ?? [], keywordRules: data.keywordRules ?? [], profileOptions: data.profileOptions ?? [] },
+    opts
+  );
   return Buffer.from((await wb.xlsx.writeBuffer()) as ArrayBuffer);
 }
 
@@ -223,10 +312,15 @@ function parsePairs(
 }
 
 export interface ParsedHobit {
+  scope: ExcelScope;
   faq: ReturnType<typeof parseFaqSheet>;
   senior: ReturnType<typeof parseSeniorSheet>;
   managers: ReturnType<typeof parsePairs>;
   emails: ReturnType<typeof parsePairs>;
+  keywords: ReturnType<typeof parseKeywordSheet>;
+  profileOptions: ReturnType<typeof parseProfileSheet>;
+  /** 범위 밖이라 읽지 않은 시트 (선배 FAQ만 올릴 때) */
+  ignoredSheets: string[];
   problems: Issue[];
 }
 
@@ -261,29 +355,43 @@ const faqRowLabel = (row: number) => {
   return d.sheet ? `${d.sheet} ${d.row}번째 줄` : `${row}번째 줄`;
 };
 
-export async function parseHobitXlsx(buffer: Buffer): Promise<ParsedHobit> {
+/** 선배 FAQ 말고 이 파일이 읽을 수 있는 시트 이름들 */
+const OTHER_DATA_SHEETS = [...FAQ_SHEET_NAMES, MANAGER_SHEET, EMAIL_SHEET, KEYWORD_SHEET, PROFILE_SHEET];
+
+export async function parseHobitXlsx(buffer: Buffer, opts: { scope?: ExcelScope } = {}): Promise<ParsedHobit> {
+  const scope = opts.scope ?? 'all';
+  const empty: ParsedHobit = { scope, faq: null, senior: null, managers: null, emails: null, keywords: null, profileOptions: null, ignoredSheets: [], problems: [] };
   const wb = new ExcelJS.Workbook();
   try {
     await wb.xlsx.load(buffer as any);
   } catch {
-    return {
-      faq: null,
-      senior: null,
-      managers: null,
-      emails: null,
-      problems: [{ row: null, message: '엑셀 파일을 열지 못했어요. 받은 엑셀(.xlsx) 파일을 저장해서 다시 올려 주세요.' }],
-    };
+    return { ...empty, problems: [{ row: null, message: '엑셀 파일을 열지 못했어요. 받은 엑셀(.xlsx) 파일을 저장해서 다시 올려 주세요.' }] };
   }
   const get = (name: string) => wb.worksheets.find((w) => w.name.trim() === name);
+
+  if (scope === 'senior') {
+    const parsed: ParsedHobit = { ...empty, senior: parseSeniorSheet(get(SENIOR_SHEET_NAME)) };
+    parsed.ignoredSheets = OTHER_DATA_SHEETS.filter((n) => get(n));
+    if (!parsed.senior) {
+      parsed.problems.push({ row: null, message: "'선배 FAQ' 시트를 찾지 못했어요. [엑셀로 받기]로 받은 파일을 고쳐서 올려 주세요." });
+    }
+    return parsed;
+  }
+
   const parsed: ParsedHobit = {
+    ...empty,
     faq: parseFaqSheets(get),
     senior: parseSeniorSheet(get(SENIOR_SHEET_NAME)),
     managers: parsePairs(get(MANAGER_SHEET), MANAGER_SHEET, MANAGER_COLUMNS, 'name'),
     emails: parsePairs(get(EMAIL_SHEET), EMAIL_SHEET, EMAIL_COLUMNS, 'email'),
-    problems: [],
+    keywords: parseKeywordSheet(get(KEYWORD_SHEET)),
+    profileOptions: parseProfileSheet(get(PROFILE_SHEET)),
   };
-  if (!parsed.faq && !parsed.senior && !parsed.managers && !parsed.emails) {
-    parsed.problems.push({ row: null, message: "'학부 FAQ', '대학원 FAQ', '공통 FAQ', '선배 FAQ', '담당자', '이메일' 시트를 하나도 찾지 못했어요. [엑셀로 받기]로 받은 파일을 고쳐서 올려 주세요." });
+  if (!parsed.faq && !parsed.senior && !parsed.managers && !parsed.emails && !parsed.keywords && !parsed.profileOptions) {
+    parsed.problems.push({
+      row: null,
+      message: "'학부 FAQ', '대학원 FAQ', '공통 FAQ', '선배 FAQ', '담당자', '이메일', '키워드 규칙', '프로필 항목' 시트를 하나도 찾지 못했어요. [엑셀로 받기]로 받은 파일을 고쳐서 올려 주세요.",
+    });
   }
   return parsed;
 }
@@ -306,10 +414,13 @@ export interface EmailReplace {
 }
 
 export interface HobitPlan {
+  scope: ExcelScope;
   faq: ImportPlan | null;
   senior: SeniorPlan | null;
   managers: ManagerRename[];
   emails: EmailReplace[];
+  keywords: KeywordPlan | null;
+  profileOptions: ProfilePlan | null;
   missingSheets: string[];
   problems: Issue[];
   warnings: Issue[];
@@ -363,9 +474,36 @@ function checkPairs(
   return { ok, problems, warnings };
 }
 
-export function buildHobitPlan(parsed: ParsedHobit, data: HobitData, opts: { autoTranslate?: boolean } = {}): HobitPlan {
-  const plan: HobitPlan = { faq: null, senior: null, managers: [], emails: [], missingSheets: [], problems: [...parsed.problems], warnings: [] };
+export function buildHobitPlan(
+  parsed: ParsedHobit,
+  data: HobitData,
+  opts: { autoTranslate?: boolean; sources?: SearchSource[] | null } = {}
+): HobitPlan {
+  const plan: HobitPlan = {
+    scope: parsed.scope,
+    faq: null,
+    senior: null,
+    managers: [],
+    emails: [],
+    keywords: null,
+    profileOptions: null,
+    missingSheets: [],
+    problems: [...parsed.problems],
+    warnings: [],
+  };
   if (parsed.problems.length) return plan;
+
+  if (parsed.scope === 'senior') {
+    if (parsed.ignoredSheets.length) {
+      plan.warnings.push({ row: null, message: `선배 FAQ 시트만 반영해요. (${parsed.ignoredSheets.join(', ')} 시트는 읽지 않았어요)` });
+    }
+    if (parsed.senior) {
+      plan.senior = buildSeniorPlan(parsed.senior, data.seniorFaqs, opts);
+      plan.problems.push(...plan.senior.problems);
+      plan.warnings.push(...plan.senior.warnings);
+    }
+    return plan;
+  }
 
   if (parsed.faq) {
     plan.faq = buildImportPlan(parsed.faq, data.faqs, { ...opts, rowLabel: faqRowLabel });
@@ -414,11 +552,27 @@ export function buildHobitPlan(parsed: ParsedHobit, data: HobitData, opts: { aut
     plan.emails = r.ok.map((p) => ({ row: p.row, from: p.from, to: p.to, count: counts.get(p.from) ?? 0 }));
   } else plan.missingSheets.push(EMAIL_SHEET);
 
+  if (parsed.keywords) {
+    plan.keywords = buildKeywordPlan(parsed.keywords, data.keywordRules ?? [], {
+      faqs: data.faqs,
+      deletedFaqIds: new Set(plan.faq?.deleted.map((d) => d.id) ?? []),
+      sources: opts.sources ?? null,
+    });
+    plan.problems.push(...plan.keywords.problems);
+    plan.warnings.push(...plan.keywords.warnings);
+  } else plan.missingSheets.push(KEYWORD_SHEET);
+
+  if (parsed.profileOptions) {
+    plan.profileOptions = buildProfilePlan(parsed.profileOptions, data.profileOptions ?? []);
+    plan.problems.push(...plan.profileOptions.problems);
+    plan.warnings.push(...plan.profileOptions.warnings);
+  } else plan.missingSheets.push(PROFILE_SHEET);
+
   return plan;
 }
 
+const sheetChanges = (x: { created: unknown[]; updated: unknown[]; deleted: unknown[] } | null) =>
+  x ? x.created.length + x.updated.length + x.deleted.length : 0;
+
 export const planChangeCount = (p: HobitPlan) =>
-  (p.faq ? p.faq.created.length + p.faq.updated.length + p.faq.deleted.length : 0) +
-  (p.senior ? p.senior.created.length + p.senior.updated.length + p.senior.deleted.length : 0) +
-  p.managers.length +
-  p.emails.length;
+  sheetChanges(p.faq) + sheetChanges(p.senior) + p.managers.length + p.emails.length + sheetChanges(p.keywords) + sheetChanges(p.profileOptions);

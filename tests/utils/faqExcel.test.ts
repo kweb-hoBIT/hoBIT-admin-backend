@@ -20,10 +20,15 @@ import {
   buildHobitXlsx,
   collectEmails,
   EMAIL_SHEET,
+  KEYWORD_SHEET,
   MANAGER_SHEET,
   parseHobitXlsx,
+  planChangeCount,
+  PROFILE_SHEET,
   replaceEmailInField,
 } from '../../src/utils/hobitWorkbook';
+import { KeywordRuleDbRow, SearchSource } from '../../src/utils/keywordRuleExcel';
+import { parseCohort, ProfileOptionDbRow } from '../../src/utils/profileOptionExcel';
 
 const card = (answer: string, url = '', email = '', phone = '') => ({ answer, url, email, phone });
 
@@ -161,7 +166,33 @@ const seniorFour: SeniorDbRow = {
   detailcategory_order: 1,
 };
 
-const data = { faqs: fixture, seniorFaqs: [...seniorFixture, seniorFour] };
+const keywordFixture: KeywordRuleDbRow[] = [
+  { id: 1, keyword: '입시', synonyms: JSON.stringify(['수시', '정시', '입학']), pinned_faq_ids: JSON.stringify([10]), search_sources: JSON.stringify(['학사안내']) },
+  {
+    id: 2,
+    keyword: '휴학',
+    synonyms: '["휴학신청"]',
+    pinned_faq_ids: [10, 14], // MySQL JSON 칸은 이미 배열로 올 수도 있음
+    search_sources: ['공통_학사운영_cleaned', 'notice_under'],
+  },
+];
+const sources: SearchSource[] = [
+  { id: '학사안내', label: '홈페이지 · 학사안내', group: 'static' },
+  { id: '공통_학사운영_cleaned', label: '학사 운영 규정 (PDF)', group: 'static' },
+  { id: 'notice_under', label: '게시판 · 학부 공지', group: 'dynamic' },
+];
+const option = (id: number, field: string, value: string, label_en: string, aliases: string[], first_cohort: number | null, sort_order: number, active = 1): ProfileOptionDbRow => ({
+  id, field, value, label_en, aliases: JSON.stringify(aliases), first_cohort, sort_order, active,
+});
+const profileFixture: ProfileOptionDbRow[] = [
+  option(1, 'department', '컴퓨터학과', 'Computer Science', ['컴공', '컴과'], null, 0),
+  option(2, 'department', '데이터과학과', 'Data Science', ['데과'], 2022, 1),
+  option(3, 'major_type', '심화전공', 'Intensive Major', [], null, 0),
+  option(4, 'student_status', '재학', 'Enrolled', [], null, 0),
+  option(5, 'grad_department', '컴퓨터학과', 'Computer Science', [], null, 0), // 종류가 다르면 이름이 같아도 됨
+];
+
+const data = { faqs: fixture, seniorFaqs: [...seniorFixture, seniorFour], keywordRules: keywordFixture, profileOptions: profileFixture };
 
 // ───────── 엑셀 도우미 ─────────
 
@@ -230,7 +261,7 @@ describe('hoBIT 데이터 엑셀 (FAQ 하나가 한 줄)', () => {
   it('만든 엑셀을 그대로 읽으면 바뀐 게 없어요 · 시트 모양', async () => {
     const buf = await buildHobitXlsx(data);
     const wb = await load(buf);
-    expect(wb.worksheets.map((w) => w.name)).toEqual(['사용 방법', ...FAQ_SHEETS.map((s) => s.name), '선배 FAQ', MANAGER_SHEET, EMAIL_SHEET]);
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['사용 방법', ...FAQ_SHEETS.map((s) => s.name), '선배 FAQ', MANAGER_SHEET, EMAIL_SHEET, KEYWORD_SHEET, PROFILE_SHEET]);
     expect([idsOf(wb.getWorksheet('학부 FAQ')!), idsOf(wb.getWorksheet('대학원 FAQ')!), idsOf(wb.getWorksheet('공통 FAQ')!)]).toEqual([[13, 10, 14], [11], [12]]);
 
     // 행정실 FAQ: 답변 묶음 7개, 4~7번째는 접힘, 번호~질문 고정
@@ -299,6 +330,10 @@ describe('hoBIT 데이터 엑셀 (FAQ 하나가 한 줄)', () => {
     expect(parsed.senior!.items.find((i) => i.id === 4)!.view.cards).toHaveLength(4);
     expect(plan.managers).toEqual([]);
     expect(plan.emails).toEqual([]);
+    // 출처 목록 없이 받은 파일(먼저 찾아볼 곳이 id)도 그대로 읽힘
+    expect(plan.keywords!.unchanged).toBe(2);
+    expect(plan.profileOptions!.unchanged).toBe(5);
+    expect(planChangeCount(plan)).toBe(0);
   });
 
   it('답변 고치기 · 답변 두 개짜리 새 FAQ · 답변 묶음 비우기 · 삭제 · 빠진 줄', async () => {
@@ -549,7 +584,9 @@ describe('hoBIT 데이터 엑셀 (FAQ 하나가 한 줄)', () => {
     const singleBuf = await toBuf(single);
     const p1 = buildHobitPlan(await parseHobitXlsx(singleBuf), data);
     expect(p1.problems).toEqual([]);
-    expect(p1.missingSheets).toEqual(['선배 FAQ', MANAGER_SHEET, EMAIL_SHEET]);
+    expect(p1.missingSheets).toEqual(['선배 FAQ', MANAGER_SHEET, EMAIL_SHEET, KEYWORD_SHEET, PROFILE_SHEET]);
+    expect(p1.keywords).toBeNull();
+    expect(p1.profileOptions).toBeNull();
     expect(p1.senior).toBeNull();
     expect(p1.faq!.unchanged).toBe(5);
     expect(p1.faq!.updated).toEqual([]);
@@ -594,5 +631,229 @@ describe('hoBIT 데이터 엑셀 (FAQ 하나가 한 줄)', () => {
     expect(replaceEmailInField('a@x.kr, info@korea.ac.kr', 'info@korea.ac.kr', 'n@x.kr')).toBe('a@x.kr, n@x.kr');
     expect(replaceEmailInField('myinfo@korea.ac.kr', 'info@korea.ac.kr', 'n@x.kr')).toBe('myinfo@korea.ac.kr');
     expect(collectEmails({ faqs: fixture, seniorFaqs: [] })).toEqual([{ email: 'info@korea.ac.kr', count: 1 }]);
+  });
+  it('키워드 규칙·프로필 항목이 없는 예전 파일도 그대로 올라가요', async () => {
+    const wb = await load(await buildHobitXlsx(data, { sources }));
+    for (const n of [KEYWORD_SHEET, PROFILE_SHEET]) wb.removeWorksheet(wb.getWorksheet(n)!.id);
+    const plan = buildHobitPlan(await parseHobitXlsx(await toBuf(wb)), data, { sources });
+    expect(plan.problems).toEqual([]);
+    expect(plan.missingSheets).toEqual([KEYWORD_SHEET, PROFILE_SHEET]);
+    expect(plan.keywords).toBeNull();
+    expect(plan.profileOptions).toBeNull();
+    expect(planChangeCount(plan)).toBe(0);
+  });
+});
+
+describe('키워드 규칙 시트', () => {
+  it('시트 모양 · 그대로 읽으면 바뀐 게 없어요', async () => {
+    const wb = await load(await buildHobitXlsx(data, { sources }));
+    const ws = wb.getWorksheet(KEYWORD_SHEET)!;
+    expect(headers(ws)).toEqual(['번호', '대표 키워드', '연관 단어 (쉼표로 구분)', '고정 FAQ 번호 (쉼표, 최대 3개)', '고정 FAQ 질문 (읽기만)', '먼저 찾아볼 곳 (쉼표로 구분)', '삭제']);
+    expect(ws.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
+    const r2 = findRow(ws, 2);
+    expect(ws.getRow(r2).getCell(col(ws, '먼저 찾아볼 곳 (쉼표로 구분)')).value).toBe('학사 운영 규정 (PDF), 게시판 · 학부 공지');
+    expect(ws.getRow(r2).getCell(col(ws, '고정 FAQ 질문 (읽기만)')).value).toBe('10. 휴학은 어떻게 해?\n14. 장학금 신청은 어디서 해?');
+    expect((ws.getRow(r2).getCell(col(ws, '고정 FAQ 질문 (읽기만)')).font as any)?.color?.argb).toBe('FF7A7F87');
+    expect(ws.getRow(2).getCell(col(ws, '삭제')).dataValidation?.type).toBe('list');
+    const help = wb.getWorksheet('사용 방법')!;
+    const helpText = (help.getColumn(1).values as any[]).map((v) => cellText(v)).join('\n');
+    expect(helpText).toContain('먼저 찾아볼 곳에 쓸 수 있는 이름: 홈페이지 · 학사안내, 학사 운영 규정 (PDF), 게시판 · 학부 공지');
+
+    // 고정 FAQ 질문 칸을 고쳐도 무시
+    ws.getRow(r2).getCell(col(ws, '고정 FAQ 질문 (읽기만)')).value = '아무거나';
+    const plan = buildHobitPlan(await parseHobitXlsx(await toBuf(wb)), data, { sources });
+    expect(plan.problems).toEqual([]);
+    expect(plan.keywords!.unchanged).toBe(2);
+    expect(planChangeCount(plan)).toBe(0);
+  });
+
+  it('새로 만들기 · 고치기 · 지우기', async () => {
+    const buf = await buildHobitXlsx(data, { sources });
+    const edited = await rewrite(buf, (wb) => {
+      const ws = wb.getWorksheet(KEYWORD_SHEET)!;
+      const r1 = findRow(ws, 1);
+      // 연관 단어 더하기 (겹치는 '수시'·대표 키워드와 같은 '입 시'는 빠짐), 고정 FAQ 더하기, 출처는 이름·id 섞어서
+      writeRow(ws, r1, {
+        '연관 단어 (쉼표로 구분)': '수시, 정시, 입학, 수시 , 입 시, 편입',
+        '고정 FAQ 번호 (쉼표, 최대 3개)': '10, 11',
+        '먼저 찾아볼 곳 (쉼표로 구분)': '홈페이지·학사안내, notice_under',
+      });
+      ws.getRow(findRow(ws, 2)).getCell(col(ws, '삭제')).value = '삭제';
+      writeRow(ws, ws.actualRowCount + 1, {
+        '대표 키워드': '장학',
+        '연관 단어 (쉼표로 구분)': '장학금，국장',
+        '고정 FAQ 번호 (쉼표, 최대 3개)': '14',
+        '먼저 찾아볼 곳 (쉼표로 구분)': '게시판 · 학부 공지',
+      });
+    });
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), data, { sources });
+    console.log('키워드 규칙:', JSON.stringify({ k: plan.keywords, p: plan.problems }, null, 1));
+    expect(plan.problems).toEqual([]);
+    const k = plan.keywords!;
+    expect(k.updated).toHaveLength(1);
+    expect(k.updated[0].after).toEqual({ keyword: '입시', synonyms: ['수시', '정시', '입학', '편입'], pinned: [10, 11], sources: ['학사안내', 'notice_under'] });
+    expect(k.updated[0].changes.map((c) => [c.label, c.before, c.after])).toEqual([
+      ['연관 단어', '수시, 정시, 입학', '수시, 정시, 입학, 편입'],
+      ['고정 FAQ', '10', '10, 11'],
+      ['먼저 찾아볼 곳', '홈페이지 · 학사안내', '홈페이지 · 학사안내, 게시판 · 학부 공지'],
+    ]);
+    expect(k.deleted.map((d) => d.id)).toEqual([2]);
+    expect(k.created.map((c) => c.view)).toEqual([{ keyword: '장학', synonyms: ['장학금', '국장'], pinned: [14], sources: ['notice_under'] }]);
+    expect(planChangeCount(plan)).toBe(3);
+  });
+
+  it('막아야 하는 문제 — 없는 FAQ · 너무 많은 고정 FAQ · 모르는 출처 · 겹치는 키워드 · 이번에 지우는 FAQ', async () => {
+    const buf = await buildHobitXlsx(data, { sources });
+    const edited = await rewrite(buf, (wb) => {
+      const ws = wb.getWorksheet(KEYWORD_SHEET)!;
+      const base = ws.actualRowCount;
+      writeRow(ws, base + 1, { '대표 키워드': '없는 FAQ', '고정 FAQ 번호 (쉼표, 최대 3개)': '999' });
+      writeRow(ws, base + 2, { '대표 키워드': '너무 많음', '고정 FAQ 번호 (쉼표, 최대 3개)': '10, 11, 12, 13' });
+      writeRow(ws, base + 3, { '대표 키워드': '모르는 출처', '먼저 찾아볼 곳 (쉼표로 구분)': '네이버' });
+      writeRow(ws, base + 4, { '대표 키워드': ' 휴 학 ' }); // 2번 '휴학'과 띄어쓰기만 다름
+      writeRow(ws, base + 5, { '대표 키워드': '수강', '고정 FAQ 번호 (쉼표, 최대 3개)': '13, 둘' }); // 13은 이번에 지움
+      writeRow(ws, base + 6, { '연관 단어 (쉼표로 구분)': '대표 키워드 없음' });
+      const under = wb.getWorksheet('학부 FAQ')!;
+      under.getRow(findRow(under, 13)).getCell(col(under, '삭제')).value = '삭제';
+    });
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), data, { sources });
+    console.log('키워드 문제:', JSON.stringify(plan.problems.filter((p) => p.sheet === KEYWORD_SHEET), null, 1));
+    const at = (row: number) => plan.problems.filter((p) => p.sheet === KEYWORD_SHEET && p.row === row).map((p) => p.message).join('\n');
+    const base = 3; // 규칙 2개 + 칸 제목
+    expect(at(base + 1)).toContain('고정 FAQ 번호 999인 FAQ가 없어요');
+    expect(at(base + 2)).toContain('고정 FAQ는 3개까지');
+    expect(at(base + 3)).toContain("먼저 찾아볼 곳 '네이버'을(를) 찾지 못했어요. 쓸 수 있는 이름: 홈페이지 · 학사안내, 학사 운영 규정 (PDF), 게시판 · 학부 공지");
+    expect(at(base + 4)).toContain('대표 키워드가 번호 2와(과) 같아요');
+    expect(at(base + 5)).toContain("'둘'을(를) 읽지 못했어요");
+    expect(at(base + 5)).toContain('13은(는) 이번에 지우는 FAQ예요');
+    expect(at(base + 6)).toContain('대표 키워드가 비어 있어요');
+
+    // 출처 목록을 못 받으면 새 출처는 확인할 수 없다고 안내 (이미 쓰던 값은 그대로 통과 — 첫 테스트)
+    const noList = buildHobitPlan(await parseHobitXlsx(edited), data, { sources: null });
+    expect(noList.problems.map((p) => p.message).join('\n')).toContain("먼저 찾아볼 곳 목록을 불러오지 못해서 '네이버'");
+  });
+});
+
+describe('프로필 항목 시트', () => {
+  it('시트 모양 · 새로 만들기 · 이름 바꾸기 · 숨김 · 순서', async () => {
+    const buf = await buildHobitXlsx(data);
+    const wb0 = await load(buf);
+    const ws0 = wb0.getWorksheet(PROFILE_SHEET)!;
+    expect(headers(ws0)).toEqual(['번호', '종류', '이름', '영어 이름', '다른 이름 (쉼표로 구분)', '첫 입학 학번 (학과만)', '숨김', '순서', '삭제']);
+    expect(idsOf(ws0)).toEqual([1, 2, 3, 4, 5]);
+    expect(ws0.getRow(2).getCell(col(ws0, '종류')).dataValidation?.formulae).toEqual(['"학과,전공 유형,학적 상태,대학원 학과"']);
+    expect(ws0.getRow(2).getCell(col(ws0, '숨김')).dataValidation?.type).toBe('list');
+    expect(ws0.getRow(findRow(ws0, 2)).getCell(col(ws0, '순서')).value).toBe(2);
+    expect(ws0.getRow(findRow(ws0, 2)).getCell(col(ws0, '첫 입학 학번 (학과만)')).value).toBe(2022);
+
+    const edited = await rewrite(buf, (wb) => {
+      const ws = wb.getWorksheet(PROFILE_SHEET)!;
+      writeRow(ws, findRow(ws, 2), { 이름: '데이터사이언스학과' }); // 이름 바꾸기 → 예전 이름은 다른 이름에
+      writeRow(ws, findRow(ws, 3), { 숨김: '숨김' });
+      ws.getRow(findRow(ws, 1)).getCell(col(ws, '순서')).value = 3;
+      writeRow(ws, ws.actualRowCount + 1, {
+        종류: '학과',
+        이름: '인공지능학과',
+        '영어 이름': 'Artificial Intelligence',
+        '다른 이름 (쉼표로 구분)': 'AI학과, 인공지능과',
+        '첫 입학 학번 (학과만)': '25',
+      });
+    });
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), data);
+    console.log('프로필 항목:', JSON.stringify({ p: plan.profileOptions, problems: plan.problems }, null, 1));
+    expect(plan.problems).toEqual([]);
+    const po = plan.profileOptions!;
+    const byId = new Map(po.updated.map((u) => [u.id, u]));
+    expect([...byId.keys()].sort()).toEqual([1, 2, 3]);
+    expect(byId.get(2)!.after.aliases).toEqual(['데과', '데이터과학과']);
+    expect(byId.get(2)!.changes.map((c) => [c.label, c.before, c.after])).toEqual([
+      ['이름', '데이터과학과', '데이터사이언스학과'],
+      ['다른 이름', '데과', '데과, 데이터과학과'],
+    ]);
+    expect(plan.warnings.map((w) => w.message).join('\n')).toContain("예전 이름 '데이터과학과'을(를) 다른 이름에 남겨 둘게요");
+    expect(byId.get(3)!.changes.map((c) => [c.label, c.after])).toEqual([['숨김', '숨김']]);
+    expect(byId.get(3)!.after.active).toBe(false);
+    expect(byId.get(1)!.after.sort_order).toBe(2);
+    expect(po.created.map((c) => c.view)).toEqual([
+      { field: 'department', value: '인공지능학과', label_en: 'Artificial Intelligence', aliases: ['AI학과', '인공지능과'], first_cohort: 2025, active: true, sort_order: null },
+    ]);
+    expect(parseCohort('22', 2026)).toBe(2022);
+    expect(parseCohort('98', 2026)).toBe(1998);
+    expect(parseCohort('2019', 2026)).toBe(2019);
+  });
+
+  it('막아야 하는 문제 — 다른 이름 겹침 · 첫 입학 학번 · 한국어 이름 · 종류 바꾸기 · 최소 1개', async () => {
+    const buf = await buildHobitXlsx(data);
+    const edited = await rewrite(buf, (wb) => {
+      const ws = wb.getWorksheet(PROFILE_SHEET)!;
+      const base = ws.actualRowCount;
+      const dep = { 종류: '학과', '영어 이름': 'X' };
+      writeRow(ws, base + 1, { ...dep, 이름: '컴퓨터공학과', '다른 이름 (쉼표로 구분)': '컴공' }); // 1번의 다른 이름과 겹침
+      writeRow(ws, base + 2, { 종류: '전공 유형', 이름: '연계전공', '영어 이름': 'Linked Major', '첫 입학 학번 (학과만)': '2020' });
+      writeRow(ws, base + 3, { ...dep, 이름: '로봇학과', '첫 입학 학번 (학과만)': 'abc' });
+      writeRow(ws, base + 4, { ...dep, 이름: 'Robotics' });
+      writeRow(ws, base + 5, { 종류: '기타', 이름: '무엇', '영어 이름': 'What' });
+      writeRow(ws, findRow(ws, 3), { 종류: '학과' }); // 종류 바꾸기
+      writeRow(ws, findRow(ws, 4), { 삭제: '삭제' }); // 학적 상태 하나뿐
+      writeRow(ws, findRow(ws, 2), { 이름: '컴과' }); // 1번의 다른 이름으로 이름 바꾸기
+    });
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), data);
+    console.log('프로필 문제:', JSON.stringify(plan.problems, null, 1));
+    const at = (row: number) => plan.problems.filter((p) => p.sheet === PROFILE_SHEET && p.row === row).map((p) => p.message).join('\n');
+    const base = 6; // 항목 5개 + 칸 제목
+    expect(at(base + 1)).toContain("'컴공'은(는) 이미 '컴퓨터학과'(번호 1)의 이름(또는 다른 이름)으로 쓰이고 있어요");
+    expect(at(base + 2)).toContain('첫 입학 학번은 학과에만 적어요');
+    expect(at(base + 3)).toContain('22 또는 2022처럼');
+    expect(at(base + 4)).toContain('이름은 한국어로 적어 주세요');
+    expect(at(base + 5)).toContain("종류에는 학과, 전공 유형, 학적 상태, 대학원 학과만 쓸 수 있어요. (지금: '기타')");
+    expect(at(4)).toContain('종류는 바꿀 수 없어요');
+    expect(at(5)).toContain('학적 상태은(는) 최소 1개는 남아 있어야 해요');
+    expect(at(3)).toContain("'컴과'은(는) 이미 '컴퓨터학과'(번호 1)");
+    expect(plan.profileOptions!.created).toEqual([]);
+  });
+});
+
+describe('선배 FAQ만 (근로장학생 계정)', () => {
+  it('받기: 사용 방법 + 선배 FAQ 시트만', async () => {
+    const wb = await load(await buildHobitXlsx(data, { scope: 'senior' }));
+    expect(wb.worksheets.map((w) => w.name)).toEqual(['사용 방법', '선배 FAQ']);
+    expect(cellText(wb.getWorksheet('사용 방법')!.getCell(1, 1).value)).toBe('hoBIT 선배 FAQ 엑셀 사용 방법');
+    const plan = buildHobitPlan(await parseHobitXlsx(await toBuf(wb), { scope: 'senior' }), data);
+    expect(plan.problems).toEqual([]);
+    expect(plan.warnings).toEqual([]);
+    expect(plan.senior!.unchanged).toBe(3);
+    expect(planChangeCount(plan)).toBe(0);
+  });
+
+  it('올리기: 다른 시트는 읽지 않고 알려 줘요', async () => {
+    const buf = await buildHobitXlsx(data, { sources });
+    const edited = await rewrite(buf, (wb) => {
+      const ss = wb.getWorksheet('선배 FAQ')!;
+      ss.getRow(findRow(ss, 2)).getCell(col(ss, '답변1')).value = '2월, 8월이야.';
+      // 다른 시트를 고쳐도 반영하지 않음
+      const under = wb.getWorksheet('학부 FAQ')!;
+      under.getRow(findRow(under, 13)).getCell(col(under, '삭제')).value = '삭제';
+      const kw = wb.getWorksheet(KEYWORD_SHEET)!;
+      kw.getRow(findRow(kw, 1)).getCell(col(kw, '삭제')).value = '삭제';
+    });
+    const parsed = await parseHobitXlsx(edited, { scope: 'senior' });
+    expect(parsed.faq).toBeNull();
+    expect(parsed.keywords).toBeNull();
+    expect(parsed.profileOptions).toBeNull();
+    expect(parsed.managers).toBeNull();
+    const plan = buildHobitPlan(parsed, { faqs: [], seniorFaqs: data.seniorFaqs }, { sources });
+    expect(plan.scope).toBe('senior');
+    expect(plan.problems).toEqual([]);
+    expect(plan.warnings[0].message).toBe(`선배 FAQ 시트만 반영해요. (학부 FAQ, 대학원 FAQ, 공통 FAQ, ${MANAGER_SHEET}, ${EMAIL_SHEET}, ${KEYWORD_SHEET}, ${PROFILE_SHEET} 시트는 읽지 않았어요)`);
+    expect(plan.faq).toBeNull();
+    expect(plan.keywords).toBeNull();
+    expect(plan.missingSheets).toEqual([]);
+    expect(plan.senior!.updated.map((u) => u.id)).toEqual([2]);
+    expect(planChangeCount(plan)).toBe(1);
+
+    // 선배 FAQ 시트가 없으면 문제
+    const noSenior = await rewrite(buf, (wb) => wb.removeWorksheet(wb.getWorksheet('선배 FAQ')!.id));
+    const p2 = buildHobitPlan(await parseHobitXlsx(noSenior, { scope: 'senior' }), data);
+    expect(p2.problems.map((p) => p.message)).toEqual(["'선배 FAQ' 시트를 찾지 못했어요. [엑셀로 받기]로 받은 파일을 고쳐서 올려 주세요."]);
   });
 });

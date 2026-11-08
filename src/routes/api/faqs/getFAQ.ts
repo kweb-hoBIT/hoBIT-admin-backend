@@ -1,7 +1,7 @@
 import express, { Response } from "express";
 import { Pool } from "../../../../config/connectDB";
 import { PoolConnection, RowDataPacket } from "mysql2/promise";
-import { GetFAQResponse } from '../../../types/faq';
+import { FAQAudience, GetFAQResponse } from '../../../types/faq';
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
 
@@ -18,6 +18,7 @@ interface FAQ {
   answer_ko: string;
   answer_en: string;
   manager: string;
+  audience: FAQAudience;
   created_at: string;
   updated_at: string;
 }
@@ -33,7 +34,7 @@ router.get("/:faq_id", auth, async (req: Request, res: Response) => {
 
   try {
     const [row] = await connection.execute<RowDataPacket[]>(
-      'SELECT id as faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, created_at, updated_at FROM faqs WHERE id = ?',
+      'SELECT id as faq_id, maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, audience, created_at, updated_at FROM faqs WHERE id = ?',
       [Number(faq_id)]
     );
 
@@ -54,6 +55,7 @@ router.get("/:faq_id", auth, async (req: Request, res: Response) => {
           answer_ko: safetyParse(faq.answer_ko),
           answer_en: safetyParse(faq.answer_en),
           manager: faq.manager,
+          audience: faq.audience ?? 'undergraduate',
           created_at: faq.created_at,
           updated_at: faq.updated_at
         }

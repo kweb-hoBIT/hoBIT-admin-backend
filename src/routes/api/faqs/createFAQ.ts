@@ -5,6 +5,7 @@ import env from "../../../../config/env";
 import { CreateFAQRequest, CreateFAQResponse } from '../../../types/faq';
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
+import { DEFAULT_AUDIENCE, isAudience } from "../../../utils/faqAudience";
 
 const router = express.Router();
 
@@ -23,10 +24,16 @@ router.post("/", auth, async (req: Request, res: Response) => {
     question_en,
     answer_ko,
     answer_en,
-    manager
+    manager,
+    audience = DEFAULT_AUDIENCE
   } : CreateFAQRequest['body'] = req.body;
   const existed_accessToken = req.cookies?.accessToken;
   console.log(req.body);
+
+  if (!isAudience(audience)) {
+    connection.release();
+    return res.status(400).json({ statusCode: 400, message: "대상(audience)은 undergraduate, graduate, all 중 하나여야 해요." });
+  }
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
@@ -49,10 +56,24 @@ router.post("/", auth, async (req: Request, res: Response) => {
         return (rows[0].max_order ?? 0) + 1;
       });
 
+    // 소분류 순서 — 기존 소분류면 그 순서, 새 소분류면 그 대분류 안 맨 뒤 (엑셀 올리기와 같은 방식)
+    const [subOrderRow] = await connection.execute<RowDataPacket[]>(
+      `SELECT subcategory_order FROM faqs WHERE maincategory_ko = ? AND subcategory_ko = ? LIMIT 1`,
+      [maincategory_ko, subcategory_ko]
+    );
+    const subcategory_order = subOrderRow.length > 0
+    ? subOrderRow[0].subcategory_order ?? 1
+    : await connection.execute<RowDataPacket[]>(
+        `SELECT MAX(subcategory_order) AS max_order FROM faqs WHERE maincategory_ko = ?`,
+        [maincategory_ko]
+      ).then(([rows]) => {
+        return (rows[0].max_order ?? 0) + 1;
+      });
+
     const [faq] = await connection.execute<ResultSetHeader>(
       `INSERT INTO faqs (
-        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, category_order, created_by, updated_by) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, audience, category_order, subcategory_order, created_by, updated_by) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         maincategory_ko,
         maincategory_en,
@@ -63,7 +84,9 @@ router.post("/", auth, async (req: Request, res: Response) => {
         JSON.stringify(answer_ko),
         JSON.stringify(answer_en),
         manager,
+        audience,
         category_order,
+        subcategory_order,
         user_id,
         user_id
       ]
@@ -102,7 +125,8 @@ router.post("/", auth, async (req: Request, res: Response) => {
       question_en: "",
       answer_ko: {},
       answer_en: {},
-      manager: ""
+      manager: "",
+      audience: ""
     };
     const new_faq = {
       maincategory_ko: maincategory_ko,
@@ -114,6 +138,7 @@ router.post("/", auth, async (req: Request, res: Response) => {
       answer_ko: answer_ko,
       answer_en: answer_en,
       manager: manager,
+      audience: audience,
     };
 
     const data = {

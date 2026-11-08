@@ -13,10 +13,13 @@ const openai = new OpenAI({
   apiKey: env.OPENAI_KEY,
 });
 
-router.post("/related", auth, async (req: Request, res: Response) => {
+/**
+ * FAQ 질문과 비슷한 질문을 만들어 related_faqs에 저장 (한 개 FAQ)
+ *   POST /faqs/related 와 엑셀 올리기(새 FAQ·질문이 바뀐 FAQ)에서 같이 씀
+ */
+export async function generateRelatedFAQs(faq_id: number, question: string, count = 10): Promise<void> {
   const connection: PoolConnection = await Pool.getConnection();
   try {
-    const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
     const koreanCompletion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -71,7 +74,15 @@ router.post("/related", auth, async (req: Request, res: Response) => {
         [faq_id, JSON.stringify(uninonRelatedQuestions)]
       );
     }
-    
+  } finally {
+    connection.release();
+  }
+}
+
+router.post("/related", auth, async (req: Request, res: Response) => {
+  try {
+    const { faq_id, question, count = 10 } : RelatedFAQRequest['body'] = req.body;
+    await generateRelatedFAQs(faq_id, question, count);
     const response : RelatedFAQResponse= {
       statusCode: 200,
       message: "Related questions generated successfully",
@@ -85,8 +96,6 @@ router.post("/related", auth, async (req: Request, res: Response) => {
     }
     console.error(response);
     res.status(500).json(response);
-  } finally {
-    connection.release();
   }
 });
 

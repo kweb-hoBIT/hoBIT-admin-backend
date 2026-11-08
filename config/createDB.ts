@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import env from './env';
+import { initialAudience } from '../src/utils/faqAudience';
 
 const dbHost = env.DB_HOST;
 const dbUser = env.DB_USER;
@@ -61,6 +62,7 @@ const createFAQTable = async () => {
       answer_ko TEXT NOT NULL,
       answer_en TEXT NOT NULL,
       manager VARCHAR(45) NOT NULL,
+      audience VARCHAR(20) NOT NULL DEFAULT 'undergraduate',
       category_order INT NOT NULL,
       subcategory_order INT DEFAULT 1,
       created_by INT,
@@ -72,6 +74,24 @@ const createFAQTable = async () => {
     );
   `;
   await connection.query(query);
+  await connection.end();
+};
+
+// FAQ 엑셀 올리기·되돌리기 전에 faqs 표 전체를 저장해 두는 곳 (최근 20개만 남김)
+//   data: SELECT * FROM faqs 결과를 JSON으로
+const createFaqBackupsTable = async () => {
+  const connection = await createConnection();
+  await connection.query(`
+    CREATE TABLE IF NOT EXISTS faq_backups (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      user_id INT NULL,
+      note VARCHAR(300) NOT NULL DEFAULT '',
+      row_count INT NOT NULL,
+      data LONGTEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+    )
+  `);
   await connection.end();
 };
 
@@ -219,14 +239,44 @@ const createKeywordRulesTable = async () => {
   await connection.end();
 };
 
-// 키워드 규칙의 '먼저 찾아볼 곳' — 이미 만들어진 표에도 칸 추가
-const addKeywordSourcesColumn = async () => {
+// 이미 만들어진 표에 나중에 추가한 칸 — 없으면 추가하고, 처음 추가할 때만 onAdded 실행
+type AddedColumn = {
+  table: string;
+  column: string;
+  definition: string;
+  onAdded?: (connection: mysql.Connection) => Promise<void>;
+};
+
+// FAQ 대상 처음 값 — 칸을 새로 만들 때 한 번만 (대학원 → 대학원, 행정실·ETC 공통 업무 → 공통, 나머지 학부)
+const setInitialFaqAudience = async (connection: mysql.Connection) => {
+  const [rows]: any = await connection.query(`SELECT id, maincategory_ko, subcategory_ko FROM faqs`);
+  for (const row of rows) {
+    const audience = initialAudience(row);
+    if (audience !== 'undergraduate') {
+      await connection.query(`UPDATE faqs SET audience = ?, updated_at = updated_at WHERE id = ?`, [audience, row.id]);
+    }
+  }
+};
+
+const ADDED_COLUMNS: AddedColumn[] = [
+  // 키워드 규칙의 '먼저 찾아볼 곳'
+  { table: 'keyword_rules', column: 'search_sources', definition: 'JSON NULL' },
+  // FAQ 대상: undergraduate(학부) / graduate(대학원) / all(공통)
+  { table: 'faqs', column: 'audience', definition: "VARCHAR(20) NOT NULL DEFAULT 'undergraduate' AFTER manager", onAdded: setInitialFaqAudience },
+];
+
+const addColumns = async () => {
   const connection = await createConnection();
   try {
-    const [rows]: any = await connection.query(
-      `SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'keyword_rules' AND column_name = 'search_sources'`
-    );
-    if (!rows.length) await connection.query(`ALTER TABLE keyword_rules ADD COLUMN search_sources JSON NULL`);
+    for (const c of ADDED_COLUMNS) {
+      const [rows]: any = await connection.query(
+        `SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?`,
+        [c.table, c.column]
+      );
+      if (rows.length) continue;
+      await connection.query(`ALTER TABLE \`${c.table}\` ADD COLUMN \`${c.column}\` ${c.definition}`);
+      if (c.onAdded) await c.onAdded(connection);
+    }
   } finally {
     await connection.end();
   }
@@ -324,7 +374,8 @@ const createTables = async () => {
   await createKeywordRulesTable();
   await createProfileOptionsTable();
   await createNoticeChangesTable();
-  await addKeywordSourcesColumn();
+  await createFaqBackupsTable();
+  await addColumns();
 };
 
 // 데이터베이스 및 테이블 생성

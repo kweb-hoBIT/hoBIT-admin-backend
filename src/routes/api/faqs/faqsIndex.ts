@@ -10,9 +10,12 @@ import createRelateFAQRoutes from './createRelateFAQ';
 import createCheckFAQCateogryConflictRoutes from './createCheckFAQCategoryConflict';
 import updateCheckFAQCateogryConflictRoutes from './updateCheckFAQCategoryConflict';
 import updateFAQCategoryOrderRoutes from './updateFAQCategoryOrder';
+import faqExcelRoutes from './faqExcel';
 
 const router = express.Router();
 
+// 엑셀 받기·올리기 — /faqs/:faq_id(getFAQ)보다 먼저 등록해야 /faqs/excel이 FAQ 번호로 잡히지 않음
+router.use('/faqs', faqExcelRoutes);
 router.use('/faqs', createFAQRoutes);
 router.use('/faqs', changeFAQCategoryRoutes);
 router.use('/faqs', getAllFAQCategoryRoutes);

@@ -28,6 +28,34 @@ export function fixTranslation(text: string): string {
   return MISTRANSLATIONS.reduce((acc, [re, en]) => acc.replace(re, en), text);
 }
 
+/**
+ * 여러 글을 한 번에 영어로 (엑셀 올리기에서 비어 있는 영어 칸 채우기)
+ *   DeepL에 한 번에 최대 40개씩 보냄. 실패하면 오류를 던짐 (부른 쪽에서 처리)
+ */
+export async function translateTexts(texts: string[]): Promise<string[]> {
+  const out: string[] = [];
+  for (let i = 0; i < texts.length; i += 40) {
+    const chunk = texts.slice(i, i + 40);
+    const body = new URLSearchParams();
+    chunk.forEach((t) => body.append('text', applyGlossary(t)));
+    body.append('target_lang', 'EN');
+    const resp = await fetch('https://api-free.deepl.com/v2/translate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `DeepL-Auth-Key ${env.DEEPL_KEY}`,
+      },
+      body: body.toString(),
+    });
+    if (!resp.ok) throw new Error(`DeepL ${resp.status}`);
+    const data: any = await resp.json();
+    const translations: any[] = data?.translations ?? [];
+    if (translations.length !== chunk.length) throw new Error('DeepL 응답 개수가 맞지 않음');
+    translations.forEach((t) => out.push(fixTranslation(String(t.text ?? ''))));
+  }
+  return out;
+}
+
 // @route   POST api/translate/
 // @desc    Translate the given text and return the translated result
 // @access  Private

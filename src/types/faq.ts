@@ -1,3 +1,6 @@
+/** FAQ 대상 — 학부 / 대학원 / 공통 (src/utils/faqAudience.ts) */
+export type FAQAudience = 'undergraduate' | 'graduate' | 'all';
+
 export type CreateFAQRequest = {
   body: {
     user_id: number;
@@ -20,6 +23,7 @@ export type CreateFAQRequest = {
       phone: string;
     }[];
     manager: string;
+    audience?: FAQAudience; // 없으면 'undergraduate'
   };
 };
 
@@ -55,6 +59,7 @@ export type GetAllFAQResponse = {
         phone: string;
       }[];
       manager: string;
+      audience: FAQAudience;
       created_at: string;
       updated_at: string;
     }[];
@@ -92,6 +97,7 @@ export type GetFAQResponse = {
         phone: string;
       }[];
       manager: string;
+      audience: FAQAudience;
       created_at: string;
       updated_at: string;
     };
@@ -137,6 +143,7 @@ export type UpdateFAQRequest = {
       phone: string;
     }[];
     manager: string;
+    audience?: FAQAudience; // 없으면 'undergraduate'
   };
 };
 

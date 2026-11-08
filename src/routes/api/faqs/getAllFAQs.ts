@@ -30,6 +30,7 @@ router.get("/", auth, async (req: Request, res: Response) => {
         answer_ko: safetyParse(faq.answer_ko),
         answer_en: safetyParse(faq.answer_en),
         manager: faq.manager,
+        audience: faq.audience ?? 'undergraduate',
         created_at: faq.created_at,
         updated_at: faq.updated_at
       };

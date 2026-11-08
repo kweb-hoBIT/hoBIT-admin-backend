@@ -5,6 +5,7 @@ import { UpdateFAQRequest, UpdateFAQResponse } from '../../../types/faq';
 import env from "../../../../config/env";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
+import { isAudience } from "../../../utils/faqAudience";
 
 const router = express.Router();
 
@@ -18,6 +19,7 @@ interface FAQ {
   answer_ko: { answer: string; url: string; email: string; phone: string; }[];
   answer_en: { answer: string; url: string; email: string; phone: string; }[];
   manager: string;
+  audience: string;
 }
 
 // @route   Put api/faqs/:faq_id
@@ -36,10 +38,16 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
     question_en,
     answer_ko,
     answer_en,
-    manager
+    manager,
+    audience: audienceInput
   } : UpdateFAQRequest['body'] = req.body;
   console.log(faq_id, req.body);
   const existed_accessToken = req.cookies?.accessToken;
+
+  if (audienceInput !== undefined && !isAudience(audienceInput)) {
+    connection.release();
+    return res.status(400).json({ statusCode: 400, message: "대상(audience)은 undergraduate, graduate, all 중 하나여야 해요." });
+  }
 
   try {
     const [userName] = await connection.execute<RowDataPacket[]>(
@@ -50,13 +58,15 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
     const username = userName[0].username as string;
 
     const [[faq]] = await connection.execute<RowDataPacket[]>(
-      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, category_order
+      `SELECT maincategory_ko, maincategory_en, subcategory_ko, subcategory_en, question_ko, question_en, answer_ko, answer_en, manager, audience, category_order
        FROM faqs 
        WHERE id = ?`,
       [Number(faq_id)]
     );
 
     let category_order = faq.category_order as number;
+    // 대상을 안 보내면(예전 화면) 원래 값 그대로
+    const audience = audienceInput ?? faq.audience ?? 'undergraduate';
 
     if (faq.maincategory_ko !== maincategory_ko) {
       const [categoryOrderRow] = await connection.execute<RowDataPacket[]>(
@@ -83,7 +93,8 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
       question_en: faq.question_en,
       answer_ko: safetyParse(faq.answer_ko),
       answer_en: safetyParse(faq.answer_en),
-      manager: faq.manager
+      manager: faq.manager,
+      audience: faq.audience
     }
 
     const new_faq : FAQ = {
@@ -95,7 +106,8 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
       question_en: question_en,
       answer_ko: answer_ko,
       answer_en: answer_en,
-      manager: manager
+      manager: manager,
+      audience: audience
     }
 
     if(prev_faq.question_ko !== new_faq.question_ko) {
@@ -159,6 +171,7 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
         answer_ko = ?, 
         answer_en = ?, 
         manager = ?,
+        audience = ?,
         category_order = ?,
         updated_by = ? 
       WHERE id = ?`,
@@ -172,6 +185,7 @@ router.put("/:faq_id", auth, async (req: Request, res: Response) => {
         JSON.stringify(answer_ko),
         JSON.stringify(answer_en),
         manager,
+        audience,
         category_order,
         user_id,
         Number(faq_id)

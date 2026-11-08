@@ -69,6 +69,7 @@ describe('FAQ API', () => {
             answer_ko: [{ answer: '답변', url: '', email: '', phone: '' }],
             answer_en: [{ answer: 'Answer', url: '', email: '', phone: '' }],
             manager: 'Admin',
+            audience: 'undergraduate',
             created_at: expect.any(String),
             updated_at: expect.any(String),
           },

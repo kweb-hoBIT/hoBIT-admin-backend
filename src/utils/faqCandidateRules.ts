@@ -122,8 +122,16 @@ const KO_PROFANITY = [
   '씨발', '씨바', '씨빨', '시발(?![점표령전])', 'ㅅㅂ', 'ㅆㅂ', '씹', '좆', '좃', '존나', '졸라', 'ㅈㄴ', '병신', 'ㅂㅅ', '븅신',
   '개새끼', '개새기', '새끼', '쌔끼', '미친놈', '미친년', '미친새끼', '지랄', 'ㅈㄹ', '닥쳐', '꺼져', '엿먹', '느금마', '니애미',
   '썅', '개같',
+  // 비하·모욕·혐오 표현 (채팅 욕설 검사 hoBIT-backend/src/chat/moderation.ts와 같은 목록 — 일상어와 겹치는 말은 뒤 글자까지)
+  '바보(?!상자)', '멍청', '멍텅구리', '등신', '머저리', '찐따', '찌질', '돌대가리', '닭대가리', '새대가리', '빡대가리', '저능', '꼴통', '띨띨',
+  '모지리', '얼간이', '무뇌', '한심하', '한심한', '재수없', '싸가지', '개빡', '개소리', '쓰레기같', '쓰레기야', '쓰레기네', '정신병자', '정신나간',
+  '틀딱', '한남충', '급식충', '맘충', '김치녀', '된장녀', '니미', '느개비',
 ];
-const EN_PROFANITY = ['fuck\\w*', 'motherfuck\\w*', 'shit\\w*', 'bitch\\w*', 'asshole\\w*', 'bastard\\w*', 'cunt\\w*', 'dick', 'dickhead', 'wtf', 'stfu'];
+const EN_PROFANITY = [
+  'fuck\\w*', 'motherfuck\\w*', 'shit\\w*', 'bitch\\w*', 'asshole\\w*', 'bastard\\w*', 'cunt\\w*', 'dick', 'dickhead', 'wtf', 'stfu',
+  'idiot\\w*', 'stupid\\w*', 'moron\\w*', 'dumbass\\w*', 'dumb', 'imbecile\\w*', 'loser\\w*', 'jerk\\w*', 'scumbag\\w*', 'retard\\w*', 'whore\\w*', 'slut\\w*',
+  'shut\\s+up', 'screw\\s+you', 'you\\s+suck',
+];
 const PROFANITY_MASK = '●●';
 
 // 한 글자씩 사이에 기호 허용 (뒤에 붙은 (?!점) 같은 조건은 그대로)

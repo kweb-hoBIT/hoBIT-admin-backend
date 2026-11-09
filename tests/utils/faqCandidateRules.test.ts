@@ -107,3 +107,16 @@ describe('faqCandidateRules', () => {
     expect(buildTopicTree([])).toEqual([]);
   });
 });
+
+describe('maskProfanity — 비하·모욕 표현도 가림 (채팅 욕설 검사와 같은 목록)', () => {
+  test.each([
+    ['바보야 수강신청 언제야', '●●야 수강신청 언제야'],
+    ['멍청한 시스템', '●●한 시스템'],
+    ['this is stupid', 'this is ●●'],
+    ['shut up', '●●'],
+    ['바보상자 강의', '바보상자 강의'],
+    ['쓰레기통 어디', '쓰레기통 어디'],
+    ['한남동 캠퍼스', '한남동 캠퍼스'],
+    ['dumbbell 있어요?', 'dumbbell 있어요?'],
+  ])('%s', (a, b) => expect(maskProfanity(a)).toBe(b));
+});

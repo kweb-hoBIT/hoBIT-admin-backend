@@ -648,10 +648,12 @@ describe('키워드 규칙 시트', () => {
   it('시트 모양 · 그대로 읽으면 바뀐 게 없어요', async () => {
     const wb = await load(await buildHobitXlsx(data, { sources }));
     const ws = wb.getWorksheet(KEYWORD_SHEET)!;
-    expect(headers(ws)).toEqual(['번호', '대표 키워드', '연관 단어 (쉼표로 구분)', '고정 FAQ 번호 (쉼표, 최대 3개)', '고정 FAQ 질문 (읽기만)', '먼저 찾아볼 곳 (쉼표로 구분)', '삭제']);
+    expect(headers(ws)).toEqual(['번호', '대표 키워드', '연관 단어 (쉼표로 구분)', '고정 FAQ 번호 (쉼표, 최대 3개)', '고정 FAQ 질문 (읽기만)', '먼저 찾아볼 곳 1', '먼저 찾아볼 곳 2', '먼저 찾아볼 곳 3', '삭제']);
     expect(ws.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
     const r2 = findRow(ws, 2);
-    expect(ws.getRow(r2).getCell(col(ws, '먼저 찾아볼 곳 (쉼표로 구분)')).value).toBe('학사 운영 규정 (PDF), 게시판 · 학부 공지');
+    expect(ws.getRow(r2).getCell(col(ws, '먼저 찾아볼 곳 1')).value).toBe('학사 운영 규정 (PDF)');
+    expect(ws.getRow(r2).getCell(col(ws, '먼저 찾아볼 곳 2')).value).toBe('게시판 · 학부 공지');
+    expect(ws.getRow(r2).getCell(col(ws, '먼저 찾아볼 곳 1')).dataValidation?.type).toBe('list'); // 칸을 누르면 목록에서 고름
     expect(ws.getRow(r2).getCell(col(ws, '고정 FAQ 질문 (읽기만)')).value).toBe('10. 휴학은 어떻게 해?\n14. 장학금 신청은 어디서 해?');
     expect((ws.getRow(r2).getCell(col(ws, '고정 FAQ 질문 (읽기만)')).font as any)?.color?.argb).toBe('FF7A7F87');
     expect(ws.getRow(2).getCell(col(ws, '삭제')).dataValidation?.type).toBe('list');
@@ -676,14 +678,14 @@ describe('키워드 규칙 시트', () => {
       writeRow(ws, r1, {
         '연관 단어 (쉼표로 구분)': '수시, 정시, 입학, 수시 , 입 시, 편입',
         '고정 FAQ 번호 (쉼표, 최대 3개)': '10, 11',
-        '먼저 찾아볼 곳 (쉼표로 구분)': '홈페이지·학사안내, notice_under',
+        '먼저 찾아볼 곳 1': '홈페이지·학사안내, notice_under',
       });
       ws.getRow(findRow(ws, 2)).getCell(col(ws, '삭제')).value = '삭제';
       writeRow(ws, ws.actualRowCount + 1, {
         '대표 키워드': '장학',
         '연관 단어 (쉼표로 구분)': '장학금，국장',
         '고정 FAQ 번호 (쉼표, 최대 3개)': '14',
-        '먼저 찾아볼 곳 (쉼표로 구분)': '게시판 · 학부 공지',
+        '먼저 찾아볼 곳 1': '게시판 · 학부 공지',
       });
     });
     const plan = buildHobitPlan(await parseHobitXlsx(edited), data, { sources });
@@ -709,7 +711,7 @@ describe('키워드 규칙 시트', () => {
       const base = ws.actualRowCount;
       writeRow(ws, base + 1, { '대표 키워드': '없는 FAQ', '고정 FAQ 번호 (쉼표, 최대 3개)': '999' });
       writeRow(ws, base + 2, { '대표 키워드': '너무 많음', '고정 FAQ 번호 (쉼표, 최대 3개)': '10, 11, 12, 13' });
-      writeRow(ws, base + 3, { '대표 키워드': '모르는 출처', '먼저 찾아볼 곳 (쉼표로 구분)': '네이버' });
+      writeRow(ws, base + 3, { '대표 키워드': '모르는 출처', '먼저 찾아볼 곳 1': '네이버' });
       writeRow(ws, base + 4, { '대표 키워드': ' 휴 학 ' }); // 2번 '휴학'과 띄어쓰기만 다름
       writeRow(ws, base + 5, { '대표 키워드': '수강', '고정 FAQ 번호 (쉼표, 최대 3개)': '13, 둘' }); // 13은 이번에 지움
       writeRow(ws, base + 6, { '연관 단어 (쉼표로 구분)': '대표 키워드 없음' });

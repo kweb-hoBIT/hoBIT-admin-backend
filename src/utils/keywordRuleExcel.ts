@@ -62,14 +62,19 @@ export interface ParsedKeyword {
 
 export type KeywordPlan = SimplePlan<KeywordView>;
 
-type Key = 'id' | 'keyword' | 'synonyms' | 'pinned' | 'pinned_q' | 'sources' | 'delete';
+type Key = 'id' | 'keyword' | 'synonyms' | 'pinned' | 'pinned_q' | 'sources' | 'sources2' | 'sources3' | 'delete';
+// 먼저 찾아볼 곳은 칸마다 하나씩 골라요 (엑셀 드롭다운은 한 칸에 하나만 고를 수 있음). 4개 이상이면 마지막 칸에 쉼표로
+const SOURCE_KEYS = ['sources', 'sources2', 'sources3'] as const;
 export const KEYWORD_COLUMNS: { key: Key; header: string; match: string; width: number; numeric?: boolean }[] = [
   { key: 'id', header: '번호', match: '번호', width: 7, numeric: true },
   { key: 'keyword', header: '대표 키워드', match: '대표키워드', width: 16 },
   { key: 'synonyms', header: '연관 단어 (쉼표로 구분)', match: '연관단어', width: 40 },
   { key: 'pinned', header: `고정 FAQ 번호 (쉼표, 최대 ${MAX_KEYWORD_PINNED}개)`, match: '고정FAQ번호', width: 16 },
   { key: 'pinned_q', header: '고정 FAQ 질문 (읽기만)', match: '고정FAQ질문', width: 44 },
-  { key: 'sources', header: '먼저 찾아볼 곳 (쉼표로 구분)', match: '먼저찾아볼곳', width: 34 },
+  // 세 칸 모두 같은 match — 왼쪽부터 차례로 sources, sources2, sources3 (예전 파일의 '먼저 찾아볼 곳 (쉼표로 구분)' 한 칸도 sources로 읽힘)
+  { key: 'sources', header: '먼저 찾아볼 곳 1', match: '먼저찾아볼곳', width: 18 },
+  { key: 'sources2', header: '먼저 찾아볼 곳 2', match: '먼저찾아볼곳', width: 18 },
+  { key: 'sources3', header: '먼저 찾아볼 곳 3', match: '먼저찾아볼곳', width: 18 },
   { key: 'delete', header: '삭제', match: '삭제', width: 8 },
 ];
 
@@ -110,7 +115,9 @@ export function addKeywordSheet(
       synonyms: v.synonyms.join(', '),
       pinned: v.pinned.join(', '),
       pinned_q: v.pinned.map((n) => `${n}. ${question.get(n) ?? '(없는 FAQ)'}`).join('\n'),
-      sources: v.sources.map(label).join(', '),
+      sources: label(v.sources[0] ?? ''),
+      sources2: v.sources[1] ? label(v.sources[1]) : '',
+      sources3: v.sources.slice(2).map(label).join(', '),
       delete: '',
     });
     row.getCell(qCol).font = READONLY_FONT;
@@ -119,7 +126,10 @@ export function addKeywordSheet(
   ws.getRow(1).getCell(qCol).note = '어떤 FAQ인지 보여 주는 칸이에요. 고쳐도 반영되지 않아요. 고정 FAQ는 왼쪽 번호 칸에서 바꿔요.';
   if (sources?.length) {
     const sCol = KEYWORD_COLUMNS.findIndex((c) => c.key === 'sources') + 1;
-    ws.getRow(1).getCell(sCol).note = `쓸 수 있는 이름 (쉼표로 여러 개):\n${sources.map((s) => `• ${s.label}`).join('\n')}`;
+    ws.getRow(1).getCell(sCol).note = `칸을 누르면 목록에서 골라요. 한 칸에 하나씩, 4개 이상이면 3번 칸에 쉼표로 이어 적어요.\n${sources.map((s) => `• ${s.label}`).join('\n')}`;
+    for (const k of SOURCE_KEYS) {
+      addListValidation(ws, KEYWORD_COLUMNS.findIndex((c) => c.key === k) + 1, sources.map((s) => s.label), '먼저 찾아볼 곳', '목록에서 골라 주세요.', { strict: false });
+    }
   }
   ws.views = [{ state: 'frozen', xSplit: 2, ySplit: 1 }];
   addListValidation(ws, KEYWORD_COLUMNS.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "규칙을 지우려면 '삭제'를 골라 주세요.");
@@ -141,7 +151,7 @@ export function parseKeywordSheet(ws: ExcelJS.Worksheet | undefined): { items: P
     problems.push({ row: 1, message: missingHeaderMessage(missing) });
     return done();
   }
-  const readKeys: Key[] = ['id', 'keyword', 'synonyms', 'pinned', 'sources', 'delete'];
+  const readKeys: Key[] = ['id', 'keyword', 'synonyms', 'pinned', ...SOURCE_KEYS, 'delete'];
   for (let r = 2; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
     const text = (k: Key) => (colOf[k] ? cellText(row.getCell(colOf[k]!).value) : '');
@@ -167,7 +177,7 @@ export function parseKeywordSheet(ws: ExcelJS.Worksheet | undefined): { items: P
       keyword,
       synonyms: splitList(text('synonyms')),
       pinnedTokens: String(text('pinned')).split(/[,，、;\s]+/).map((s) => s.trim()).filter(Boolean),
-      sourceTokens: splitList(text('sources')),
+      sourceTokens: SOURCE_KEYS.flatMap((k) => splitList(text(k))),
     });
   }
   return done();

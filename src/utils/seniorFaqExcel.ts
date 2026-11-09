@@ -12,6 +12,7 @@
 import ExcelJS from 'exceljs';
 import {
   addListValidation,
+  sortedUnique,
   addStyledSheet,
   cellText,
   Change,
@@ -261,6 +262,13 @@ export function addSeniorSheet(wb: ExcelJS.Workbook, rows: SeniorDbRow[]): Excel
     freezeCol: HEAD_COLUMNS.findIndex((c) => c.key === 'detailcategory_ko') + 1, // 번호 ~ 세부 항목
   });
   addListValidation(ws, columns.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "선배 FAQ를 지우려면 '삭제'를 골라 주세요.");
+  // 분류·담당자 — 칸을 누르면 지금 쓰는 값에서 고름 (새 값도 적을 수 있음)
+  const colOf = (key: string) => columns.findIndex((x) => x.key === key) + 1;
+  const pick = (key: 'maincategory_ko' | 'subcategory_ko' | 'detailcategory_ko' | 'manager') => sortedUnique(rows.map((r) => (r as any)[key]));
+  addListValidation(ws, colOf('maincategory_ko'), pick('maincategory_ko'), '대분류', '지금 쓰는 대분류에서 골라 주세요.', { strict: false });
+  addListValidation(ws, colOf('subcategory_ko'), pick('subcategory_ko'), '소분류', '지금 쓰는 소분류에서 골라 주세요.', { strict: false });
+  addListValidation(ws, colOf('detailcategory_ko'), pick('detailcategory_ko'), '세부 항목', '지금 쓰는 세부 항목에서 골라 주세요.', { strict: false });
+  addListValidation(ws, colOf('manager'), pick('manager'), '담당자', '담당자 목록에서 골라 주세요.', { strict: false });
   return ws;
 }
 

@@ -12,6 +12,7 @@
 import ExcelJS from 'exceljs';
 import {
   addFaqSheet,
+  faqChoicesOf,
   addStyledSheet,
   buildImportPlan,
   cellText,
@@ -249,8 +250,9 @@ export function buildHobitWorkbook(data: HobitData, opts: WorkbookOptions = {}):
   // 행정실 FAQ는 대상별 시트로 (대상 값이 이상하면 학부 시트)
   // 세 시트의 답변 묶음 수는 똑같이 (가장 많은 답변 수 기준 — 시트끼리 줄을 옮겨도 칸이 맞게)
   const groups = maxFaqCards(data.faqs);
+  const choices = faqChoicesOf(data.faqs.map(dbRowToView), collectManagers(data).map((m) => m.name)); // 드롭다운은 학부·대학원·공통 FAQ 전체 기준
   for (const sh of FAQ_SHEETS) {
-    addFaqSheet(wb, data.faqs.filter((f) => dbRowToView(f).audience === sh.audience), sh.name, groups); // 대상이 비면 처음 규칙
+    addFaqSheet(wb, data.faqs.filter((f) => dbRowToView(f).audience === sh.audience), sh.name, groups, choices); // 대상이 비면 처음 규칙
   }
   addSeniorSheet(wb, data.seniorFaqs);
 

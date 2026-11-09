@@ -349,17 +349,56 @@ export function addStyledSheet(
   return ws;
 }
 
-/** 드롭다운 (2번째 줄부터 데이터 끝 + 여유 줄까지) */
-export function addListValidation(ws: ExcelJS.Worksheet, col: number, values: string[], title: string, error: string) {
+/** 드롭다운 선택지를 모아 두는 숨김 시트 — 엑셀은 선택지를 칸에 직접 적으면 255자까지라 긴 목록(카테고리 등)은 여기 적고 범위로 가리킴. 올릴 때는 읽지 않음 */
+export const CHOICE_SHEET = '선택지';
+
+function choiceRange(ws: ExcelJS.Worksheet, values: string[], title: string): string {
+  const wb = ws.workbook;
+  let cs = wb.getWorksheet(CHOICE_SHEET);
+  if (!cs) {
+    cs = wb.addWorksheet(CHOICE_SHEET);
+    cs.state = 'hidden';
+  }
+  const sheet = cs;
+  const col = sheet.columnCount + 1;
+  sheet.getRow(1).getCell(col).value = `${ws.name} · ${title}`;
+  values.forEach((v, i) => {
+    sheet.getRow(i + 2).getCell(col).value = v;
+  });
+  const letter = sheet.getColumn(col).letter;
+  return `'${CHOICE_SHEET}'!$${letter}$2:$${letter}$${values.length + 1}`;
+}
+
+/**
+ * 드롭다운 (2번째 줄부터 데이터 끝 + 여유 줄까지) — 칸을 누르면 목록에서 고름
+ *   strict(기본): 목록에 없는 값은 막음 (대상·삭제처럼 정해진 값)
+ *   strict: false: 목록에 없는 값도 '예'를 누르면 그대로 씀 (카테고리·담당자처럼 새로 만들 수도 있는 값)
+ */
+export function addListValidation(
+  ws: ExcelJS.Worksheet,
+  col: number,
+  values: string[],
+  title: string,
+  error: string,
+  opts: { strict?: boolean } = {}
+) {
+  const list = [...new Set(values.map((v) => String(v ?? '').trim()).filter(Boolean))];
+  if (col < 1 || !list.length) return;
+  const strict = opts.strict ?? true;
+  const inline = `"${list.join(',')}"`;
+  // 쉼표·따옴표가 든 값이나 255자를 넘는 목록은 숨김 시트 범위로
+  const formula =
+    inline.length <= 250 && !list.some((v) => v.includes(',') || v.includes('"')) ? inline : choiceRange(ws, list, title);
   const lastRow = ws.rowCount + EXTRA_VALIDATION_ROWS;
   for (let r = 2; r <= lastRow; r++) {
     ws.getRow(r).getCell(col).dataValidation = {
       type: 'list',
       allowBlank: true,
-      formulae: [`"${values.join(',')}"`],
+      formulae: [formula],
       showErrorMessage: true,
+      errorStyle: strict ? 'stop' : 'warning',
       errorTitle: title,
-      error,
+      error: strict ? error : `${error} 목록에 없는 값이에요. 새로 만들려면 '예'를 눌러 주세요.`,
     };
   }
 }
@@ -518,7 +557,26 @@ export const maxFaqCards = (rows: DbFaqRow[]) => rows.reduce((m, r) => Math.max(
  * 행정실 FAQ 시트 — FAQ 하나가 한 줄
  *   groups: 답변 묶음 수 (안 주면 MIN_FAQ_GROUPS와 이 시트의 가장 많은 답변 수 중 큰 값 — 카드를 빠뜨리지 않음)
  */
-export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[], name: string = FAQ_SHEETS[0].name, groups?: number): ExcelJS.Worksheet {
+/** 드롭다운 선택지 — 시트마다 자기 줄만 보면 대학원처럼 FAQ가 적은 시트는 고를 게 없어서, 전체 FAQ 기준으로 넘겨받음 */
+export type FaqChoices = { main: string[]; sub: string[]; managers: string[] };
+const collatorKo = new Intl.Collator('ko-KR');
+export const sortedUnique = (values: (string | null | undefined)[]) =>
+  [...new Set(values.map((v) => normLine(v ?? '')).filter(Boolean))].sort((a, b) => collatorKo.compare(a, b));
+export function faqChoicesOf(rows: { maincategory_ko?: string | null; subcategory_ko?: string | null; manager?: string | null }[], extraManagers: string[] = []): FaqChoices {
+  return {
+    main: sortedUnique(rows.map((r) => r.maincategory_ko)),
+    sub: sortedUnique(rows.map((r) => r.subcategory_ko)),
+    managers: sortedUnique([...rows.map((r) => r.manager), ...extraManagers]),
+  };
+}
+
+export function addFaqSheet(
+  wb: ExcelJS.Workbook,
+  rows: DbFaqRow[],
+  name: string = FAQ_SHEETS[0].name,
+  groups?: number,
+  choices?: FaqChoices
+): ExcelJS.Worksheet {
   const n = Math.max(groups ?? 0, MIN_FAQ_GROUPS, maxFaqCards(rows));
   const columns = [...FAQ_HEAD_COLUMNS, ...groupColumns(FAQ_CARD_FIELDS, n), ...FAQ_TAIL_COLUMNS];
   const ws = addStyledSheet(wb, name, columns.map((c) => ({ ...c, numeric: c.key === 'id' })));
@@ -556,6 +614,12 @@ export function addFaqSheet(wb: ExcelJS.Workbook, rows: DbFaqRow[], name: string
     '학부, 대학원, 공통 중에서 골라 주세요.'
   );
   addListValidation(ws, columns.findIndex((c) => c.key === 'delete') + 1, [DELETE_MARK], '삭제', "FAQ를 지우려면 '삭제'를 골라 주세요.");
+  // 대분류·소분류·담당자 — 칸을 누르면 지금 쓰는 값에서 고름 (새 분류·담당자도 적을 수 있게 막지는 않음)
+  const c = choices ?? faqChoicesOf(rows.map(dbRowToView));
+  const colOf = (key: string) => columns.findIndex((x) => x.key === key) + 1;
+  addListValidation(ws, colOf('maincategory_ko'), c.main, '대분류', '지금 쓰는 대분류에서 골라 주세요.', { strict: false });
+  addListValidation(ws, colOf('subcategory_ko'), c.sub, '소분류', '지금 쓰는 소분류에서 골라 주세요.', { strict: false });
+  addListValidation(ws, colOf('manager'), c.managers, '담당자', '담당자 목록에서 골라 주세요.', { strict: false });
   return ws;
 }
 

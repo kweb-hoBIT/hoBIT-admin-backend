@@ -1,6 +1,14 @@
 import mysql from 'mysql2/promise';
 import env from './env';
 import { initialAudience } from '../src/utils/faqAudience';
+import {
+  AUTO_FEEDBACK_REASON,
+  mergeSamples,
+  normalizeQuestion,
+  parseAutoFeedbackDetail,
+  parseSamples,
+  Sample,
+} from '../src/utils/faqCandidateRules';
 
 const dbHost = env.DB_HOST;
 const dbUser = env.DB_USER;
@@ -379,6 +387,91 @@ const createProfileOptionsTable = async () => {
   await connection.end();
 };
 
+// FAQ 후보 — 학생이 물었지만 호빗이 답을 못 찾은 질문을 비슷한 것끼리 모은 것 (밤 12시 src/scripts/faqCandidates.ts)
+//   question: 대표 문장(한국어) / ask_count: 물은 횟수 / samples: 학생 원래 문장 최근 8개 [{text, language, at}] (JSON)
+//   status: open(열림) | done(FAQ 만듦) | dismissed(제외)
+//   similar_faq_*: 이미 비슷한 FAQ가 있으면 — 검색이 놓친 것이라 FAQ 대신 키워드 규칙을 고칠 일
+const createFaqCandidatesTable = async () => {
+  const connection = await createConnection();
+  try {
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS faq_candidates (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        question VARCHAR(300) NOT NULL,
+        ask_count INT NOT NULL DEFAULT 1,
+        samples TEXT NULL,
+        first_asked_at TIMESTAMP NULL,
+        last_asked_at TIMESTAMP NULL,
+        status VARCHAR(16) NOT NULL DEFAULT 'open',
+        similar_faq_id INT NULL,
+        similar_faq_question VARCHAR(300) NULL,
+        similar_faq_senior TINYINT NOT NULL DEFAULT 0,
+        similar_score FLOAT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        KEY idx_status_count (status, ask_count)
+      )
+    `);
+    await moveAutoFeedbacksToCandidates(connection);
+  } finally {
+    await connection.end();
+  }
+};
+
+// 예전 밤 작업이 user_feedbacks에 넣은 '질문을 추가해주세요!' 기록 → FAQ 후보로 한 번 옮김
+//   처리 안 한 것만 후보로 (같은 글자는 합쳐 물은 횟수를 더함), 옮긴 뒤 자동 기록은 처리한 것까지 모두 지움
+//   (처리한 것은 이미 FAQ를 만들었거나 넘긴 것이라 후보로 다시 띄울 필요가 없고, 피드백 목록엔 학생이 남긴 것만 남기려고)
+//   지운 뒤에는 자동 기록이 없으므로 다시 켜도 아무것도 안 함 — 한 번만 실행됨
+const moveAutoFeedbacksToCandidates = async (connection: mysql.Connection) => {
+  const [rows]: any = await connection.query(
+    `SELECT id, feedback_detail, resolved, created_at FROM user_feedbacks WHERE feedback_reason = ? ORDER BY created_at`,
+    [AUTO_FEEDBACK_REASON]
+  );
+  if (!rows.length) return;
+  const groups = new Map<string, { question: string; samples: Sample[]; first: Date; last: Date }>();
+  for (const r of rows) {
+    if (Number(r.resolved)) continue;
+    const q = parseAutoFeedbackDetail(r.feedback_detail);
+    if (!q) continue;
+    const key = normalizeQuestion(q);
+    const at = new Date(r.created_at);
+    const g = groups.get(key);
+    const sample = { text: q, language: 'KO', at: at.toISOString() };
+    if (g) {
+      g.samples.push(sample);
+      if (at < g.first) g.first = at;
+      if (at > g.last) g.last = at;
+    } else groups.set(key, { question: q, samples: [sample], first: at, last: at });
+  }
+  await connection.beginTransaction();
+  try {
+    const [cands]: any = await connection.query(`SELECT id, question, samples FROM faq_candidates`);
+    const byNorm = new Map<string, any>(cands.map((c: any) => [normalizeQuestion(c.question), c]));
+    for (const [key, g] of groups) {
+      const c = byNorm.get(key);
+      if (c) {
+        await connection.query(
+          `UPDATE faq_candidates SET ask_count = ask_count + ?, samples = ?,
+                  first_asked_at = LEAST(COALESCE(first_asked_at, ?), ?), last_asked_at = GREATEST(COALESCE(last_asked_at, ?), ?)
+            WHERE id = ?`,
+          [g.samples.length, JSON.stringify(mergeSamples(parseSamples(c.samples), g.samples)), g.first, g.first, g.last, g.last, c.id]
+        );
+      } else {
+        await connection.query(
+          `INSERT INTO faq_candidates (question, ask_count, samples, first_asked_at, last_asked_at) VALUES (?, ?, ?, ?, ?)`,
+          [g.question.slice(0, 300), g.samples.length, JSON.stringify(mergeSamples([], g.samples)), g.first, g.last]
+        );
+      }
+    }
+    await connection.query(`DELETE FROM user_feedbacks WHERE id IN (?)`, [rows.map((r: any) => r.id)]);
+    await connection.commit();
+    console.log(`[faq_candidates] 예전 자동 피드백 ${rows.length}개 정리 → 후보 ${groups.size}개`);
+  } catch (e) {
+    await connection.rollback();
+    throw e;
+  }
+};
+
 const createTables = async () => {
   await createUserTable();
   await createFAQTable();
@@ -393,6 +486,7 @@ const createTables = async () => {
   await createNoticeChangesTable();
   await createFaqBackupsTable();
   await addColumns();
+  await createFaqCandidatesTable();
 };
 
 // 데이터베이스 및 테이블 생성

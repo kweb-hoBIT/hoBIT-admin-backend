@@ -3,7 +3,7 @@ import { RowDataPacket } from "mysql2/promise";
 import { Pool } from "../../../../config/connectDB";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
-import { AUTO_FEEDBACK_REASON } from "../../../scripts/getUnmatchedQuestion_v2";
+import { AUTO_FEEDBACK_REASON } from "../../../utils/faqCandidateRules";
 import env from "../../../../config/env";
 
 /**

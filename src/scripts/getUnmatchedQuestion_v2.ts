@@ -23,8 +23,9 @@ const openai = new OpenAI({
   apiKey: env.OPENAI_KEY,
 });
 
-/** 이 작업이 만든 기록의 이유 문구 — 학생이 직접 남긴 피드백과 구분할 때 씀 (대시보드) */
-export const AUTO_FEEDBACK_REASON = 'AI가 유저 질문과 매칭되는 FAQ가 없는것을 발견';
+// 더 이상 밤 작업에서 부르지 않음 — scripts/faqCandidates.ts(FAQ 후보)로 바뀜. 문구는 utils/faqCandidateRules.ts로 옮김
+import { AUTO_FEEDBACK_REASON } from "../utils/faqCandidateRules";
+export { AUTO_FEEDBACK_REASON };
 
 export async function getUnmatchedQuestion_v2() {
   const connection: PoolConnection = await Pool.getConnection();

@@ -4,6 +4,7 @@ import { PoolConnection, RowDataPacket } from "mysql2/promise";
 import { GetAllUserFeedbackResponse } from '../../../types/feedback';
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
+import { AUTO_FEEDBACK_REASON } from "../../../utils/faqCandidateRules";
 
 const router = express.Router();
 
@@ -17,8 +18,11 @@ router.get("/user", auth, async (req: Request, res: Response) => {
     const [rows] = await connection.execute<RowDataPacket[]>(
       `SELECT user_feedbacks.id, faqs.question_ko, user_feedbacks.user_question, user_feedbacks.feedback_reason, user_feedbacks.feedback_detail, user_feedbacks.language, user_feedbacks.resolved, user_feedbacks.created_at
       FROM user_feedbacks
-      LEFT JOIN faqs ON user_feedbacks.faq_id = faqs.id 
+      LEFT JOIN faqs ON user_feedbacks.faq_id = faqs.id
+      WHERE user_feedbacks.feedback_reason IS NULL OR user_feedbacks.feedback_reason <> ?
       order by user_feedbacks.created_at desc`,
+      // 예전 밤 작업이 넣은 자동 기록은 빼고 학생이 남긴 피드백만 (자동 기록은 'FAQ 후보'로 옮김)
+      [AUTO_FEEDBACK_REASON],
     )
 
     const userFeedbacks : GetAllUserFeedbackResponse['data']['userFeedbacks'] = rows.map((userFeedback) => {

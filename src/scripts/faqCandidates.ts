@@ -5,6 +5,7 @@ import env from "../../config/env";
 import {
   groupByExactText,
   isTrivialQuestion,
+  maskProfanity,
   mergeSamples,
   normalizeQuestion,
   parseFilterResponse,
@@ -20,7 +21,10 @@ import {
  *   3) AI(gpt-4o-mini, 50개씩): 챗봇과 상관없는 질문 거르기 + 영어 → 한국어. 응답을 못 읽으면 그 묶음은 그대로 둠
  *   4) RAG(POST /faq_candidates/analyze): 기존 후보에 붙일지, 새 질문끼리 어떻게 묶을지, 비슷한 FAQ가 있는지
  *      RAG가 꺼져 있으면 글자가 같은 것만 묶음
- *   5) 후보 표(faq_candidates)에 합치거나 새로 만들고, 가져온 질문을 '살펴봄'(ismatched=1)으로
+ *      주제·하위 주제도 RAG가 정함 (주제 지도 단어 → 가까운 FAQ 분류 → AI)
+ *   5) 후보 표(faq_candidates)에 합치거나 새로 만들고, 학생 원문 전부를 faq_candidate_questions에 (욕설은 ●●)
+ *      가져온 질문은 '살펴봄'(ismatched=1)으로
+ *   6) 새 질문이 없어도 열림·제외 후보의 비슷한 FAQ·주제를 다시 정하고, 주제가 빈 완료 후보도 한 번 채움
  * 예전 방식(user_feedbacks에 매일 한 줄씩)은 같은 질문이 날마다 다시 쌓이고 몇 명이 물었는지 몰라서 바꿈
  */
 
@@ -32,12 +36,15 @@ const RAG_TIMEOUT_MS = 120_000;
 
 type LogRow = { id: number; user_question: string; language: string; created_at: Date };
 type SimilarFaq = { faq_id: number | null; question: string; score: number; senior: boolean } | null;
-type Group = { existing_id: number | null; cluster: number | null; similar_faq?: SimilarFaq };
+type Topic = { topic?: { id: string; name: string }; subtopic?: string };
+type Group = { existing_id: number | null; cluster: number | null; similar_faq?: SimilarFaq } & Topic;
+type ExistingResult = { id: number; similar_faq: SimilarFaq } & Topic;
 export type RunSummary = {
   logs: number;
   dropped: number;
   merged: number;
   created: number;
+  topics: number; // 주제를 (다시) 정한 후보 수
   rag: boolean;
 };
 
@@ -83,7 +90,7 @@ async function filterAndTranslate(texts: string[]): Promise<{ keep: boolean; ko:
 async function analyzeWithRag(
   questions: string[],
   existing: { id: number; question: string }[],
-): Promise<{ results: Group[]; existing: { id: number; similar_faq: SimilarFaq }[] } | null> {
+): Promise<{ results: Group[]; existing: ExistingResult[] } | null> {
   try {
     const r = await fetch(`${env.RAG_URL}/faq_candidates/analyze`, {
       method: "POST",
@@ -120,11 +127,15 @@ async function similarColumns(conn: PoolConnection, s: SimilarFaq) {
 
 const iso = (d: Date | string) => new Date(d).toISOString();
 
+/** RAG가 정한 주제 → [topic_id, topic_name, subtopic] (없으면 null — 기존 값을 지우지 않게 호출하는 쪽에서 건너뜀) */
+const topicColumns = (t: Topic | undefined | null) =>
+  t?.topic?.id ? [t.topic.id.slice(0, 32), String(t.topic.name ?? "").slice(0, 50), String(t.subtopic ?? "").slice(0, 100) || null] : null;
+
 export async function runFaqCandidates(): Promise<RunSummary | null> {
   if (running) return null;
   running = true;
   let conn: PoolConnection | null = null;
-  const summary: RunSummary = { logs: 0, dropped: 0, merged: 0, created: 0, rag: false };
+  const summary: RunSummary = { logs: 0, dropped: 0, merged: 0, created: 0, topics: 0, rag: false };
   try {
     conn = await Pool.getConnection();
     // 답한 질문·FAQ 클릭·예전 기록은 살펴본 것으로 표시만
@@ -138,7 +149,6 @@ export async function runFaqCandidates(): Promise<RunSummary | null> {
     );
     const logs = logRows as LogRow[];
     summary.logs = logs.length;
-    if (!logs.length) return summary;
 
     // 규칙 먼저 — 빈·한 글자 질문은 버리고, 글자가 같은 질문은 AI에 한 번만
     const kept = logs.filter((l) => !isTrivialQuestion(l.user_question));
@@ -151,9 +161,9 @@ export async function runFaqCandidates(): Promise<RunSummary | null> {
         uniq.push(l.user_question.trim());
       }
     }
-    const filtered = await filterAndTranslate(uniq);
+    const filtered = uniq.length ? await filterAndTranslate(uniq) : [];
 
-    // 남길 질문 (한국어 문장 기준) — 같은 한국어 문장끼리 다시 모음
+    // 남길 질문 (한국어 문장 기준) — 같은 한국어 문장끼리 다시 모음. AI가 버린 질문(욕설·장난)은 원문도 저장하지 않음
     type Item = { ko: string; logs: LogRow[] };
     const items: Item[] = [];
     const itemByKo = new Map<string, Item>();
@@ -183,6 +193,12 @@ export async function runFaqCandidates(): Promise<RunSummary | null> {
     summary.rag = !!rag;
     const groups: Group[] = rag ? rag.results : groupByExactText(questions, existing);
 
+    // 주제가 빈 완료 후보 — 묶기와 상관없이 주제만 (처음 한 번 채우기)
+    const [doneRows] = await conn.query<RowDataPacket[]>(
+      `SELECT id, question FROM faq_candidates WHERE status = 'done' AND topic_name IS NULL LIMIT 2000`,
+    );
+    const doneTopics = doneRows.length ? await analyzeWithRag(doneRows.map((r) => String(r.question)), []) : null;
+
     await conn.beginTransaction();
     try {
       // 기존 후보에 합치기
@@ -198,10 +214,19 @@ export async function runFaqCandidates(): Promise<RunSummary | null> {
       });
 
       const samplesOf = (its: Item[]): Sample[] =>
-        its.flatMap((it) => it.logs.map((l) => ({ text: l.user_question.trim(), language: l.language || "KO", at: iso(l.created_at) })));
+        its.flatMap((it) => it.logs.map((l) => ({ text: maskProfanity(l.user_question.trim()), language: l.language || "KO", at: iso(l.created_at) })));
       const range = (its: Item[]) => {
         const times = its.flatMap((it) => it.logs.map((l) => new Date(l.created_at).getTime()));
         return [new Date(Math.min(...times)), new Date(Math.max(...times))];
+      };
+      // 학생 원문 전부 (samples는 최근 8개뿐이라 따로)
+      const saveQuestions = async (candidateId: number, its: Item[]) => {
+        const values = its.flatMap((it) => it.logs.map((l) => [
+          candidateId, l.id, maskProfanity(l.user_question.trim()).slice(0, 300), l.language || "KO", new Date(l.created_at),
+        ]));
+        if (values.length) {
+          await conn!.query(`INSERT INTO faq_candidate_questions (candidate_id, log_id, text, language, asked_at) VALUES ?`, [values]);
+        }
       };
 
       for (const [id, its] of toExisting) {
@@ -216,6 +241,7 @@ export async function runFaqCandidates(): Promise<RunSummary | null> {
             WHERE id = ?`,
           [n, JSON.stringify(mergeSamples(parseSamples(rows[0].samples), samplesOf(its))), first, first, last, last, id],
         );
+        await saveQuestions(id, its);
         summary.merged += 1;
       }
 
@@ -225,27 +251,40 @@ export async function runFaqCandidates(): Promise<RunSummary | null> {
         const rep = pickRepresentative(its.flatMap((it) => it.logs.map(() => it.ko)));
         const repIdx = idxs.find((i) => normalizeQuestion(items[i].ko) === normalizeQuestion(rep)) ?? idxs[0];
         const [first, last] = range(its);
-        await conn.query(
+        const topic = topicColumns(groups[repIdx]) ?? [null, null, null];
+        const [ins]: any = await conn.query(
           `INSERT INTO faq_candidates
-             (question, ask_count, samples, first_asked_at, last_asked_at, similar_faq_id, similar_faq_question, similar_faq_senior, similar_score)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [rep.slice(0, 300), its.reduce((s, it) => s + it.logs.length, 0), JSON.stringify(mergeSamples([], samplesOf(its))),
-            first, last, ...(await similarColumns(conn, groups[repIdx]?.similar_faq ?? null))],
+             (question, ask_count, samples, first_asked_at, last_asked_at, similar_faq_id, similar_faq_question, similar_faq_senior, similar_score,
+              topic_id, topic_name, subtopic)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [maskProfanity(rep).slice(0, 300), its.reduce((s, it) => s + it.logs.length, 0), JSON.stringify(mergeSamples([], samplesOf(its))),
+            first, last, ...(await similarColumns(conn, groups[repIdx]?.similar_faq ?? null)), ...topic],
         );
+        await saveQuestions(Number(ins.insertId), its);
         summary.created += 1;
+        if (topic[0]) summary.topics += 1;
       }
 
-      // 기존 후보의 비슷한 FAQ 새로 — 그사이 FAQ를 추가했으면 바로 보이게
+      // 기존 후보의 비슷한 FAQ·주제 새로 — 그사이 FAQ를 추가했으면 바로 보이게, 주제가 비었으면 채움
       for (const e of rag?.existing ?? []) {
+        const topic = topicColumns(e);
         await conn.query(
           `UPDATE faq_candidates SET similar_faq_id = ?, similar_faq_question = ?, similar_faq_senior = ?, similar_score = ?,
-                  updated_at = updated_at WHERE id = ?`,
-          [...(await similarColumns(conn, e.similar_faq ?? null)), Number(e.id)],
+                  ${topic ? "topic_id = ?, topic_name = ?, subtopic = ?," : ""} updated_at = updated_at WHERE id = ?`,
+          [...(await similarColumns(conn, e.similar_faq ?? null)), ...(topic ?? []), Number(e.id)],
         );
+        if (topic) summary.topics += 1;
+      }
+      for (const [k, r] of (doneTopics?.results ?? []).entries()) {
+        const topic = topicColumns(r);
+        if (!topic || !doneRows[k]) continue;
+        await conn.query(`UPDATE faq_candidates SET topic_id = ?, topic_name = ?, subtopic = ?, updated_at = updated_at WHERE id = ?`,
+          [...topic, Number(doneRows[k].id)]);
+        summary.topics += 1;
       }
 
       // 가져온 질문만 '살펴봄' (작업 중에 새로 들어온 질문은 다음에)
-      await conn.query(`UPDATE question_logs SET ismatched = 1 WHERE id IN (?)`, [logs.map((l) => l.id)]);
+      if (logs.length) await conn.query(`UPDATE question_logs SET ismatched = 1 WHERE id IN (?)`, [logs.map((l) => l.id)]);
       await conn.commit();
     } catch (e) {
       await conn.rollback();

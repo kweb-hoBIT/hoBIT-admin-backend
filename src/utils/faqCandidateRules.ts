@@ -112,3 +112,85 @@ export function groupByExactText(
     return { existing_id: null, cluster: clusters.get(k)! };
   });
 }
+
+// ── 욕설 가리기 ─────────────────────────────────────────────
+// AI 거르기(욕설·장난 질문 버림)를 지나 남은 질문 속 욕설을 한 번 더 가림 — 저장할 때와 화면에 보낼 때
+// 단어 목록은 여기 한 곳에만 (고칠 때 tests/utils/faqCandidateRules.test.ts도 같이)
+//   한국어: 글자 사이에 기호를 끼워 써도 잡음 ("ㅅ.ㅂ", "씨*발") — 띄어쓰기는 허용 안 함 ("몇 시 발표"가 걸려서)
+//   '시발점'·'시발표'(몇시발표)처럼 뜻이 다른 말은 뺌. '시바'·'애미'·'니미'는 다른 말 속에 너무 자주 나와 넣지 않음
+const KO_PROFANITY = [
+  '씨발', '씨바', '씨빨', '시발(?![점표령전])', 'ㅅㅂ', 'ㅆㅂ', '씹', '좆', '좃', '존나', '졸라', 'ㅈㄴ', '병신', 'ㅂㅅ', '븅신',
+  '개새끼', '개새기', '새끼', '쌔끼', '미친놈', '미친년', '미친새끼', '지랄', 'ㅈㄹ', '닥쳐', '꺼져', '엿먹', '느금마', '니애미',
+  '썅', '개같',
+];
+const EN_PROFANITY = ['fuck\\w*', 'motherfuck\\w*', 'shit\\w*', 'bitch\\w*', 'asshole\\w*', 'bastard\\w*', 'cunt\\w*', 'dick', 'dickhead', 'wtf', 'stfu'];
+const PROFANITY_MASK = '●●';
+
+// 한 글자씩 사이에 기호 허용 (뒤에 붙은 (?!점) 같은 조건은 그대로)
+const spaced = (w: string) => {
+  const m = /^(.*?)(\(\?.*\))?$/.exec(w)!;
+  return [...m[1]].join('[.\\-_*~]*') + (m[2] ?? '');
+};
+const PROFANITY_RE = new RegExp(
+  `(${KO_PROFANITY.map(spaced).join('|')})|\\b(${EN_PROFANITY.join('|')})\\b`,
+  'gi',
+);
+
+/** 욕설을 ●●로 */
+export function maskProfanity(text: string): string {
+  return String(text ?? '').replace(PROFANITY_RE, PROFANITY_MASK);
+}
+
+// ── 주제별 묶음 ─────────────────────────────────────────────
+export const OTHER_TOPIC = { id: 'other', name: '기타' };
+
+export type TopicCandidateRow = {
+  id: number;
+  question: string;
+  ask_count: number;
+  topic_id?: string | null;
+  topic_name?: string | null;
+  subtopic?: string | null;
+  [key: string]: any;
+};
+export type SubtopicNode<T> = { name: string; count: number; candidates: T[] };
+export type TopicNode<T> = {
+  topic: { id: string; name: string };
+  count: number; // 물은 횟수 합
+  candidates_count: number;
+  subtopics: SubtopicNode<T>[];
+};
+
+/** 후보 목록 → 주제 → 하위 주제 → 후보 (모두 물은 횟수 많은 순, '기타'는 같은 횟수면 뒤로) */
+export function buildTopicTree<T extends TopicCandidateRow>(rows: T[]): TopicNode<T>[] {
+  const topics = new Map<string, TopicNode<T> & { subs: Map<string, SubtopicNode<T>> }>();
+  for (const r of rows) {
+    const id = r.topic_id || OTHER_TOPIC.id;
+    const name = r.topic_name || OTHER_TOPIC.name;
+    let t = topics.get(id);
+    if (!t) {
+      t = { topic: { id, name }, count: 0, candidates_count: 0, subtopics: [], subs: new Map() };
+      topics.set(id, t);
+    }
+    const subName = (r.subtopic || '').trim() || OTHER_TOPIC.name;
+    let s = t.subs.get(subName);
+    if (!s) {
+      s = { name: subName, count: 0, candidates: [] };
+      t.subs.set(subName, s);
+    }
+    const n = Number(r.ask_count) || 0;
+    s.count += n;
+    s.candidates.push(r);
+    t.count += n;
+    t.candidates_count += 1;
+  }
+  const otherLast = (a: string, b: string) => (a === OTHER_TOPIC.name ? 1 : 0) - (b === OTHER_TOPIC.name ? 1 : 0);
+  return [...topics.values()]
+    .map(({ subs, ...t }) => ({
+      ...t,
+      subtopics: [...subs.values()]
+        .map((s) => ({ ...s, candidates: [...s.candidates].sort((a, b) => b.ask_count - a.ask_count || b.id - a.id) }))
+        .sort((a, b) => b.count - a.count || otherLast(a.name, b.name) || a.name.localeCompare(b.name, 'ko')),
+    }))
+    .sort((a, b) => b.count - a.count || otherLast(a.topic.name, b.topic.name) || a.topic.name.localeCompare(b.topic.name, 'ko'));
+}

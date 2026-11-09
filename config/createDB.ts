@@ -6,6 +6,7 @@ import {
   mergeSamples,
   normalizeQuestion,
   parseAutoFeedbackDetail,
+  maskProfanity,
   parseSamples,
   Sample,
 } from '../src/utils/faqCandidateRules';
@@ -272,6 +273,10 @@ const ADDED_COLUMNS: AddedColumn[] = [
   { table: 'keyword_rules', column: 'search_sources', definition: 'JSON NULL' },
   // FAQ 대상: undergraduate(학부) / graduate(대학원) / all(공통)
   { table: 'faqs', column: 'audience', definition: "VARCHAR(20) NOT NULL DEFAULT 'undergraduate' AFTER manager", onAdded: setInitialFaqAudience },
+  // FAQ 후보 주제 (호빗 RAG가 정함 — 주제 지도 단어 → 가까운 FAQ 분류 → AI). 비어 있으면 다음 밤 작업·'지금 모으기'가 채움
+  { table: 'faq_candidates', column: 'topic_id', definition: 'VARCHAR(32) NULL' },
+  { table: 'faq_candidates', column: 'topic_name', definition: 'VARCHAR(50) NULL' },
+  { table: 'faq_candidates', column: 'subtopic', definition: 'VARCHAR(100) NULL' },
 ];
 
 const addColumns = async () => {
@@ -472,6 +477,41 @@ const moveAutoFeedbacksToCandidates = async (connection: mysql.Connection) => {
   }
 };
 
+// FAQ 후보에 들어간 학생 질문 원문 전부 (samples는 최근 8개뿐) — 후보를 지우면 같이 지워짐
+//   밤 작업이 넣음. 예전 자동 피드백에서 옮긴 후보는 원문이 samples뿐이라 처음 한 번 samples로 채움
+const createFaqCandidateQuestionsTable = async () => {
+  const connection = await createConnection();
+  try {
+    await connection.query(`
+      CREATE TABLE IF NOT EXISTS faq_candidate_questions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        candidate_id INT NOT NULL,
+        log_id INT NULL,
+        text VARCHAR(300) NOT NULL,
+        language VARCHAR(45) NOT NULL DEFAULT 'KO',
+        asked_at TIMESTAMP NULL,
+        KEY idx_candidate (candidate_id, asked_at),
+        FOREIGN KEY (candidate_id) REFERENCES faq_candidates(id) ON DELETE CASCADE
+      )
+    `);
+    // 원문이 하나도 없는 후보만 — 한 번 채우면 다시 대상이 아니라 켤 때마다 돌아도 한 번만 들어감
+    const [rows]: any = await connection.query(`
+      SELECT c.id, c.samples FROM faq_candidates c
+       WHERE NOT EXISTS (SELECT 1 FROM faq_candidate_questions q WHERE q.candidate_id = c.id)`);
+    const values = rows.flatMap((r: any) =>
+      parseSamples(r.samples).map((smp) => [
+        r.id, maskProfanity(smp.text).slice(0, 300), smp.language || 'KO', smp.at ? new Date(smp.at) : null,
+      ])
+    );
+    if (values.length) {
+      await connection.query(`INSERT INTO faq_candidate_questions (candidate_id, text, language, asked_at) VALUES ?`, [values]);
+      console.log(`[faq_candidates] 원문 ${values.length}개를 samples에서 채움`);
+    }
+  } finally {
+    await connection.end();
+  }
+};
+
 const createTables = async () => {
   await createUserTable();
   await createFAQTable();
@@ -485,8 +525,9 @@ const createTables = async () => {
   await createProfileOptionsTable();
   await createNoticeChangesTable();
   await createFaqBackupsTable();
+  await createFaqCandidatesTable(); // 아래 addColumns가 이 표에 칸을 더하므로 먼저
   await addColumns();
-  await createFaqCandidatesTable();
+  await createFaqCandidateQuestionsTable();
 };
 
 // 데이터베이스 및 테이블 생성

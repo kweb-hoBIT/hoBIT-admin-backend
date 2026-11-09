@@ -2,7 +2,9 @@
 //   npx jest tests/utils/faqCandidateRules.test.ts
 import { expect } from '@jest/globals';
 import {
+  buildTopicTree,
   groupByExactText,
+  maskProfanity,
   isTrivialQuestion,
   mergeSamples,
   normalizeQuestion,
@@ -69,5 +71,39 @@ describe('faqCandidateRules', () => {
       { existing_id: null, cluster: 0 },
       { existing_id: null, cluster: 1 },
     ]);
+  });
+
+  it('욕설 가리기 — 띄어 쓰거나 기호를 끼워도, 뜻이 다른 말은 그대로', () => {
+    expect(maskProfanity('씨발 수강신청 왜 안돼')).toBe('●● 수강신청 왜 안돼');
+    expect(maskProfanity('씨*발 진짜')).toBe('●● 진짜');
+    expect(maskProfanity('몇 시 발표야? 몇시발표야?')).toBe('몇 시 발표야? 몇시발표야?');
+    expect(maskProfanity('ㅅ.ㅂ 휴학')).toBe('●● 휴학');
+    expect(maskProfanity('존나 어렵네 병신같은 시간표')).toBe('●● 어렵네 ●●같은 시간표');
+    expect(maskProfanity('what the FUCK is this, shitty site')).toBe('what the ●● is this, ●● site');
+    expect(maskProfanity('시발점이 어디야')).toBe('시발점이 어디야');
+    expect(maskProfanity('Dickens 강의 있어?')).toBe('Dickens 강의 있어?');
+    expect(maskProfanity('수강신청 기간 알려줘')).toBe('수강신청 기간 알려줘');
+    expect(maskProfanity('')).toBe('');
+  });
+
+  it('주제별 묶음 — 주제·하위 주제·후보 모두 물은 횟수 많은 순, 주제 없으면 기타', () => {
+    const rows = [
+      { id: 1, question: '수강신청 언제', ask_count: 5, topic_id: 'courses', topic_name: '수업·수강', subtopic: '수강신청' },
+      { id: 2, question: '정정 기간', ask_count: 2, topic_id: 'courses', topic_name: '수업·수강', subtopic: '정정' },
+      { id: 3, question: '수강신청 팁', ask_count: 7, topic_id: 'courses', topic_name: '수업·수강', subtopic: '수강신청' },
+      { id: 4, question: '휴학', ask_count: 9, topic_id: 'academic_status', topic_name: '학적', subtopic: '' },
+      { id: 5, question: '넌 누구야', ask_count: 1, topic_id: null, topic_name: null, subtopic: null },
+    ];
+    const tree = buildTopicTree(rows);
+    expect(tree.map((t) => [t.topic.name, t.count, t.candidates_count])).toEqual([
+      ['수업·수강', 14, 3],
+      ['학적', 9, 1],
+      ['기타', 1, 1],
+    ]);
+    expect(tree[0].subtopics.map((s) => [s.name, s.count])).toEqual([['수강신청', 12], ['정정', 2]]);
+    expect(tree[0].subtopics[0].candidates.map((c) => c.id)).toEqual([3, 1]);
+    expect(tree[1].subtopics[0].name).toBe('기타');
+    expect(tree[2].topic.id).toBe('other');
+    expect(buildTopicTree([])).toEqual([]);
   });
 });

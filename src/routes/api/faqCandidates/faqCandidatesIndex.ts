@@ -3,7 +3,7 @@ import { RowDataPacket } from "mysql2/promise";
 import { Pool } from "../../../../config/connectDB";
 import Request from "../../../types/Request";
 import auth from "../../../middleware/auth";
-import { parseSamples } from "../../../utils/faqCandidateRules";
+import { buildTopicTree, maskProfanity, parseSamples } from "../../../utils/faqCandidateRules";
 import { isFaqCandidatesRunning, runFaqCandidates } from "../../../scripts/faqCandidates";
 
 /**
@@ -18,37 +18,85 @@ const SORTS: Record<string, string> = {
   recent: "last_asked_at DESC, id DESC",
 };
 
+const statusOf = (v: unknown) => (STATUSES.includes(String(v) as any) ? String(v) : "open");
+
+// 목록·주제별이 같이 씀 — 화면에 보낼 때도 욕설을 한 번 더 가림 (예전에 저장된 문장까지)
+async function loadCandidates(status: string, order: string) {
+  const [counts] = await Pool.query<RowDataPacket[]>(`SELECT status, COUNT(*) AS n FROM faq_candidates GROUP BY status`);
+  const [rows] = await Pool.query<RowDataPacket[]>(
+    `SELECT c.id, c.question, c.ask_count, c.samples, c.first_asked_at, c.last_asked_at, c.status,
+            c.similar_faq_id, c.similar_faq_question, c.similar_faq_senior, c.similar_score, c.created_at, c.updated_at,
+            c.topic_id, c.topic_name, c.subtopic,
+            (SELECT COUNT(*) FROM faq_candidate_questions q WHERE q.candidate_id = c.id) AS question_count
+       FROM faq_candidates c WHERE c.status = ? ORDER BY ${order} LIMIT 1000`,
+    [status],
+  );
+  return {
+    counts: Object.fromEntries(STATUSES.map((s) => [s, Number(counts.find((c) => c.status === s)?.n ?? 0)])),
+    candidates: rows.map((r) => ({
+      ...r,
+      question: maskProfanity(r.question),
+      samples: parseSamples(r.samples).map((smp) => ({ ...smp, text: maskProfanity(smp.text) })),
+      similar_faq_senior: !!r.similar_faq_senior,
+      question_count: Number(r.question_count ?? 0),
+    })),
+  };
+}
+
 // @route   GET api/faq-candidates?status=open|done|dismissed&sort=count|recent
 // @access  Private
 router.get("/", auth, async (req: Request, res: Response) => {
-  const status = STATUSES.includes(String(req.query.status) as any) ? String(req.query.status) : "open";
   const order = SORTS[String(req.query.sort)] ?? SORTS.count;
   try {
-    const [counts] = await Pool.query<RowDataPacket[]>(
-      `SELECT status, COUNT(*) AS n FROM faq_candidates GROUP BY status`,
-    );
-    const [rows] = await Pool.query<RowDataPacket[]>(
-      `SELECT id, question, ask_count, samples, first_asked_at, last_asked_at, status,
-              similar_faq_id, similar_faq_question, similar_faq_senior, similar_score, created_at, updated_at
-         FROM faq_candidates WHERE status = ? ORDER BY ${order} LIMIT 1000`,
-      [status],
-    );
-    res.status(200).json({
-      statusCode: 200,
-      message: "FAQ candidates retrieved",
-      data: {
-        counts: Object.fromEntries(STATUSES.map((s) => [s, Number(counts.find((c) => c.status === s)?.n ?? 0)])),
-        candidates: rows.map((r) => ({
-          ...r,
-          samples: parseSamples(r.samples),
-          similar_faq_senior: !!r.similar_faq_senior,
-        })),
-      },
-    });
+    const data = await loadCandidates(statusOf(req.query.status), order.replace(/(^|, )/g, "$1c."));
+    res.status(200).json({ statusCode: 200, message: "FAQ candidates retrieved", data });
   } catch (err: any) {
     if (err.code === "ER_NO_SUCH_TABLE") {
       return res.status(200).json({ statusCode: 200, message: "Not ready", data: { counts: {}, candidates: [] } });
     }
+    console.error(err.message);
+    res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+  }
+});
+
+// @route   GET api/faq-candidates/topics?status=open — 주제 → 하위 주제 → 후보 (물은 횟수 많은 순)
+// @access  Private
+router.get("/topics", auth, async (req: Request, res: Response) => {
+  try {
+    const { counts, candidates } = await loadCandidates(statusOf(req.query.status), SORTS.count.replace(/(^|, )/g, "$1c."));
+    res.status(200).json({
+      statusCode: 200,
+      message: "FAQ candidate topics retrieved",
+      data: { counts, total: candidates.length, topics: buildTopicTree(candidates as any[]) },
+    });
+  } catch (err: any) {
+    if (err.code === "ER_NO_SUCH_TABLE" || err.code === "ER_BAD_FIELD_ERROR") {
+      return res.status(200).json({ statusCode: 200, message: "Not ready", data: { counts: {}, total: 0, topics: [] } });
+    }
+    console.error(err.message);
+    res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+  }
+});
+
+// @route   GET api/faq-candidates/:id/questions?offset=0&limit=20 — 학생이 실제로 쓴 질문 (최근 순)
+// @access  Private
+router.get("/:id/questions", auth, async (req: Request, res: Response) => {
+  const offset = Math.max(Number(req.query.offset) || 0, 0);
+  const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
+  try {
+    const id = Number(req.params.id);
+    const [[total]] = await Pool.query<RowDataPacket[]>(`SELECT COUNT(*) AS n FROM faq_candidate_questions WHERE candidate_id = ?`, [id]) as any;
+    const [rows] = await Pool.query<RowDataPacket[]>(
+      `SELECT id, text, language, asked_at FROM faq_candidate_questions WHERE candidate_id = ?
+        ORDER BY asked_at IS NULL, asked_at DESC, id DESC LIMIT ? OFFSET ?`,
+      [id, limit, offset],
+    );
+    res.status(200).json({
+      statusCode: 200,
+      message: "FAQ candidate questions retrieved",
+      data: { total: Number(total?.n ?? 0), questions: rows.map((r) => ({ ...r, text: maskProfanity(r.text) })) },
+    });
+  } catch (err: any) {
     console.error(err.message);
     res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
   }

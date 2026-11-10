@@ -7,6 +7,7 @@ import { Pool } from "../../../../config/connectDB";
 import { RowDataPacket } from "mysql2/promise";
 import { LoginRequest, LoginResponse } from "../../../types/user";
 import env from "../../../../config/env";
+import { clientIp, loginLimiter, recordLoginFailure, recordLoginSuccess } from "../../../middleware/loginLimit";
 
 const router = express.Router();
 
@@ -23,15 +24,18 @@ interface User {
 // @route   POST api/auth
 // @desc    Login user and get token
 // @access  Public
-router.post("/", async (req: Request, res: Response) => {
+// loginLimiter: 같은 IP에서 계속 틀리면 잠시 잠금 (무작위 대입 방지) — 실패·성공은 아래에서 기록
+router.post("/", loginLimiter, async (req: Request, res: Response) => {
   const connection = await Pool.getConnection();
   const { email, password }: LoginRequest["body"] = req.body;
+  const ip = clientIp(req);
 
   try {
     const [rows] = await connection.execute<RowDataPacket[]>(`SELECT * FROM users WHERE email = ?`, [email]);
     const user = rows[0] as User;
 
     if (!user) {
+      recordLoginFailure(ip, email);
       return res.status(404).json({
         statusCode: 404,
         message: "User not found",
@@ -41,12 +45,14 @@ router.post("/", async (req: Request, res: Response) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {
+      recordLoginFailure(ip, email);
       return res.status(401).json({
         statusCode: 401,
         message: "Invalid password",
       });
     }
 
+    recordLoginSuccess(ip, email);
     const username = user.username;
     const user_id = user.id;
     const payload: Payload = { user_id };

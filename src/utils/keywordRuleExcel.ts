@@ -1,11 +1,13 @@
 /**
  * '키워드 규칙' 시트 (keyword_rules) — 규칙 하나가 한 줄
- *   번호 | 대표 키워드 | 연관 단어 (쉼표로 구분) | 고정 FAQ 번호 (쉼표, 최대 3개) | 고정 FAQ 질문 (읽기만) | 먼저 찾아볼 곳 (쉼표로 구분) | 삭제
+ *   번호 | 대표 키워드 | 연관 단어 (쉼표로 구분) | 영어 대표 키워드 | 영어 연관 단어 (쉼표로 구분) | 고정 FAQ 번호 (쉼표, 최대 3개) | 고정 FAQ 질문 (읽기만) | 먼저 찾아볼 곳 (쉼표로 구분) | 삭제
  *   '고정 FAQ 질문'은 어떤 FAQ인지 보여 주는 칸이라 올릴 때는 읽지 않아요
  *   '먼저 찾아볼 곳'은 출처 이름(한국어)으로 보여 주고, 올릴 때는 이름이나 id 모두 받아요 (선택지는 RAG GET /search/sources)
+ *   영어 칸 두 개가 없는 예전 파일도 올릴 수 있어요 (지금 값을 그대로 둠). 연관 단어 칸의 영어 단어는 영어 연관 단어로 옮김
  * 관리자 사이트 키워드 규칙 화면(src/routes/api/keywords/keywordsIndex.ts)과 같은 규칙으로 확인해요
  */
 import ExcelJS from 'exceljs';
+import { isLatin, splitKeywordLang } from './keywordLang';
 import { addListValidation, addStyledSheet, cellText, Change, DELETE_MARK, inSheet, Issue, normLine } from './faqExcel';
 import {
   byRow,
@@ -29,7 +31,9 @@ const MAX_SOURCES = 6;
 export interface KeywordRuleDbRow {
   id: number;
   keyword: string;
+  keyword_en?: string | null;
   synonyms: unknown; // JSON 글자 또는 배열
+  synonyms_en?: unknown;
   pinned_faq_ids: unknown;
   search_sources: unknown;
   [key: string]: any;
@@ -44,7 +48,9 @@ export interface SearchSource {
 
 export interface KeywordView {
   keyword: string;
-  synonyms: string[];
+  keyword_en: string; // 영어 대표 키워드 (없으면 '')
+  synonyms: string[]; // 한국어 연관 단어
+  synonyms_en: string[]; // 영어 연관 단어·약어
   pinned: number[]; // 고정 FAQ 번호 (순서대로)
   sources: string[]; // 먼저 찾아볼 곳 id
 }
@@ -56,19 +62,23 @@ export interface ParsedKeyword {
   del: boolean;
   keyword: string;
   synonyms: string[];
+  keywordEn: string | null; // null = 영어 칸이 없는 예전 파일
+  synonymsEn: string[] | null;
   pinnedTokens: string[];
   sourceTokens: string[];
 }
 
 export type KeywordPlan = SimplePlan<KeywordView>;
 
-type Key = 'id' | 'keyword' | 'synonyms' | 'pinned' | 'pinned_q' | 'sources' | 'sources2' | 'sources3' | 'delete';
+type Key = 'id' | 'keyword' | 'synonyms' | 'keyword_en' | 'synonyms_en' | 'pinned' | 'pinned_q' | 'sources' | 'sources2' | 'sources3' | 'delete';
 // 먼저 찾아볼 곳은 칸마다 하나씩 골라요 (엑셀 드롭다운은 한 칸에 하나만 고를 수 있음). 4개 이상이면 마지막 칸에 쉼표로
 const SOURCE_KEYS = ['sources', 'sources2', 'sources3'] as const;
 export const KEYWORD_COLUMNS: { key: Key; header: string; match: string; width: number; numeric?: boolean }[] = [
   { key: 'id', header: '번호', match: '번호', width: 7, numeric: true },
   { key: 'keyword', header: '대표 키워드', match: '대표키워드', width: 16 },
   { key: 'synonyms', header: '연관 단어 (쉼표로 구분)', match: '연관단어', width: 40 },
+  { key: 'keyword_en', header: '영어 대표 키워드', match: '영어대표키워드', width: 20 },
+  { key: 'synonyms_en', header: '영어 연관 단어 (쉼표로 구분)', match: '영어연관단어', width: 30 },
   { key: 'pinned', header: `고정 FAQ 번호 (쉼표, 최대 ${MAX_KEYWORD_PINNED}개)`, match: '고정FAQ번호', width: 16 },
   { key: 'pinned_q', header: '고정 FAQ 질문 (읽기만)', match: '고정FAQ질문', width: 44 },
   // 세 칸 모두 같은 match — 왼쪽부터 차례로 sources, sources2, sources3 (예전 파일의 '먼저 찾아볼 곳 (쉼표로 구분)' 한 칸도 sources로 읽힘)
@@ -82,9 +92,14 @@ export const KEYWORD_COLUMNS: { key: Key; header: string; match: string; width: 
 
 export function keywordRowToView(r: KeywordRuleDbRow): KeywordView {
   const keyword = normLine(r.keyword);
+  const keywordEn = normLine(r.keyword_en ?? '');
+  // 예전 줄은 영어 단어가 synonyms에 섞여 있음 → 영어 쪽으로
+  const split = splitKeywordLang(parseJsonList(r.synonyms).map((s) => normLine(s)), parseJsonList(r.synonyms_en).map((s) => normLine(s)));
   return {
     keyword,
-    synonyms: dedupLoose(parseJsonList(r.synonyms).map((s) => normLine(s)), [keyword]),
+    keyword_en: keywordEn,
+    synonyms: dedupLoose(split.synonyms, [keyword]),
+    synonyms_en: dedupLoose(split.synonyms_en, [keywordEn]),
     pinned: [...new Set(parseJsonList(r.pinned_faq_ids).map(Number).filter((n) => Number.isInteger(n) && n > 0))],
     sources: [...new Set(parseJsonList(r.search_sources).map((s) => normLine(s)).filter(Boolean))],
   };
@@ -113,6 +128,8 @@ export function addKeywordSheet(
       id,
       keyword: v.keyword,
       synonyms: v.synonyms.join(', '),
+      keyword_en: v.keyword_en,
+      synonyms_en: v.synonyms_en.join(', '),
       pinned: v.pinned.join(', '),
       pinned_q: v.pinned.map((n) => `${n}. ${question.get(n) ?? '(없는 FAQ)'}`).join('\n'),
       sources: label(v.sources[0] ?? ''),
@@ -151,7 +168,7 @@ export function parseKeywordSheet(ws: ExcelJS.Worksheet | undefined): { items: P
     problems.push({ row: 1, message: missingHeaderMessage(missing) });
     return done();
   }
-  const readKeys: Key[] = ['id', 'keyword', 'synonyms', 'pinned', ...SOURCE_KEYS, 'delete'];
+  const readKeys: Key[] = ['id', 'keyword', 'synonyms', 'keyword_en', 'synonyms_en', 'pinned', ...SOURCE_KEYS, 'delete'];
   for (let r = 2; r <= ws.rowCount; r++) {
     const row = ws.getRow(r);
     const text = (k: Key) => (colOf[k] ? cellText(row.getCell(colOf[k]!).value) : '');
@@ -176,6 +193,9 @@ export function parseKeywordSheet(ws: ExcelJS.Worksheet | undefined): { items: P
       del,
       keyword,
       synonyms: splitList(text('synonyms')),
+      // 영어 칸이 없는 예전 파일이면 null (지금 값 그대로)
+      keywordEn: colOf.keyword_en ? normLine(text('keyword_en')) : null,
+      synonymsEn: colOf.synonyms_en ? splitList(text('synonyms_en')) : null,
       pinnedTokens: String(text('pinned')).split(/[,，、;\s]+/).map((s) => s.trim()).filter(Boolean),
       sourceTokens: SOURCE_KEYS.flatMap((k) => splitList(text(k))),
     });
@@ -185,13 +205,22 @@ export function parseKeywordSheet(ws: ExcelJS.Worksheet | undefined): { items: P
 
 // ───────────────────────── 비교 ─────────────────────────
 
-const LABEL = { keyword: '대표 키워드', synonyms: '연관 단어', pinned: '고정 FAQ', sources: '먼저 찾아볼 곳' };
+const LABEL = {
+  keyword: '대표 키워드',
+  keyword_en: '영어 대표 키워드',
+  synonyms: '연관 단어',
+  synonyms_en: '영어 연관 단어',
+  pinned: '고정 FAQ',
+  sources: '먼저 찾아볼 곳',
+};
 
 export function diffKeyword(before: KeywordView, after: KeywordView, sources?: SearchSource[] | null): Change[] {
   const label = sourceLabel(sources);
   const show: Record<keyof KeywordView, (v: KeywordView) => string> = {
     keyword: (v) => v.keyword,
+    keyword_en: (v) => v.keyword_en,
     synonyms: (v) => v.synonyms.join(', '),
+    synonyms_en: (v) => v.synonyms_en.join(', '),
     pinned: (v) => v.pinned.join(', '),
     sources: (v) => v.sources.map(label).join(', '),
   };
@@ -259,10 +288,16 @@ export function buildKeywordPlan(
     const keyword = it.keyword;
     if (keyword.length > 100) problems.push({ row: it.row, message: `대표 키워드가 너무 길어요. 100자까지 쓸 수 있어요. (지금 ${keyword.length}자)` });
 
-    const long = it.synonyms.filter((s) => s.length > 50);
+    const keywordEn = it.keywordEn ?? prev?.keyword_en ?? '';
+    if (keywordEn.length > 100) problems.push({ row: it.row, message: `영어 대표 키워드가 너무 길어요. 100자까지 쓸 수 있어요. (지금 ${keywordEn.length}자)` });
+    const enWords = [...(it.synonymsEn ?? prev?.synonyms_en ?? [])];
+    const long = [...it.synonyms, ...enWords].filter((s) => s.length > 50);
     if (long.length) problems.push({ row: it.row, message: `연관 단어는 하나에 50자까지 쓸 수 있어요. ('${long[0].slice(0, 20)}…')` });
-    const synonyms = dedupLoose(it.synonyms, [keyword]);
+    // 연관 단어 칸에 적은 영어 단어(예전 파일 모양)는 영어 연관 단어로
+    const synonyms = dedupLoose(it.synonyms.filter((s) => !isLatin(s)), [keyword]);
+    const synonymsEn = dedupLoose([...enWords, ...it.synonyms.filter(isLatin)], [keywordEn]);
     if (synonyms.length > MAX_SYNONYMS) problems.push({ row: it.row, message: `연관 단어는 ${MAX_SYNONYMS}개까지 적을 수 있어요. (지금 ${synonyms.length}개)` });
+    if (synonymsEn.length > MAX_SYNONYMS) problems.push({ row: it.row, message: `영어 연관 단어는 ${MAX_SYNONYMS}개까지 적을 수 있어요. (지금 ${synonymsEn.length}개)` });
 
     // 고정 FAQ 번호
     const pinned: number[] = [];
@@ -310,7 +345,7 @@ export function buildKeywordPlan(
     if (sources.length > MAX_SOURCES) problems.push({ row: it.row, message: `먼저 찾아볼 곳은 ${MAX_SOURCES}개까지 고를 수 있어요. (지금 ${sources.length}개)` });
     if (problems.length !== before) continue;
 
-    const view: KeywordView = { keyword, synonyms, pinned, sources };
+    const view: KeywordView = { keyword, keyword_en: keywordEn, synonyms, synonyms_en: synonymsEn, pinned, sources };
     if (!prev) plan.created.push({ row: it.row, view });
     else {
       finalOf.set(it.id!, { row: it.row, view });
@@ -353,7 +388,7 @@ export function buildKeywordPlan(
   for (const [id, prev] of dbViews) if (!deletedIds.has(id)) keywordOwner.set(nameKey(finalOf.get(id)?.view.keyword ?? prev.keyword), finalOf.get(id)?.view.keyword ?? prev.keyword);
   for (const c of plan.created) keywordOwner.set(nameKey(c.view.keyword), c.view.keyword);
   for (const t of [...plan.created.map((c) => ({ row: c.row, v: c.view })), ...plan.updated.map((u) => ({ row: u.row, v: u.after }))]) {
-    const clash = t.v.synonyms.find((s) => keywordOwner.has(nameKey(s)));
+    const clash = [...t.v.synonyms, ...t.v.synonyms_en].find((s) => keywordOwner.has(nameKey(s)));
     if (clash) warnings.push({ row: t.row, message: `연관 단어 '${clash}'은(는) 다른 규칙의 대표 키워드이기도 해요. 두 규칙이 함께 쓰일 수 있어요.` });
   }
 
@@ -367,6 +402,8 @@ export function keywordSummary(v: KeywordView, faqs: Map<number, string>, source
   const label = sourceLabel(sources);
   const out: string[] = [];
   if (v.synonyms.length) out.push(`연관 단어: ${v.synonyms.join(', ')}`);
+  if (v.keyword_en) out.push(`영어 대표 키워드: ${v.keyword_en}`);
+  if (v.synonyms_en.length) out.push(`영어 연관 단어: ${v.synonyms_en.join(', ')}`);
   if (v.pinned.length) out.push(`고정 FAQ: ${v.pinned.map((n) => `${n}. ${faqs.get(n) ?? ''}`.trim()).join(' / ')}`);
   if (v.sources.length) out.push(`먼저 찾아볼 곳: ${v.sources.map(label).join(', ')}`);
   return out;

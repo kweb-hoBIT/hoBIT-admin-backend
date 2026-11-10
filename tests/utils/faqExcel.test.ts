@@ -648,7 +648,7 @@ describe('키워드 규칙 시트', () => {
   it('시트 모양 · 그대로 읽으면 바뀐 게 없어요', async () => {
     const wb = await load(await buildHobitXlsx(data, { sources }));
     const ws = wb.getWorksheet(KEYWORD_SHEET)!;
-    expect(headers(ws)).toEqual(['번호', '대표 키워드', '연관 단어 (쉼표로 구분)', '고정 FAQ 번호 (쉼표, 최대 3개)', '고정 FAQ 질문 (읽기만)', '먼저 찾아볼 곳 1', '먼저 찾아볼 곳 2', '먼저 찾아볼 곳 3', '삭제']);
+    expect(headers(ws)).toEqual(['번호', '대표 키워드', '연관 단어 (쉼표로 구분)', '영어 대표 키워드', '영어 연관 단어 (쉼표로 구분)', '고정 FAQ 번호 (쉼표, 최대 3개)', '고정 FAQ 질문 (읽기만)', '먼저 찾아볼 곳 1', '먼저 찾아볼 곳 2', '먼저 찾아볼 곳 3', '삭제']);
     expect(ws.views[0]).toMatchObject({ state: 'frozen', ySplit: 1 });
     const r2 = findRow(ws, 2);
     expect(ws.getRow(r2).getCell(col(ws, '먼저 찾아볼 곳 1')).value).toBe('학사 운영 규정 (PDF)');
@@ -693,14 +693,14 @@ describe('키워드 규칙 시트', () => {
     expect(plan.problems).toEqual([]);
     const k = plan.keywords!;
     expect(k.updated).toHaveLength(1);
-    expect(k.updated[0].after).toEqual({ keyword: '입시', synonyms: ['수시', '정시', '입학', '편입'], pinned: [10, 11], sources: ['학사안내', 'notice_under'] });
+    expect(k.updated[0].after).toEqual({ keyword: '입시', keyword_en: '', synonyms: ['수시', '정시', '입학', '편입'], synonyms_en: [], pinned: [10, 11], sources: ['학사안내', 'notice_under'] });
     expect(k.updated[0].changes.map((c) => [c.label, c.before, c.after])).toEqual([
       ['연관 단어', '수시, 정시, 입학', '수시, 정시, 입학, 편입'],
       ['고정 FAQ', '10', '10, 11'],
       ['먼저 찾아볼 곳', '홈페이지 · 학사안내', '홈페이지 · 학사안내, 게시판 · 학부 공지'],
     ]);
     expect(k.deleted.map((d) => d.id)).toEqual([2]);
-    expect(k.created.map((c) => c.view)).toEqual([{ keyword: '장학', synonyms: ['장학금', '국장'], pinned: [14], sources: ['notice_under'] }]);
+    expect(k.created.map((c) => c.view)).toEqual([{ keyword: '장학', keyword_en: '', synonyms: ['장학금', '국장'], synonyms_en: [], pinned: [14], sources: ['notice_under'] }]);
     expect(planChangeCount(plan)).toBe(3);
   });
 
@@ -733,6 +733,86 @@ describe('키워드 규칙 시트', () => {
     // 출처 목록을 못 받으면 새 출처는 확인할 수 없다고 안내 (이미 쓰던 값은 그대로 통과 — 첫 테스트)
     const noList = buildHobitPlan(await parseHobitXlsx(edited), data, { sources: null });
     expect(noList.problems.map((p) => p.message).join('\n')).toContain("먼저 찾아볼 곳 목록을 불러오지 못해서 '네이버'");
+  });
+
+  // 한국어·영어 따로 — 컴퓨터학과 ← 컴학, 컴과 / computer science ← cs, comp sci
+  const csRule: KeywordRuleDbRow = {
+    id: 3,
+    keyword: '컴퓨터학과',
+    synonyms: JSON.stringify(['컴학', 'CS', '컴과', 'comp sci']), // 예전 모양: 영어 단어가 synonyms에 섞여 있음
+    pinned_faq_ids: '[]',
+    search_sources: null,
+  };
+  const enData = { ...data, keywordRules: [...keywordFixture, csRule] };
+
+  it('영어 칸 — 예전 줄의 영어 단어는 영어 연관 단어 칸에, 그대로 올리면 바뀐 게 없어요', async () => {
+    const wb = await load(await buildHobitXlsx(enData, { sources }));
+    const ws = wb.getWorksheet(KEYWORD_SHEET)!;
+    const r3 = findRow(ws, 3);
+    expect(ws.getRow(r3).getCell(col(ws, '연관 단어 (쉼표로 구분)')).value).toBe('컴학, 컴과');
+    expect(ws.getRow(r3).getCell(col(ws, '영어 연관 단어 (쉼표로 구분)')).value).toBe('CS, comp sci');
+    expect(ws.getRow(r3).getCell(col(ws, '영어 대표 키워드')).value).toBe('');
+    const plan = buildHobitPlan(await parseHobitXlsx(await toBuf(wb)), enData, { sources });
+    expect(plan.problems).toEqual([]);
+    expect(plan.keywords!.unchanged).toBe(3);
+  });
+
+  it('영어 대표 키워드·영어 연관 단어 고치기 → DB 모양으로 왕복', async () => {
+    const edited = await rewrite(await buildHobitXlsx(enData, { sources }), (wb) => {
+      const ws = wb.getWorksheet(KEYWORD_SHEET)!;
+      writeRow(ws, findRow(ws, 3), {
+        '영어 대표 키워드': ' computer science ',
+        '영어 연관 단어 (쉼표로 구분)': 'cs, comp sci, Computer Science', // 영어 대표 키워드와 같은 단어는 빠짐
+        '연관 단어 (쉼표로 구분)': '컴학, 컴과, CSE', // 한국어 칸의 영어 단어는 영어 쪽으로
+      });
+    });
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), enData, { sources });
+    expect(plan.problems).toEqual([]);
+    const k = plan.keywords!;
+    expect(k.updated).toHaveLength(1);
+    expect(k.updated[0].after).toMatchObject({
+      keyword: '컴퓨터학과',
+      keyword_en: 'computer science',
+      synonyms: ['컴학', '컴과'],
+      synonyms_en: ['cs', 'comp sci', 'CSE'],
+    });
+    expect(k.updated[0].changes.map((c) => c.label)).toEqual(['영어 대표 키워드', '영어 연관 단어']);
+
+    // 저장된 모양(keyword_en·synonyms_en 칸)으로 다시 받으면 같은 값
+    const v = k.updated[0].after;
+    const saved = { ...csRule, keyword_en: v.keyword_en, synonyms: JSON.stringify(v.synonyms), synonyms_en: JSON.stringify(v.synonyms_en) };
+    const again = { ...data, keywordRules: [...keywordFixture, saved] };
+    const plan2 = buildHobitPlan(await parseHobitXlsx(await buildHobitXlsx(again, { sources })), again, { sources });
+    expect(plan2.problems).toEqual([]);
+    expect(plan2.keywords!.unchanged).toBe(3);
+  });
+
+  it('영어 칸이 없는 예전 파일도 올릴 수 있어요 — 영어 값은 그대로', async () => {
+    const saved: KeywordRuleDbRow = {
+      ...csRule,
+      keyword_en: 'computer science',
+      synonyms: JSON.stringify(['컴학', '컴과']),
+      synonyms_en: JSON.stringify(['cs', 'comp sci']),
+    };
+    const cur = { ...data, keywordRules: [...keywordFixture, saved] };
+    const edited = await rewrite(await buildHobitXlsx(cur, { sources }), (wb) => {
+      const ws = wb.getWorksheet(KEYWORD_SHEET)!;
+      // 예전 파일처럼 영어 칸 두 개를 지움
+      ws.spliceColumns(col(ws, '영어 대표 키워드'), 2);
+      writeRow(ws, findRow(ws, 3), { '연관 단어 (쉼표로 구분)': '컴학, 컴과, 컴공, SW' });
+    });
+    const wb = await load(edited);
+    expect(headers(wb.getWorksheet(KEYWORD_SHEET)!)).not.toContain('영어 대표 키워드');
+    const plan = buildHobitPlan(await parseHobitXlsx(edited), cur, { sources });
+    expect(plan.problems).toEqual([]);
+    const k = plan.keywords!;
+    expect(k.updated).toHaveLength(1);
+    expect(k.updated[0].after).toMatchObject({
+      keyword_en: 'computer science',
+      synonyms: ['컴학', '컴과', '컴공'],
+      synonyms_en: ['cs', 'comp sci', 'SW'],
+    });
+    expect(k.unchanged).toBe(2);
   });
 });
 

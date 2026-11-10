@@ -634,15 +634,17 @@ router.post('/excel/apply', auth, scopeGuard, async (req: ExcelRequest, res: Res
       for (const u of plan.keywords.updated) {
         const v = u.after;
         await conn.execute(
-          `UPDATE keyword_rules SET keyword = ?, synonyms = ?, pinned_faq_ids = ?, search_sources = ?, updated_by = ? WHERE id = ?`,
-          [v.keyword, JSON.stringify(v.synonyms), JSON.stringify(v.pinned), JSON.stringify(v.sources), userId, u.id]
+          `UPDATE keyword_rules SET keyword = ?, keyword_en = ?, synonyms = ?, synonyms_en = ?, pinned_faq_ids = ?, search_sources = ?, updated_by = ? WHERE id = ?`,
+          [v.keyword, v.keyword_en || null, JSON.stringify(v.synonyms), JSON.stringify(v.synonyms_en), JSON.stringify(v.pinned),
+            JSON.stringify(v.sources), userId, u.id]
         );
       }
       for (const c of plan.keywords.created) {
         const v = c.view;
         await conn.execute(
-          `INSERT INTO keyword_rules (keyword, synonyms, pinned_faq_ids, search_sources, updated_by) VALUES (?, ?, ?, ?, ?)`,
-          [v.keyword, JSON.stringify(v.synonyms), JSON.stringify(v.pinned), JSON.stringify(v.sources), userId]
+          `INSERT INTO keyword_rules (keyword, keyword_en, synonyms, synonyms_en, pinned_faq_ids, search_sources, updated_by) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [v.keyword, v.keyword_en || null, JSON.stringify(v.synonyms), JSON.stringify(v.synonyms_en), JSON.stringify(v.pinned),
+            JSON.stringify(v.sources), userId]
         );
       }
     }
@@ -756,9 +758,9 @@ const SENIOR_SPEC: TableSpec = {
 // 키워드 규칙·프로필 항목은 변경 기록 표가 없어서 기록 없이 되돌림
 const KEYWORD_SPEC: TableSpec = {
   table: 'keyword_rules',
-  columns: ['keyword', 'synonyms', 'pinned_faq_ids', 'search_sources'],
-  defaults: { synonyms: '[]', pinned_faq_ids: '[]', search_sources: null },
-  jsonColumns: ['synonyms', 'pinned_faq_ids', 'search_sources'],
+  columns: ['keyword', 'keyword_en', 'synonyms', 'synonyms_en', 'pinned_faq_ids', 'search_sources'],
+  defaults: { keyword_en: null, synonyms: '[]', synonyms_en: null, pinned_faq_ids: '[]', search_sources: null },
+  jsonColumns: ['synonyms', 'synonyms_en', 'pinned_faq_ids', 'search_sources'],
   unique: 'keyword',
 };
 const PROFILE_SPEC: TableSpec = {

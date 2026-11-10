@@ -229,6 +229,8 @@ const createUserFeedbacksTable = async () => {
 // 테이블 생성 실행
 // 키워드 규칙 — 입력창 추천(자동완성)·질문 검색에 쓰는 대표 키워드, 연관 단어, 맨 위에 고정할 FAQ
 //   예) keyword: 입시 / synonyms: ["수시","정시","이공계","계열"] / pinned_faq_ids: [123]
+//   영어 모드용: keyword_en(영어 대표 키워드) / synonyms_en(영어 단어·약어)
+//   예) 컴퓨터학과 ← 컴학, 컴과  /  computer science ← cs, comp sci
 //   호빗 서버(hoBIT-backend)가 읽어 감 (src/apis/keywordRules.ts)
 const createKeywordRulesTable = async () => {
   const connection = await createConnection();
@@ -236,7 +238,9 @@ const createKeywordRulesTable = async () => {
     CREATE TABLE IF NOT EXISTS keyword_rules (
       id INT AUTO_INCREMENT PRIMARY KEY,
       keyword VARCHAR(100) NOT NULL UNIQUE,
+      keyword_en VARCHAR(100) NULL,
       synonyms JSON NOT NULL,
+      synonyms_en JSON NULL,
       pinned_faq_ids JSON NOT NULL,
       search_sources JSON NULL,
       updated_by INT,
@@ -271,6 +275,9 @@ const setInitialFaqAudience = async (connection: mysql.Connection) => {
 const ADDED_COLUMNS: AddedColumn[] = [
   // 키워드 규칙의 '먼저 찾아볼 곳'
   { table: 'keyword_rules', column: 'search_sources', definition: 'JSON NULL' },
+  // 키워드 규칙의 영어 대표 키워드·영어 단어 (비어 있으면 예전처럼 synonyms에 섞인 영어 단어로만 비교)
+  { table: 'keyword_rules', column: 'keyword_en', definition: 'VARCHAR(100) NULL AFTER keyword' },
+  { table: 'keyword_rules', column: 'synonyms_en', definition: 'JSON NULL AFTER synonyms' },
   // FAQ 대상: undergraduate(학부) / graduate(대학원) / all(공통)
   { table: 'faqs', column: 'audience', definition: "VARCHAR(20) NOT NULL DEFAULT 'undergraduate' AFTER manager", onAdded: setInitialFaqAudience },
   // FAQ 후보 주제 (호빗 RAG가 정함 — 주제 지도 단어 → 가까운 FAQ 분류 → AI). 비어 있으면 다음 밤 작업·'지금 모으기'가 채움
